@@ -4,6 +4,7 @@
   const PACKS = window.DYVO_PACKS || [];
   const OFFLINE_FILE = location.protocol === 'file:';     // архів з диска: сервера немає, доступ повний
   const DEMO_STOPS = ['shevchenko'];                        // що можна пройти без коду
+  const CONTACT = 'info@dyvourok.com.ua';
 
   // ---------------------------------------------------------------- утиліти
   function h(tag, attrs, ...kids) {
@@ -94,7 +95,9 @@
       else if (r.status === 401) { license.clear(); toast('Доступ на цьому пристрої завершено. Введіть код ще раз.'); route(); }
     } catch (e) {}
   }
-  const buyHint = () => h('p', { class: 'muted' }, 'Код доступу надходить на пошту одразу після покупки.');
+  const mailLink = () => h('a', { class: 'mail', href: 'mailto:' + CONTACT }, CONTACT);
+  const contactLine = (lead = 'Питання чи проблеми з доступом? Пишіть на ') => h('p', { class: 'muted contact' }, lead, mailLink());
+  const buyHint = () => h('div', {}, h('p', { class: 'muted' }, 'Код доступу надходить на пошту одразу після покупки.'), contactLine('Питання? Пишіть на '));
   function lockedDialog() {
     Sfx.wrong();
     const r = h('div', { class: 'reward', role: 'dialog', 'aria-label': 'Потрібен доступ' },
@@ -104,7 +107,8 @@
         h('h2', {}, 'Ця частина відкривається з кодом доступу'),
         h('p', {}, 'У демо можна пройти зупинку «Тарас Шевченко». Повний набір — 5 епох, мультфільми, роздатка і сценарій уроку.'),
         h('button', { class: 'btn big', onclick: () => { r.remove(); store.set('dyvo_demo', false); route(); } }, 'Ввести код'),
-        h('button', { class: 'btn ghost', onclick: () => r.remove() }, 'Повернутися')));
+        h('button', { class: 'btn ghost', onclick: () => r.remove() }, 'Повернутися'),
+        contactLine('Як придбати: ')));
     document.body.append(r);
   }
 
@@ -150,9 +154,9 @@
     const err = h('div', { class: 'err', role: 'status' });
     const MESSAGES = {
       invalid: 'Такого коду немає. Перевірте, чи немає помилки.',
-      revoked: 'Цей код заблоковано. Напишіть нам — розберемося.',
-      expired: 'Термін дії коду завершився.',
-      devices: 'Код уже активовано на максимальній кількості пристроїв. Вийдіть з нього на одному з них або напишіть нам.'
+      revoked: `Цей код заблоковано. Напишіть нам на ${CONTACT} — розберемося.`,
+      expired: `Термін дії коду завершився. Щоб продовжити, напишіть на ${CONTACT}.`,
+      devices: `Код уже активовано на максимальній кількості пристроїв. Вийдіть з нього на одному з них або напишіть на ${CONTACT}.`
     };
     const btn = h('button', { class: 'btn big', onclick: () => submit() }, 'Увійти');
     async function submit() {
@@ -489,7 +493,8 @@
         license.clear(); toast('Ви вийшли. Місце для пристрою звільнено.'); go('#/'); route();
       } }, 'Вийти з цього пристрою') : null,
       !l ? h('button', { class: 'btn big', onclick: () => { store.set('dyvo_demo', false); route(); } }, 'Ввести код') : null,
-      h('p', { class: 'muted' }, 'Один код працює на кількох пристроях (наприклад, дошка, ноутбук і телефон). Щоб перенести доступ на новий пристрій, вийдіть на старому.')));
+      h('p', { class: 'muted' }, 'Один код працює на кількох пристроях (наприклад, дошка, ноутбук і телефон). Щоб перенести доступ на новий пристрій, вийдіть на старому.'),
+      contactLine()));
   }
 
   // ---------------------------------------------------------------- маршрути

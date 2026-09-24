@@ -51,6 +51,9 @@ img { max-width: 100%; display: block; }
 .stop.final.locked .medal .ph { color: var(--muted); }
 .stop.closed .medal { opacity: .45; filter: grayscale(.6); }
 .stop .badge.lock { background: var(--paper-2); color: var(--muted); font-size: 1em; }
+.contact { margin-top: 4px; }
+a.mail { color: var(--red); font-weight: 800; text-decoration: none; border-bottom: 2px solid rgba(200, 52, 31, .25); user-select: text; }
+a.mail:hover { border-bottom-color: var(--red); }
 .license-mark { font-size: .7em; color: #b9aa9c; margin-top: 8px; letter-spacing: .04em; }
 
 /* ---------- кнопки ---------- */
