@@ -15,8 +15,9 @@
       year: '863',
       who: 'Кирило і Мефодій',
       letter: 'С',
-      portrait: null,
-      video: null,
+      portrait: 'img/kyrylo-head.png',
+      video: 'media/kyrylo.mp4',
+      poster: 'img/kyrylo-poster.jpg',
       intro: 'Колись у слов\'ян не було букв. Брати Кирило і Мефодій створили першу слов\'янську абетку — глаголицю. А кирилицю, з якої походить і наша абетка, назвали на честь Кирила.',
       task: {
         type: 'cipher',
@@ -104,7 +105,7 @@
 
   cartoons: [
     { title: 'Тарас Шевченко: «Коли я був малим…»', file: 'media/shevchenko.mp4', ready: true, demo: true },
-    { title: 'Кирило і Мефодій: перша абетка', ready: false },
+    { title: 'Кирило і Мефодій: таємниця першої абетки', file: 'media/kyrylo.mp4', ready: true },
     { title: 'Нестор Літописець', ready: false },
     { title: 'Леся Українка: перший вірш у 9 років', ready: false },
     { title: 'Іван Франко: казки для своїх дітей', ready: false }
