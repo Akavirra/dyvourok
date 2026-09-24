@@ -1,7 +1,8 @@
 /* Робота без інтернету: після першого відкриття все потрібне лежить у кеші. Нову версію — через зміну VERSION. */
-const VERSION = 'dyvourok-v3';
+const VERSION = 'dyvourok-v4';
+// Застосунок живе в /app/, сайт-вітрина — на головній (її не кешуємо наперед).
 const CORE = [
-  './', 'index.html', 'manifest.webmanifest', 'css/app.css',
+  'app/', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/star.js', 'js/sfx.js',
   'fonts/Nunito.ttf', 'fonts/NotoSansGlagolitic.ttf',
   'brand/dyvourok-logo.svg', 'brand/dyvourok-mark.svg',
@@ -29,5 +30,5 @@ self.addEventListener('fetch', e => {
       caches.open(VERSION).then(c => c.put(e.request, copy));
     }
     return res;
-  }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(hit => hit || caches.match('index.html'))));
+  }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(hit => hit || caches.match('app/'))));
 });

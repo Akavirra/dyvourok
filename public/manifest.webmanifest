@@ -3,7 +3,7 @@
   "short_name": "Дивоурок",
   "description": "Інтерактивні уроки-диво для початкової школи",
   "lang": "uk",
-  "start_url": "./",
+  "start_url": "./app/",
   "scope": "./",
   "display": "fullscreen",
   "orientation": "any",

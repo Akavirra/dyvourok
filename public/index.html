@@ -3,21 +3,297 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Дивоурок</title>
-<meta name="description" content="Інтерактивні уроки-диво для початкової школи">
+<title>Дивоурок — уроки, які оживають на дошці</title>
+<meta name="description" content="Готові інтерактивні заходи для 1–4 класу: квест для дошки, мультфільми з паперовими героями вертепу, роздатка і сценарій уроку. Відкрили — і провели.">
 <meta name="theme-color" content="#C8341F">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="canonical" href="https://dyvourok.com.ua/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Дивоурок">
+<meta property="og:title" content="Дивоурок — уроки, які оживають на дошці">
+<meta property="og:description" content="Квест, мультфільми, роздатка і сценарій для 1–4 класу. Спробуйте безкоштовно.">
+<meta property="og:url" content="https://dyvourok.com.ua/">
+<meta property="og:image" content="https://dyvourok.com.ua/img/site/og.jpg">
+<meta property="og:locale" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="icons/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="stylesheet" href="css/app.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preload" href="fonts/Nunito.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="css/site.css">
 </head>
 <body>
-<div id="app"></div>
-<script src="packs/mova/pack.js"></script>
+
+<header class="header" id="top">
+  <div class="wrap">
+    <a class="logo" href="./" aria-label="Дивоурок — на головну"><img src="brand/dyvourok-logo.svg" alt="Дивоурок" width="180" height="38"></a>
+    <nav class="nav" aria-label="Головне меню">
+      <a href="#nabir">Набір до 9 листопада</a>
+      <a href="#vseredyni">Що всередині</a>
+      <a href="#yak">Як це працює</a>
+      <a href="#cina">Ціна</a>
+      <a href="#pytannia">Питання</a>
+    </nav>
+    <div class="actions">
+      <a class="btn small ghost" href="app/">Увійти</a>
+      <a class="btn small" href="app/#/demo">Спробувати</a>
+    </div>
+    <button class="burger" type="button" aria-label="Відкрити меню" aria-expanded="false"><span></span></button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= Перший екран ================= -->
+  <section class="hero">
+    <img class="deco" src="img/site/star-gold.webp" alt="" width="70" style="left:3%;top:9%;width:70px">
+    <img class="deco d2" src="img/site/flower-red.webp" alt="" style="left:44%;bottom:6%;width:62px">
+    <img class="deco d3" src="img/site/bird-fly.webp" alt="" style="right:4%;top:6%;width:92px">
+    <img class="deco d2" src="img/site/star-blue.webp" alt="" style="right:47%;top:12%;width:44px">
+    <div class="wrap">
+      <div>
+        <span class="kicker">Для 1–4 класу · НУШ</span>
+        <h1>Уроки, які <span class="accent">оживають</span> на дошці</h1>
+        <p class="lead">Готові інтерактивні свята й уроки: квест для всього класу, мультфільми з паперовими героями українського вертепу, роздатка і сценарій на 45 хвилин. Ви просто відкриваєте — і проводите.</p>
+        <div class="cta">
+          <a class="btn" href="app/#/demo">Спробувати безкоштовно</a>
+          <a class="btn ghost" href="#vseredyni">Що всередині</a>
+        </div>
+        <div class="trust">
+          <span>Без реєстрації учнів</span>
+          <span>Працює без інтернету</span>
+          <span>Дошка, ноутбук, телефон</span>
+        </div>
+      </div>
+      <div class="board">
+        <div class="screen">
+          <div class="frame" id="player">
+            <img src="img/site/hero-stage.webp" alt="Тарас Шевченко — паперова лялька на сцені вертепу вітається з дітьми" width="1920" height="1080" fetchpriority="high">
+            <button class="play" type="button" id="play" aria-label="Дивитися мультфільм про Тараса Шевченка">
+              <span class="circle"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg></span>
+              <span class="label">Мультфільм · 21 с</span>
+            </button>
+          </div>
+        </div>
+        <p class="caption">Тарас Шевченко розповідає дітям про своє дитинство</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="stitch" aria-hidden="true"></div>
+
+  <!-- ================= Набір до 9 листопада ================= -->
+  <section class="section night" id="nabir">
+    <div class="wrap">
+      <div>
+        <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+          <div class="date-badge" aria-label="9 листопада"><b>9</b><span>листопада</span></div>
+          <span class="kicker">День української писемності та мови</span>
+        </div>
+        <h2 class="h2" style="margin-top:22px">Машина часу рідної мови</h2>
+        <p class="lead" style="margin-top:14px">Клас подорожує епохами: від першої слов'янської абетки до сьогодення. На кожній зупинці — мультфільм із героєм і завдання, за яке діти отримують букву. Разом букви складаються в слово, що відкриває скриню з дипломом.</p>
+        <ol class="epochs">
+          <li><span class="dot">С</span><span class="yr">863</span><span class="who">Кирило і Мефодій: читаємо глаголицю</span></li>
+          <li><span class="dot">Л</span><span class="yr">≈1113</span><span class="who">Нестор Літописець: складаємо літопис</span></li>
+          <li><span class="dot">О</span><span class="yr">1840</span><span class="who">Тарас Шевченко: збираємо рядок вірша</span></li>
+          <li><span class="dot">В</span><span class="yr">1880</span><span class="who">Леся Українка: добираємо рими</span></li>
+          <li><span class="dot">О</span><span class="yr">1899</span><span class="who">Іван Франко: вікторина за казками</span></li>
+          <li class="final"><span class="dot">!</span><span class="yr">Сьогодні</span><span class="who">Скриня зі словом і дипломи для класу</span></li>
+        </ol>
+        <a class="btn gold" href="app/#/demo">Пройти зупинку безкоштовно</a>
+      </div>
+      <div class="laptop reveal">
+        <div class="lid"><img src="img/site/app-map.webp" alt="Мапа часу в застосунку: п'ять епох від 863 року до сьогодні" width="1440" height="860" loading="lazy"></div>
+        <div class="base" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Що всередині ================= -->
+  <section class="section" id="vseredyni">
+    <img class="deco" src="img/site/leaf-maple.webp" alt="" style="right:3%;top:60px;width:70px">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Що всередині</span>
+        <h2 class="h2">Усе для уроку — в одному місці</h2>
+        <p class="lead">Нічого не треба шукати, друкувати навмання чи складати самотужки. Кожен набір — це готовий захід від першої хвилини до останньої.</p>
+      </div>
+      <div class="inside">
+        <article class="feature reveal">
+          <div class="pic"><img src="img/site/app-task.webp" alt="Завдання на дошці: прочитати слово глаголицею" width="1440" height="860" loading="lazy"></div>
+          <div class="body">
+            <h3><span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg></span>Квест для дошки</h3>
+            <p>Великі кнопки, звуки, конфеті — діти виходять до дошки й виконують завдання всім класом.</p>
+            <ul><li>5 типів завдань: шифри, порядок подій, вірші, рими, вікторини</li><li>Прогрес зберігається — можна розтягнути на тиждень</li></ul>
+          </div>
+        </article>
+        <article class="feature reveal">
+          <div class="pic"><img src="img/site/flashback.webp" alt="Кадр мультфільму: малий Тарас малює вуглинкою на стіні хати" width="1920" height="1080" loading="lazy"></div>
+          <div class="body">
+            <h3><span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z" fill="currentColor"/></svg></span>Мультфільми</h3>
+            <p>Класики оживають у стилі паперового вертепу й самі розповідають дітям свою історію.</p>
+            <ul><li>Перевірені факти, без вигаданих «цитат»</li><li>Субтитри — діти читають разом з героєм</li></ul>
+          </div>
+        </article>
+        <article class="feature reveal">
+          <div class="pic paper" aria-hidden="true">
+            <div class="sheet" style="--r:-4deg"><i class="t"></i><i></i><i class="s"></i><div class="grid"></div></div>
+            <div class="sheet" style="--r:2deg"><i class="t"></i><div class="grid"></div><i></i><i class="s"></i></div>
+            <div class="sheet" style="--r:5deg"><i class="t"></i><i></i><i></i><i class="s"></i><div class="grid"></div></div>
+          </div>
+          <div class="body">
+            <h3><span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg></span>Роздатка для друку</h3>
+            <p>Робочі аркуші, плакати для класу, грамоти й закладки — друкуються і в кольорі, і чорно-білими.</p>
+            <ul><li>Окремо для 1–2 і 3–4 класу</li><li>Відповіді для вчителя в комплекті</li></ul>
+          </div>
+        </article>
+        <article class="feature reveal">
+          <div class="pic"><img src="img/site/app-teacher.webp" alt="Сценарій заходу на 45 хвилин з порадами й відповідями" width="1440" height="860" loading="lazy"></div>
+          <div class="body">
+            <h3><span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 10h8M8 14h8M8 18h5"/></svg></span>Сценарій уроку</h3>
+            <p>Хвилина за хвилиною: що сказати, що показати, скільки часу на кожну частину.</p>
+            <ul><li>Поради для молодших класів і дистанційки</li><li>Можна провести урок без підготовки</li></ul>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Як це працює ================= -->
+  <section class="section" id="yak" style="background:var(--paper-2)">
+    <div class="wrap">
+      <div class="section-head center">
+        <span class="kicker">Як це працює</span>
+        <h2 class="h2">Від покупки до уроку — 3 хвилини</h2>
+      </div>
+      <div class="steps">
+        <div class="step reveal"><div class="n">1</div><h3>Обираєте набір</h3><p>Спершу можна безкоштовно пройти демо-зупинку й переконатися, що дітям сподобається.</p></div>
+        <div class="step reveal"><div class="n">2</div><h3>Отримуєте код на пошту</h3><p>Одразу після оплати. Один код працює на 3 пристроях: дошка, ноутбук і телефон.</p></div>
+        <div class="step reveal"><div class="n">3</div><h3>Відкриваєте й проводите</h3><p>На будь-якій дошці чи проєкторі, у браузері. Встановлюється як програма і працює навіть без інтернету.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Чому / безпечно ================= -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Чому «Дивоурок»</span>
+        <h2 class="h2">Зроблено з любов'ю до дітей і повагою до вчителя</h2>
+      </div>
+      <div class="why">
+        <div class="item reveal"><img src="img/site/star-gold.webp" alt="" width="64" height="64" loading="lazy"><h3>Економить ваш вечір</h3><p>Не треба збирати урок по шматочках з десяти сайтів. Відкрили — і все готово.</p></div>
+        <div class="item reveal"><img src="img/site/flower-tulip.webp" alt="" width="64" height="64" loading="lazy"><h3>Діти в центрі</h3><p>Виходять до дошки, працюють разом, радіють кожній букві. Урок, який запам'ятовується.</p></div>
+        <div class="item reveal"><img src="img/site/flower-blue.webp" alt="" width="64" height="64" loading="lazy"><h3>Українське коріння</h3><p>Вертеп, вишивка, класики, народні прислів'я. Факти перевіряємо, тексти — лише з вільних джерел.</p></div>
+        <div class="item safe reveal"><img src="img/site/star-red.webp" alt="" width="64" height="64" loading="lazy"><h3>Безпечно</h3><p>Без реклами й сторонніх трекерів. Не потрібні акаунти учнів — ми не збираємо жодних даних дітей.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Ціна ================= -->
+  <section class="section" id="cina" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Ціна</span>
+        <h2 class="h2">Один раз купили — ваше назавжди</h2>
+      </div>
+      <div class="pricing">
+        <div class="price-card reveal">
+          <span class="ribbon">Новинка</span>
+          <h3>Машина часу рідної мови</h3>
+          <div class="price"><b>249&nbsp;₴</b><span>одноразово</span></div>
+          <ul class="checks">
+            <li>Квест на 5 епох для інтерактивної дошки</li>
+            <li>Мультфільми з героями-класиками</li>
+            <li>Роздатка: аркуші, плакати, грамоти, закладки</li>
+            <li>Сценарій заходу на 45 хвилин</li>
+            <li>До 3 пристроїв, працює без інтернету</li>
+            <li>Нові мультфільми набору — безкоштовно</li>
+          </ul>
+          <div class="cta">
+            <a class="btn" href="mailto:info@dyvourok.com.ua?subject=%D0%97%D0%B0%D0%BC%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D1%8F%3A%20%D0%9C%D0%B0%D1%88%D0%B8%D0%BD%D0%B0%20%D1%87%D0%B0%D1%81%D1%83%20%D1%80%D1%96%D0%B4%D0%BD%D0%BE%D1%97%20%D0%BC%D0%BE%D0%B2%D0%B8">Замовити</a>
+            <a class="btn ghost" href="app/#/demo">Спершу спробувати</a>
+          </div>
+          <p class="price-note">Щоб замовити, напишіть на <a href="mailto:info@dyvourok.com.ua">info@dyvourok.com.ua</a> — надішлемо реквізити, а код прийде на пошту одразу після оплати.</p>
+        </div>
+        <div class="soon-card reveal" id="nezabarom">
+          <span class="kicker" style="color:var(--yellow)">Незабаром</span>
+          <h3>Свята, що вже в роботі</h3>
+          <p>Кожен новий набір — у тому ж стилі й з тими ж героями вертепу.</p>
+          <div class="soon-list">
+            <div><img src="img/site/star-gold.webp" alt="" width="42" height="42" loading="lazy"><span>Миколай, Новий рік і Різдво<small>грудень</small></span></div>
+            <div><img src="img/site/leaf-oak.webp" alt="" width="42" height="42" loading="lazy"><span>Шевченківські дні<small>березень</small></span></div>
+            <div><img src="img/site/flower-red.webp" alt="" width="42" height="42" loading="lazy"><span>Весна і Великдень<small>квітень</small></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Питання ================= -->
+  <section class="section" id="pytannia" style="background:var(--paper-2)">
+    <div class="wrap">
+      <div class="section-head center">
+        <span class="kicker">Питання</span>
+        <h2 class="h2">Часті питання вчителів</h2>
+      </div>
+      <div class="faq">
+        <details><summary>Чи потрібен інтернет у класі?</summary><p>Лише для першого входу. Після цього «Дивоурок» запам'ятовує матеріали, і квест працює навіть без інтернету — зручно під час відключень світла чи на слабкому шкільному Wi-Fi.</p></details>
+        <details><summary>На чому це працює?</summary><p>У будь-якому сучасному браузері: інтерактивна дошка чи панель (Windows або Android), ноутбук із проєктором, планшет, телефон. Нічого встановлювати не обов'язково — але можна натиснути «Встановити», і з'явиться окрема програма.</p></details>
+        <details><summary>Як отримати код після оплати?</summary><p>Код приходить на вашу пошту. Вводите його один раз на кожному пристрої — і всі матеріали набору відкриваються.</p></details>
+        <details><summary>Скільки пристроїв можна підключити?</summary><p>До трьох: наприклад, дошка в класі, домашній ноутбук і телефон. Щоб перенести доступ на новий пристрій, просто вийдіть на старому.</p></details>
+        <details><summary>Чи можна провести урок дистанційно?</summary><p>Так. Покажіть екран у Meet чи Zoom — діти відповідають голосом, а ви натискаєте відповіді на своєму комп'ютері.</p></details>
+        <details><summary>Чи безпечно це для дітей?</summary><p>Так. Учням не потрібні акаунти, ми не збираємо їхніх даних, на сайті немає реклами і сторонніх трекерів. Усі тексти й факти перевіряємо перед публікацією.</p></details>
+        <details><summary>А якщо щось не працює?</summary><p>Напишіть на <a href="mailto:info@dyvourok.com.ua">info@dyvourok.com.ua</a> — відповімо й допоможемо. Якщо проблему не вдасться вирішити, повернемо кошти.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Фінальний заклик ================= -->
+  <section class="section">
+    <div class="wrap">
+      <div class="final-cta reveal">
+        <canvas id="bloom" width="300" height="300" aria-hidden="true"></canvas>
+        <div>
+          <h2>Спробуйте урок-диво з вашим класом</h2>
+          <p>Демо-зупинка з Тарасом Шевченком — безкоштовно й без реєстрації.</p>
+        </div>
+        <a class="btn gold" href="app/#/demo">Спробувати безкоштовно</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <img class="logo" src="brand/dyvourok-logo-white.svg" alt="Дивоурок" width="190" height="40">
+        <p class="small">Інтерактивні уроки-свята для початкової школи. Зроблено в Україні.</p>
+      </div>
+      <div>
+        <h4>Сайт</h4>
+        <ul>
+          <li><a href="#nabir">Набір до 9 листопада</a></li>
+          <li><a href="#cina">Ціна</a></li>
+          <li><a href="#pytannia">Питання</a></li>
+          <li><a href="app/">Увійти в застосунок</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Контакти</h4>
+        <ul>
+          <li><a href="mailto:info@dyvourok.com.ua">info@dyvourok.com.ua</a></li>
+          <li><a href="oferta">Публічна оферта</a></li>
+          <li><a href="pryvatnist">Політика конфіденційності</a></li>
+          <li><a href="povernennia">Повернення коштів</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom"><span>© <span id="year">2026</span> Дивоурок</span><span>Зроблено з любов'ю до дітей</span></div>
+  </div>
+</footer>
+
 <script src="js/star.js"></script>
-<script src="js/sfx.js"></script>
-<script src="js/app.js"></script>
+<script src="js/site.js"></script>
 </body>
 </html>

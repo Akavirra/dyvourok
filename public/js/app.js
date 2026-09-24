@@ -499,8 +499,15 @@
 
   // ---------------------------------------------------------------- маршрути
   function route() {
-    if (!hasAccess()) return gate();
     const parts = location.hash.replace(/^#\/?/, '').split('/');
+    // посилання «Спробувати безкоштовно» з сайту: одразу в демо набору
+    if (parts[0] === 'demo') {
+      if (!license.get()) store.set('dyvo_demo', true);
+      // replaceState з повним шляхом: відносна адреса розв'язалася б від <base> і вела б на головну сайту
+      history.replaceState(null, '', location.pathname + location.search + '#/pack/' + (parts[1] || 'mova'));
+      return route();
+    }
+    if (!hasAccess()) return gate();
     if (parts[0] === 'account') return account();
     const pack = PACKS.find(p => p.id === parts[1]);
     const byId = id => pack && pack.stops.find(s => s.id === id);
@@ -522,6 +529,7 @@
   window.addEventListener('hashchange', () => { document.querySelectorAll('.reward').forEach(r => r.remove()); route(); });
   let seen = false;
   try { seen = sessionStorage.getItem('dyvo_splash') === '1'; sessionStorage.setItem('dyvo_splash', '1'); } catch (e) {}
+  if (/[?&]nosplash/.test(location.search)) seen = true;   // для скриншотів і вбудовування
   if (seen) route(); else { route(); splash(() => {}); }
   refreshLicense();
 
