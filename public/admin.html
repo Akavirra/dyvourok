@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Дивоурок · Коди</title>
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; }
+  :root { --red: #C8341F; --paper: #FBF6EC; --ink: #2A1714; --muted: #7A6A60; --line: #E6DAC7; --green: #2E7D4F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.45 'Nunito', 'Segoe UI', sans-serif; padding: 24px 16px 60px; }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  h1 { margin: 0; font-weight: 900; font-size: 30px; } h1 span { color: var(--red); }
+  .card { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 8px 24px -14px rgba(42,23,20,.3); display: flex; flex-direction: column; gap: 12px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 800; color: var(--muted); }
+  input { font: inherit; padding: 10px 12px; border: 2px solid var(--line); border-radius: 10px; min-width: 0; }
+  input:focus { outline: none; border-color: var(--red); }
+  button { font: inherit; font-weight: 800; border: none; border-radius: 10px; padding: 10px 16px; cursor: pointer; background: var(--red); color: #fff; }
+  button.ghost { background: #f3eada; color: var(--ink); }
+  button.small { padding: 5px 10px; font-size: 13px; }
+  .out { font-family: Consolas, monospace; background: #f7f2e8; border-radius: 10px; padding: 12px; white-space: pre-wrap; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding: 8px; border-bottom: 2px solid var(--line); }
+  td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  td.code { font-family: Consolas, monospace; font-weight: 700; white-space: nowrap; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 12px; font-weight: 800; }
+  .ok { background: #e6f3ea; color: var(--green); } .bad { background: #fbe4df; color: var(--red); } .full { background: #fff1d6; color: #9a6a00; }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .muted { color: var(--muted); font-size: 14px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span>Дивоурок</span> · коди доступу</h1>
+
+  <div class="card" id="login">
+    <label for="token">Адмін-токен<input id="token" type="password" autocomplete="off"></label>
+    <div><button id="enter">Увійти</button></div>
+    <div class="muted" id="login-err"></div>
+  </div>
+
+  <div id="panel" hidden>
+    <div class="card">
+      <b>Новий код</b>
+      <div class="row">
+        <label for="note" style="flex:2 1 240px">Покупець (ім'я, пошта) — буде на дипломі<input id="note" placeholder="Олена Коваль, olena@…"></label>
+        <label for="count" style="flex:0 0 90px">Кількість<input id="count" type="number" value="1" min="1" max="100"></label>
+        <label for="max" style="flex:0 0 110px">Пристроїв<input id="max" type="number" value="3" min="1" max="50"></label>
+        <label for="packs" style="flex:1 1 140px">Набори (* — усі)<input id="packs" value="*"></label>
+        <label for="days" style="flex:0 0 130px">Днів (порожньо — назавжди)<input id="days" type="number" min="1"></label>
+        <button id="create">Створити</button>
+      </div>
+      <div class="out" id="created" hidden></div>
+      <div id="letter-actions" hidden><button class="ghost small" id="copy-letter">Скопіювати лист для покупця</button></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <b>Усі коди</b>
+        <input id="filter" placeholder="Пошук за кодом чи покупцем" style="flex:0 1 320px">
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Код</th><th>Покупець</th><th>Пристрої</th><th>Останній вхід</th><th>Статус</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  let token = sessionStorage.getItem('dyvo_admin') || '';
+  let all = [];
+  let lastCreated = [];
+
+  async function call(method, body) {
+    const r = await fetch('/api/admin/codes', { method, headers: { 'authorization': 'Bearer ' + token, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    const data = await r.json().catch(() => ({}));
+    if (r.status === 403) throw new Error('forbidden');
+    return data;
+  }
+
+  async function load() {
+    const d = await call('GET');
+    all = d.codes || [];
+    render();
+  }
+
+  function render() {
+    const q = $('filter').value.trim().toLowerCase();
+    const rows = all.filter(c => !q || c.code.toLowerCase().includes(q) || (c.note || '').toLowerCase().includes(q));
+    $('rows').replaceChildren(...rows.map(c => {
+      const tr = document.createElement('tr');
+      const status = c.revoked ? '<span class="pill bad">заблоковано</span>'
+        : c.expires_at && c.expires_at < Date.now() ? '<span class="pill bad">минув термін</span>'
+        : c.devices >= c.max_devices ? '<span class="pill full">ліміт пристроїв</span>' : '<span class="pill ok">активний</span>';
+      tr.innerHTML = `<td class="code"></td><td class="note"></td><td>${c.devices} / ${c.max_devices}</td><td>${c.last_seen ? new Date(c.last_seen).toLocaleString('uk-UA') : '—'}</td><td>${status}</td><td class="actions"></td>`;
+      tr.querySelector('.code').textContent = c.code;
+      tr.querySelector('.note').textContent = c.note || '—';
+      const acts = tr.querySelector('.actions');
+      const btn = (label, fn, cls) => { const b = document.createElement('button'); b.className = 'small ' + (cls || 'ghost'); b.textContent = label; b.onclick = fn; acts.append(b); };
+      btn('Копіювати', () => navigator.clipboard.writeText(c.code));
+      btn(c.revoked ? 'Розблокувати' : 'Заблокувати', () => act(c.revoked ? 'restore' : 'revoke', c.code));
+      if (c.devices) btn('Скинути пристрої', () => act('reset-devices', c.code));
+      return tr;
+    }));
+  }
+
+  async function act(action, code) { await call('POST', { action, code }); load(); }
+
+  $('enter').onclick = async () => {
+    token = $('token').value.trim();
+    try { await load(); sessionStorage.setItem('dyvo_admin', token); $('login').hidden = true; $('panel').hidden = false; }
+    catch (e) { $('login-err').textContent = 'Токен не підходить.'; }
+  };
+  $('token').addEventListener('keydown', e => { if (e.key === 'Enter') $('enter').click(); });
+
+  $('create').onclick = async () => {
+    const d = await call('POST', { note: $('note').value, count: $('count').value, maxDevices: $('max').value, packs: $('packs').value, days: $('days').value });
+    lastCreated = d.codes || [];
+    $('created').hidden = false;
+    $('created').textContent = lastCreated.join('\n');
+    $('letter-actions').hidden = false;
+    load();
+  };
+
+  $('copy-letter').onclick = () => {
+    const text = `Вітаємо! Дякуємо за покупку в «Дивоурок» ✨
+
+Ваш код доступу: ${lastCreated[0]}
+
+Як почати:
+1. Відкрийте ${location.origin} на дошці чи комп'ютері.
+2. Введіть код — і всі матеріали відкриються.
+3. Код працює на ${$('max').value} пристроях (наприклад, дошка, ноутбук і телефон).
+
+Порада: натисніть «Встановити» в браузері — «Дивоурок» з'явиться як програма і працюватиме навіть без інтернету.
+
+Гарного свята з дітьми!`;
+    navigator.clipboard.writeText(text);
+    $('copy-letter').textContent = 'Скопійовано ✓';
+    setTimeout(() => $('copy-letter').textContent = 'Скопіювати лист для покупця', 1500);
+  };
+
+  $('filter').addEventListener('input', render);
+  if (token) { $('token').value = token; $('enter').click(); }
+</script>
+</body>
+</html>

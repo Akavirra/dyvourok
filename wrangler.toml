@@ -1,0 +1,9 @@
+name = "dyvourok"
+pages_build_output_dir = "./public"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dyvourok-db"
+database_id = "ccf40c92-2453-4eb8-821e-b9281bc2a86a"
+migrations_dir = "migrations"
