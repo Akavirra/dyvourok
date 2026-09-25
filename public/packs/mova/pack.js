@@ -33,8 +33,9 @@
       year: '≈1113',
       who: 'Нестор Літописець',
       letter: 'Л',
-      portrait: null,
-      video: null,
+      portrait: 'img/nestor-head.png',
+      video: 'media/nestor.mp4',
+      poster: 'img/nestor-poster.jpg',
       intro: 'Чернець Києво-Печерського монастиря Нестор записував події, що відбувалися на нашій землі. З його іменем пов\'язують «Повість минулих літ». Саме в день його пам\'яті, 9 листопада, ми святкуємо День писемності та мови.',
       task: {
         type: 'order',
@@ -106,7 +107,7 @@
   cartoons: [
     { title: 'Тарас Шевченко: «Коли я був малим…»', file: 'media/shevchenko.mp4', ready: true, demo: true },
     { title: 'Кирило і Мефодій: таємниця першої абетки', file: 'media/kyrylo.mp4', ready: true },
-    { title: 'Нестор Літописець', ready: false },
+    { title: 'Нестор Літописець: книга про минулі літа', file: 'media/nestor.mp4', ready: true },
     { title: 'Леся Українка: перший вірш у 9 років', ready: false },
     { title: 'Іван Франко: казки для своїх дітей', ready: false }
   ],
