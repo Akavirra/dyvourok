@@ -73,8 +73,9 @@
       year: '1880',
       who: 'Леся Українка',
       letter: 'В',
-      portrait: null,
-      video: null,
+      portrait: 'img/lesya-head.png',
+      video: 'media/lesya.mp4',
+      poster: 'img/lesya-poster.jpg',
       intro: 'Лариса Косач, яку ми знаємо як Лесю Українку, написала свій перший вірш у 9 років — стільки ж, скільки третьокласникам! Вона знала багато мов і писала вірші, п\'єси та казки.',
       task: {
         type: 'pairs',
@@ -108,7 +109,7 @@
     { title: 'Тарас Шевченко: «Коли я був малим…»', file: 'media/shevchenko.mp4', ready: true, demo: true },
     { title: 'Кирило і Мефодій: таємниця першої абетки', file: 'media/kyrylo.mp4', ready: true },
     { title: 'Нестор Літописець: книга про минулі літа', file: 'media/nestor.mp4', ready: true },
-    { title: 'Леся Українка: перший вірш у 9 років', ready: false },
+    { title: 'Леся Українка: дівчинка, яка перемогла страх словом', file: 'media/lesya.mp4', ready: true },
     { title: 'Іван Франко: казки для своїх дітей', ready: false }
   ],
 
