@@ -1,5 +1,5 @@
 /* Робота без інтернету: після першого відкриття все потрібне лежить у кеші. Нову версію — через зміну VERSION. */
-const VERSION = 'dyvourok-v4';
+const VERSION = 'dyvourok-v5';
 // Застосунок живе в /app/, сайт-вітрина — на головній (її не кешуємо наперед).
 const CORE = [
   'app/', 'manifest.webmanifest', 'css/app.css',

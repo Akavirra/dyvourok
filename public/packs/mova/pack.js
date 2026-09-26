@@ -89,9 +89,10 @@
       year: '1899',
       who: 'Іван Франко',
       letter: 'О',
-      portrait: null,
-      video: null,
-      intro: 'Іван Франко був сином коваля. Він знав багато мов, написав безліч творів, а для власних дітей склав збірку казок «Коли ще звірі говорили».',
+      portrait: 'img/franko-head.png',
+      video: 'media/franko.mp4',
+      poster: 'img/franko-poster.jpg',
+      intro: 'Іван Франко був сином коваля, а сам «кував» слова: написав так багато, що його твори видали в 50 томах. Для власних дітей він склав збірку казок «Коли ще звірі говорили».',
       task: {
         type: 'quiz',
         title: 'Казки Франка',
@@ -110,7 +111,7 @@
     { title: 'Кирило і Мефодій: таємниця першої абетки', file: 'media/kyrylo.mp4', ready: true },
     { title: 'Нестор Літописець: книга про минулі літа', file: 'media/nestor.mp4', ready: true },
     { title: 'Леся Українка: дівчинка, яка перемогла страх словом', file: 'media/lesya.mp4', ready: true },
-    { title: 'Іван Франко: казки для своїх дітей', ready: false }
+    { title: 'Іван Франко: син коваля, що кував слова', file: 'media/franko.mp4', ready: true }
   ],
 
   handouts: [
