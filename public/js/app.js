@@ -247,8 +247,9 @@
 
   // ---------------------------------------------------------------- зупинка
   function stop(pack, s) {
-    const video = s.video
-      ? h('div', { class: 'video-box' }, h('video', { src: asset(pack, s.video), poster: s.poster ? asset(pack, s.poster) : null, controls: true, playsinline: true, preload: 'metadata' }))
+    const vsrc = !license.allows(pack.id) && s.demoVideo ? s.demoVideo : s.video;   // у демо — короткий тизер
+    const video = vsrc
+      ? h('div', { class: 'video-box' }, h('video', { src: asset(pack, vsrc), poster: s.poster ? asset(pack, s.poster) : null, controls: true, playsinline: true, preload: 'metadata' }))
       : h('div', { class: 'video-box soon' }, h('div', { class: 'big' }, icon('film')), 'Мультфільм про цього героя з\'явиться незабаром', h('div', { class: 'muted' }, 'А поки прочитайте розповідь і виконайте завдання'));
     frame([pack.title, ' · ', h('b', {}, s.who)], [
       h('div', { class: 'stop-screen' },

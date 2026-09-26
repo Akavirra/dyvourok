@@ -55,7 +55,8 @@
       who: 'Тарас Шевченко',
       letter: 'О',
       portrait: 'img/shevchenko-head.png',
-      video: 'media/shevchenko.mp4',
+      video: 'media/shevchenko-full.mp4',
+      demoVideo: 'media/shevchenko.mp4',
       poster: 'img/shevchenko-poster.jpg',
       intro: 'Тарас Шевченко народився в родині кріпаків. Змалку любив малювати, а виріс великим поетом і художником. 1840 року вийшла його книжка віршів «Кобзар».',
       task: {
@@ -107,7 +108,8 @@
   ],
 
   cartoons: [
-    { title: 'Тарас Шевченко: «Коли я був малим…»', file: 'media/shevchenko.mp4', ready: true, demo: true },
+    { title: 'Тарас Шевченко: хлопчик, який малював волю', file: 'media/shevchenko-full.mp4', ready: true },
+    { title: 'Тарас Шевченко: «Коли я був малим…» (тизер)', file: 'media/shevchenko.mp4', ready: true, demo: true },
     { title: 'Кирило і Мефодій: таємниця першої абетки', file: 'media/kyrylo.mp4', ready: true },
     { title: 'Нестор Літописець: книга про минулі літа', file: 'media/nestor.mp4', ready: true },
     { title: 'Леся Українка: дівчинка, яка перемогла страх словом', file: 'media/lesya.mp4', ready: true },
