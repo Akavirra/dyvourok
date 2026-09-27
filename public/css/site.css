@@ -85,7 +85,7 @@ p { margin: 0; }
 
 /* ---------- перший екран ---------- */
 .hero { position: relative; padding-block: clamp(36px, 6vw, 84px) clamp(56px, 8vw, 110px); overflow: hidden; }
-.hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.25fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
 .hero h1 { font-weight: 900; font-size: clamp(40px, 6vw, 76px); letter-spacing: -.02em; margin: 16px 0 20px; }
 .hero h1 .accent { color: var(--red); position: relative; white-space: nowrap; }
 .hero h1 .accent::after { content: ''; position: absolute; left: 0; right: 0; bottom: .04em; height: .16em; background: var(--yellow); z-index: -1; border-radius: 3px; opacity: .8; }
@@ -93,9 +93,28 @@ p { margin: 0; }
 .trust { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 28px; font-weight: 800; font-size: .88em; color: var(--muted); }
 .trust span { display: inline-flex; align-items: center; gap: 8px; }
 .trust span::before { content: ''; width: 8px; height: 8px; background: var(--green); transform: rotate(45deg); }
-@media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; } }
+@media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; } .hero .vertep { order: -1; margin-inline: -8px; } .stage-bubble { width: 62%; } }
 
 /* інтерактивна дошка з мультфільмом */
+/* жива сцена вертепу (js/stage.js) */
+.vertep { position: relative; }
+.vertep-stage { position: relative; aspect-ratio: 1672 / 941; filter: drop-shadow(0 26px 30px rgba(42, 23, 20, .28)); }
+.vertep-poster, .vertep-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.vertep-stage canvas { opacity: 0; transition: opacity .4s; }
+.vertep-stage.live canvas { opacity: 1; }
+.vertep-stage.live .vertep-poster { visibility: hidden; transition: visibility 0s .4s; }
+.stage-hit { position: absolute; border: none; background: none; padding: 0; cursor: pointer; border-radius: 40px 40px 12px 12px; -webkit-tap-highlight-color: transparent; }
+.stage-hit:focus-visible { outline: 3px solid var(--yellow); outline-offset: 4px; }
+.stage-name { position: absolute; left: 50%; bottom: -30px; transform: translate(-50%, 6px); white-space: nowrap; background: var(--red); color: #fff; font-weight: 900; font-size: clamp(10px, 1.1vw, 13px); padding: 4px 10px; border-radius: 99px; opacity: 0; transition: opacity .15s, transform .15s; pointer-events: none; box-shadow: 0 3px 0 var(--red-dark); }
+.stage-hit:hover .stage-name, .stage-hit:focus-visible .stage-name { opacity: 1; transform: translate(-50%, 0); }
+.stage-bubble { position: absolute; transform: translate(-50%, 8px) scale(.92); width: min(60%, 360px); background: #FFFDF8; border: 3px solid var(--ink); border-radius: 18px; padding: 10px 14px; font-weight: 700; font-size: clamp(12px, 1.25vw, 15px); line-height: 1.35; opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; box-shadow: 0 5px 0 rgba(42, 23, 20, .18); }
+.stage-bubble b { display: block; color: var(--red); font-weight: 900; font-size: .85em; }
+.stage-bubble::after { content: ''; position: absolute; left: calc(50% + var(--tail, 0px) - 9px); bottom: -12px; width: 16px; height: 16px; background: #FFFDF8; border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); transform: rotate(45deg); border-radius: 0 0 4px 0; }
+.stage-bubble.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.vertep .caption { margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity .4s; }
+.vertep .caption.done { opacity: .55; }
+.vertep .caption .tap { width: 12px; height: 12px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 0 rgba(200, 52, 31, .5); animation: tap 1.6s infinite; }
+@keyframes tap { 70% { box-shadow: 0 0 0 12px rgba(200, 52, 31, 0); } 100% { box-shadow: 0 0 0 0 rgba(200, 52, 31, 0); } }
 .board { position: relative; }
 .board .screen { position: relative; background: #111; border-radius: 18px; padding: 12px; box-shadow: 0 30px 60px -25px rgba(42, 23, 20, .55), 0 0 0 1px rgba(0, 0, 0, .05); }
 .board .screen::after { content: ''; position: absolute; left: 50%; bottom: -34px; width: 16%; height: 34px; transform: translateX(-50%); background: linear-gradient(#3a302b, #2a211d); border-radius: 0 0 8px 8px; z-index: -1; }

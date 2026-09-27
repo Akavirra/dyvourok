@@ -16,20 +16,6 @@
     burger && burger.setAttribute('aria-expanded', 'false');
   }));
 
-  // мультфільм запускається лише після натискання (зі звуком) — сторінка лишається легкою
-  const play = document.getElementById('play');
-  if (play) play.addEventListener('click', () => {
-    const frame = document.getElementById('player');
-    const v = document.createElement('video');
-    v.src = 'packs/mova/media/shevchenko.mp4';
-    v.poster = 'img/site/hero-stage.webp';
-    v.controls = true;
-    v.autoplay = true;
-    v.playsInline = true;
-    frame.replaceChildren(v);
-    v.play().catch(() => {});
-  });
-
   // блоки плавно з'являються; без JS або з reduced-motion усе видно одразу
   const reveal = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {

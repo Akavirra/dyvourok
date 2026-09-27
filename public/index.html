@@ -20,7 +20,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="fonts/Nunito.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="css/site.css?v=1044fb5073">
+<link rel="stylesheet" href="css/site.css?v=01e6d120e8">
 </head>
 <body>
 
@@ -64,17 +64,13 @@
           <span>Дошка, ноутбук, телефон</span>
         </div>
       </div>
-      <div class="board">
-        <div class="screen">
-          <div class="frame" id="player">
-            <img src="img/site/hero-stage.webp" alt="Тарас Шевченко — паперова лялька на сцені вертепу вітається з дітьми" width="1920" height="1080" fetchpriority="high">
-            <button class="play" type="button" id="play" aria-label="Дивитися мультфільм про Тараса Шевченка">
-              <span class="circle"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg></span>
-              <span class="label">Мультфільм · 21 с</span>
-            </button>
-          </div>
+      <div class="vertep">
+        <div class="vertep-stage">
+          <img class="vertep-poster" src="img/stage/poster.webp" alt="Паперовий вертеп: на сцені герої уроків — Кирило, Нестор Літописець, Тарас Шевченко, Леся Українка й Іван Франко" width="1672" height="941" fetchpriority="high">
+          <canvas id="stage" aria-hidden="true"></canvas>
+          <div class="stage-bubble" id="stage-bubble" aria-live="polite"><b></b><span></span></div>
         </div>
-        <p class="caption">Тарас Шевченко розповідає дітям про своє дитинство</p>
+        <p class="caption" id="stage-hint"><span class="tap" aria-hidden="true"></span>Натисніть на героя — він заговорить</p>
       </div>
     </div>
   </section>
@@ -315,6 +311,7 @@
 </footer>
 
 <script src="js/star.js?v=b7e06e2615"></script>
-<script src="js/site.js?v=5505836dc5"></script>
+<script src="js/stage.js?v=7b2ad25732"></script>
+<script src="js/site.js?v=1dbb24b234"></script>
 </body>
 </html>
