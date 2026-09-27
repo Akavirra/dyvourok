@@ -28,7 +28,7 @@
   const RAD = Math.PI / 180;
 
   let data, scene, bg, heroes = [], stars = [];
-  let t0 = performance.now(), mouse = null, speaking = null, running = false, visible = true, dpr = 1;
+  let t0 = performance.now(), mouse = null, speaking = null, running = false, visible = true, ready = false, dpr = 1;
 
   async function load() {
     data = await (await fetch(BASE + 'stage.json')).json();
@@ -47,7 +47,7 @@
     for (let i = 0; i < 16; i++) stars.push({ x: OPEN.x0 + 20 + rnd(i, 1) * (OPEN.x1 - OPEN.x0 - 40), y: OPEN.y0 + 14 + rnd(i, 2) * 130, r: 2.5 + rnd(i, 3) * 3.5, ph: rnd(i, 4) * 6.3, sp: 0.8 + rnd(i, 5) * 1.6 });
     buildButtons();
     resize();
-    wrap.classList.add('live');
+    ready = true;
     t0 = performance.now();
     start();
   }
@@ -118,6 +118,14 @@
 
   function frame(now) {
     if (!running) return;
+    try { draw(now); }
+    catch (e) { running = false; wrap.classList.remove('live'); return; }   // щось пішло не так — лишається заставка
+    // заставку ховаємо лише після першого намальованого кадру
+    if (!wrap.classList.contains('live')) wrap.classList.add('live');
+    if (visible) requestAnimationFrame(frame); else running = false;
+  }
+
+  function draw(now) {
     const t = (now - t0) / 1000;
     const cw = root.width, ch = root.height;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -148,10 +156,10 @@
     for (const h of heroes) drawHero(h, t, base);
     ctx.restore();
     placeBubble();
-    if (visible) requestAnimationFrame(frame); else running = false;
   }
 
-  function start() { if (!running && visible) { running = true; requestAnimationFrame(frame); } }
+  // малюємо лише коли все завантажено і сцену видно
+  function start() { if (ready && !running && visible) { running = true; requestAnimationFrame(frame); } }
 
   function resize() {
     dpr = Math.min(devicePixelRatio || 1, 2);
