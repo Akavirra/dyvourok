@@ -17,6 +17,6 @@ export async function onRequest({ request, env, params }) {
   }
   const res = await env.ASSETS.fetch(request);
   const out = new Response(res.body, res);
-  out.headers.set('cache-control', 'private, max-age=86400');
+  out.headers.set('cache-control', 'private, no-cache');   // браузер щоразу перевіряє ETag: оновлення видно одразу, без повторного завантаження
   return out;
 }

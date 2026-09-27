@@ -1,5 +1,5 @@
 /* Робота без інтернету: після першого відкриття все потрібне лежить у кеші. Нову версію — через зміну VERSION. */
-const VERSION = 'dyvourok-v6';
+const VERSION = 'dyvourok-v7';
 // Застосунок живе в /app/, сайт-вітрина — на головній (її не кешуємо наперед).
 const CORE = [
   'app/', 'manifest.webmanifest', 'css/app.css',
@@ -7,7 +7,7 @@ const CORE = [
   'fonts/Nunito.ttf', 'fonts/NotoSansGlagolitic.ttf',
   'brand/dyvourok-logo.svg', 'brand/dyvourok-mark.svg',
   'icons/favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
-  'packs/mova/pack.js', 'packs/mova/img/shevchenko-head.png', 'packs/mova/img/shevchenko-poster.jpg',
+  'packs/mova/pack.js', 'packs/mova/img/cover-card.jpg', 'packs/mova/img/shevchenko-head.png', 'packs/mova/img/shevchenko-poster.jpg',
   'packs/mova/media/shevchenko.mp4'
 ];
 // Захищені файли (PDF, відео з доступом) не входять у CORE: вони кешуються, коли вчитель з кодом їх відкриває.

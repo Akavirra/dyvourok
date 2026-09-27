@@ -7,7 +7,7 @@
   date: '9 листопада',
   word: 'СЛОВО',
   base: 'packs/mova/',
-  cover: 'img/shevchenko-head.png',
+  cover: 'img/cover-card.jpg',
 
   stops: [
     {
