@@ -206,7 +206,8 @@
     frame([pack.title], [
       h('div', { class: 'pack-head' },
         h('div', { class: 'kicker' }, pack.subtitle),
-        h('h1', {}, pack.title)),
+        h('h1', {}, pack.title),
+        pack.description ? h('p', { class: 'lead' }, pack.description) : null),
       h('div', { class: 'menu' },
         item('clock', 'Машина часу', done ? `Пройдено ${done} з ${pack.stops.length} зупинок — продовжити` : 'Інтерактивна подорож для дошки: 5 епох, 5 завдань, одне слово', `#/pack/${pack.id}/map`, true),
         item('film', 'Мультфільми', 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
