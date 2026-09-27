@@ -117,7 +117,7 @@
   ],
 
   handouts: [
-    { title: 'Робочі аркуші, плакати, грамота, закладки', note: '16 сторінок A4 · PDF', file: 'docs/robochi-arkushi.pdf' }
+    { title: 'Роздатка: паспорт мандрівника, аркуші-завдання, вертепні ляльки, наліпки, закладки, грамота', note: '19 сторінок A4 · PDF', file: 'docs/robochi-arkushi.pdf' }
   ],
 
   teacher: {
