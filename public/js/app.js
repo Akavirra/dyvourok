@@ -39,7 +39,10 @@
     doc: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h8"/>',
     verified: '<path d="M12 3l7 3v5c0 4.7-2.8 8-7 10-4.2-2-7-5.3-7-10V6z"/><path d="M8.5 12l2.2 2.2 4.8-5"/>',
     lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
-    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>'
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>',
+    pause: '<rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/>',
+    playbar: '<path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/>',
+    cc: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M10.5 10.2a2.4 2.4 0 1 0 0 3.6M17 10.2a2.4 2.4 0 1 0 0 3.6"/>'
   };
   const icon = (name, size) => h('span', { class: 'svg-ico', 'aria-hidden': 'true', html:
     `<svg viewBox="0 0 24 24" width="${size || '1em'}" height="${size || '1em'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>` });
@@ -250,11 +253,101 @@
   }
   const confirmReset = { armed: false };
 
+  // ---------------------------------------------------------------- плеєр
+  // Власні кнопки замість браузерних: субтитри вмикаються за бажанням (тексти — pack.subs, у кадрі їх немає),
+  // у меню немає «Завантажити». Повністю заборонити збереження відео браузер не дозволяє — лише ускладнити.
+  const SUB_SIZES = [['s', 'Малі'], ['m', 'Середні'], ['l', 'Великі']];
+  const fmtTime = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  function player(pack, file, { poster, autoplay } = {}) {
+    const pref = store.get('dyvo_subs', { on: true, size: 'm' });
+    const cues = (pack.subs && pack.subs[file]) || [];
+    const video = h('video', { src: asset(pack, file), poster: poster || null, playsinline: true, preload: 'metadata',
+      controlslist: 'nodownload noplaybackrate noremoteplayback', disablepictureinpicture: true, disableremoteplayback: true });
+    const sub = h('div', { class: 'vp-sub', 'aria-live': 'off' });
+    const bigPlay = h('button', { class: 'vp-big', 'aria-label': 'Відтворити' }, icon('playbar'));
+    const playBtn = h('button', { class: 'vp-btn', 'aria-label': 'Відтворити або пауза' }, icon('playbar'));
+    const seek = h('input', { class: 'vp-seek', type: 'range', min: 0, max: 1000, value: 0, step: 1, 'aria-label': 'Перемотування' });
+    const time = h('span', { class: 'vp-time' }, '0:00 / 0:00');
+    const ccBtn = h('button', { class: 'vp-btn vp-cc', 'aria-label': 'Субтитри', 'aria-haspopup': 'true' }, icon('cc'), h('span', { class: 'vp-cc-label' }, 'Субтитри'));
+    const menu = h('div', { class: 'vp-menu', role: 'menu', hidden: true });
+    const fsBtn = h('button', { class: 'vp-btn', 'aria-label': 'На весь екран' }, icon('full'));
+    const bar = h('div', { class: 'vp-bar' }, playBtn, seek, time, h('div', { class: 'vp-cc-wrap' }, ccBtn, menu), fsBtn);
+    const box = h('div', { class: 'vp', tabindex: 0 }, video, sub, bigPlay, bar);
+    box.addEventListener('contextmenu', e => e.preventDefault());
+
+    const applyPref = () => {
+      box.dataset.subs = pref.on ? pref.size : 'off';
+      ccBtn.classList.toggle('on', pref.on);
+      ccBtn.setAttribute('aria-pressed', pref.on ? 'true' : 'false');
+      menu.replaceChildren(
+        h('button', { role: 'menuitemradio', 'aria-checked': String(!pref.on), class: !pref.on ? 'sel' : '', onclick: () => setPref({ on: false }) }, 'Вимкнути'),
+        ...SUB_SIZES.map(([k, label]) => h('button', { role: 'menuitemradio', 'aria-checked': String(pref.on && pref.size === k), class: pref.on && pref.size === k ? 'sel' : '', onclick: () => setPref({ on: true, size: k }) }, label)));
+      store.set('dyvo_subs', pref);
+    };
+    const setPref = p => { Object.assign(pref, p); applyPref(); menu.hidden = true; showSub(); };
+    ccBtn.onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
+    document.addEventListener('click', e => { if (!menu.contains(e.target)) menu.hidden = true; });
+
+    let shown = -1;
+    const showSub = () => {
+      const t = video.currentTime;
+      const i = pref.on ? cues.findIndex(c => t >= c[0] && t <= c[1]) : -1;
+      if (i === shown) return;
+      shown = i;
+      sub.replaceChildren(...(i >= 0 ? [h('span', {}, cues[i][2])] : []));
+    };
+    const toggle = () => { if (video.paused) video.play().catch(() => {}); else video.pause(); };
+    const syncBtn = () => {
+      playBtn.replaceChildren(icon(video.paused ? 'playbar' : 'pause'));
+      box.classList.toggle('playing', !video.paused);
+    };
+    const syncTime = () => {
+      const d = video.duration || 0;
+      if (!seeking) seek.value = d ? Math.round(video.currentTime / d * 1000) : 0;
+      time.textContent = fmtTime(video.currentTime) + ' / ' + fmtTime(d);
+    };
+    let seeking = false;
+    seek.addEventListener('input', () => { seeking = true; if (video.duration) video.currentTime = seek.value / 1000 * video.duration; });
+    seek.addEventListener('change', () => { seeking = false; });
+    // субтитри за кадром — точніше, ніж timeupdate (4 рази на секунду)
+    const tick = () => { showSub(); syncTime(); if (!video.paused && box.isConnected) requestAnimationFrame(tick); };
+    video.addEventListener('play', () => { syncBtn(); requestAnimationFrame(tick); });
+    video.addEventListener('pause', () => { syncBtn(); poke(); });
+    video.addEventListener('ended', syncBtn);
+    ['loadedmetadata', 'seeked', 'timeupdate'].forEach(ev => video.addEventListener(ev, () => { syncTime(); showSub(); }));
+    video.onclick = toggle;
+    bigPlay.onclick = toggle;
+    playBtn.onclick = toggle;
+    fsBtn.onclick = () => {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (box.requestFullscreen) box.requestFullscreen().catch(() => {});
+      else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();   // iPhone: лише системний повноекранний режим
+    };
+    // кнопки ховаються, коли мультфільм іде й мишка не рухається
+    let idle;
+    const poke = () => { box.classList.remove('idle'); clearTimeout(idle); if (!video.paused) idle = setTimeout(() => menu.hidden && box.classList.add('idle'), 2500); };
+    box.addEventListener('pointermove', poke);
+    box.addEventListener('pointerdown', poke);
+    box.addEventListener('keydown', e => {
+      const k = e.key.toLowerCase();
+      if (k === ' ' || k === 'k') { e.preventDefault(); toggle(); }
+      else if (k === 'arrowright') video.currentTime += 5;
+      else if (k === 'arrowleft') video.currentTime -= 5;
+      else if (k === 'c' || k === 'с') setPref({ on: !pref.on });
+      else if (k === 'f' || k === 'а') fsBtn.onclick();
+      else return;
+      poke();
+    });
+    applyPref();
+    if (autoplay) video.play().catch(() => {});
+    return box;
+  }
+
   // ---------------------------------------------------------------- зупинка
   function stop(pack, s) {
     const vsrc = !license.allows(pack.id) && s.demoVideo ? s.demoVideo : s.video;   // у демо — короткий тизер
     const video = vsrc
-      ? h('div', { class: 'video-box' }, h('video', { src: asset(pack, vsrc), poster: s.poster ? asset(pack, s.poster) : null, controls: true, playsinline: true, preload: 'metadata' }))
+      ? h('div', { class: 'video-box' }, player(pack, vsrc, { poster: s.poster ? asset(pack, s.poster) : null }))
       : h('div', { class: 'video-box soon' }, h('div', { class: 'big' }, icon('film')), 'Мультфільм про цього героя з\'явиться незабаром', h('div', { class: 'muted' }, 'А поки прочитайте розповідь і виконайте завдання'));
     frame([pack.title, ' · ', h('b', {}, s.who)], [
       h('div', { class: 'stop-screen' },
@@ -452,15 +545,15 @@
 
   // ---------------------------------------------------------------- мультфільми, роздатка, вчитель
   function cartoons(pack) {
-    const player = h('div', { class: 'player' });
+    const slot = h('div', { class: 'player' });
     const list = h('div', { class: 'list' }, pack.cartoons.map(c => h('button', { class: 'row' + (c.ready ? '' : ' off'), onclick: () => {
       if (!c.ready) { toast('Цей мультфільм ще в роботі'); return; }
       if (!license.allows(pack.id) && !c.demo) return lockedDialog();
       Sfx.tap();
-      player.replaceChildren(h('h3', {}, c.title), h('video', { src: asset(pack, c.file), controls: true, autoplay: true, playsinline: true }));
-      player.scrollIntoView({ behavior: 'smooth' });
+      slot.replaceChildren(h('h3', {}, c.title), player(pack, c.file, { autoplay: true }));
+      slot.scrollIntoView({ behavior: 'smooth' });
     } }, h('span', { style: 'font-size:1.8em;color:var(--red)' }, icon(c.ready ? 'play' : 'wait')), h('div', { class: 'grow' }, h('h3', {}, c.title), h('div', { class: 'muted' }, c.ready ? 'Дивитися' : 'Незабаром')))));
-    frame([pack.title, ' · ', h('b', {}, 'Мультфільми')], [h('h2', {}, 'Мультфільми'), list, player]);
+    frame([pack.title, ' · ', h('b', {}, 'Мультфільми')], [h('h2', {}, 'Мультфільми'), list, slot]);
   }
 
   // демо: сторінки роздатки картинками з водяним знаком «ЗРАЗОК», PDF для друку — лише з кодом

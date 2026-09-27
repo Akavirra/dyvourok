@@ -14,6 +14,7 @@
 - `functions/api/preorder.js` — заявка «Хочу повну версію» з лендингу (таблиця `preorders`)
 - `functions/api/admin/preorders.js` — список і видалення заявок (блок «Передзамовлення» в `/admin`)
 - `functions/packs/[[path]].js` — віддає відео й PDF лише з дійсною сесією (демо-файли відкриті)
+- `subs/<набір>/*.vtt` — субтитри мультфільмів (у кадрі їх немає); `python scripts/embed_subs.py` вбудовує їх у `pack.js` (поле `subs`), плеєр в `app.js` показує за бажанням
 - `lib/auth.js` — підпис сесій (HMAC-SHA256), генерація кодів `DYVO-XXXX-XXXX`
 - `migrations/` — схема D1
 
