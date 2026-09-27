@@ -11,6 +11,8 @@
 - `functions/api/activate.js` — активація коду на пристрої → сесія в HttpOnly-кукі (30 днів)
 - `functions/api/session.js` — оновлення сесії (POST) і вихід з пристрою (DELETE)
 - `functions/api/admin/codes.js` — створення/список/блокування кодів
+- `functions/api/preorder.js` — заявка «Хочу повну версію» з лендингу (таблиця `preorders`)
+- `functions/api/admin/preorders.js` — список і видалення заявок (блок «Передзамовлення» в `/admin`)
 - `functions/packs/[[path]].js` — віддає відео й PDF лише з дійсною сесією (демо-файли відкриті)
 - `lib/auth.js` — підпис сесій (HMAC-SHA256), генерація кодів `DYVO-XXXX-XXXX`
 - `migrations/` — схема D1
