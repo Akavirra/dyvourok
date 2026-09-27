@@ -16,8 +16,8 @@
   .card { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 8px 24px -14px rgba(42,23,20,.3); display: flex; flex-direction: column; gap: 12px; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 800; color: var(--muted); }
-  input { font: inherit; padding: 10px 12px; border: 2px solid var(--line); border-radius: 10px; min-width: 0; }
-  input:focus { outline: none; border-color: var(--red); }
+  input, select { font: inherit; padding: 10px 12px; border: 2px solid var(--line); border-radius: 10px; min-width: 0; }
+  input:focus, select:focus { outline: none; border-color: var(--red); }
   button { font: inherit; font-weight: 800; border: none; border-radius: 10px; padding: 10px 16px; cursor: pointer; background: var(--red); color: #fff; }
   button.ghost { background: #f3eada; color: var(--ink); }
   button.small { padding: 5px 10px; font-size: 13px; }
@@ -63,7 +63,11 @@
         <label for="note" style="flex:2 1 240px">Покупець (ім'я, пошта) — буде на дипломі<input id="note" placeholder="Олена Коваль, olena@…"></label>
         <label for="count" style="flex:0 0 90px">Кількість<input id="count" type="number" value="1" min="1" max="100"></label>
         <label for="max" style="flex:0 0 110px">Пристроїв<input id="max" type="number" value="3" min="1" max="50"></label>
-        <label for="packs" style="flex:1 1 140px">Набори (* — усі)<input id="packs" value="*"></label>
+        <label for="packs" style="flex:1 1 220px">Набір<select id="packs">
+          <!-- новий набір: додати сюди option з id його папки в public/packs/ -->
+          <option value="mova" selected>Машина часу рідної мови</option>
+          <option value="*">Усі набори (зокрема майбутні)</option>
+        </select></label>
         <label for="days" style="flex:0 0 130px">Днів (порожньо — назавжди)<input id="days" type="number" min="1"></label>
         <button id="create">Створити</button>
       </div>
@@ -76,7 +80,7 @@
         <b>Усі коди</b>
         <input id="filter" placeholder="Пошук за кодом чи покупцем" style="flex:0 1 320px">
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Код</th><th>Покупець</th><th>Пристрої</th><th>Останній вхід</th><th>Статус</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Код</th><th>Покупець</th><th>Набори</th><th>Пристрої</th><th>Останній вхід</th><th>Статус</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
     </div>
   </div>
 </div>

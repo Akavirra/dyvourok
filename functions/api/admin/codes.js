@@ -31,7 +31,9 @@ export async function onRequest({ request, env }) {
 
   const count = Math.max(1, Math.min(100, parseInt(b.count, 10) || 1));
   const maxDevices = Math.max(1, Math.min(50, parseInt(b.maxDevices, 10) || 3));
-  const packs = String(b.packs || '*').trim() || '*';
+  // набір обирається явно: порожнє значення не перетворюється на «усі набори»
+  const packs = String(b.packs || '').trim();
+  if (packs !== '*' && !/^[a-z0-9-]+(,[a-z0-9-]+)*$/.test(packs)) return json({ error: 'packs' }, 400);
   const note = String(b.note || '').slice(0, 120);
   const now = Date.now();
   const expires = b.days ? now + Math.max(1, parseInt(b.days, 10)) * 864e5 : null;

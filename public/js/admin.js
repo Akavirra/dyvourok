@@ -65,9 +65,10 @@
       const status = c.revoked ? '<span class="pill bad">заблоковано</span>'
         : c.expires_at && c.expires_at < Date.now() ? '<span class="pill bad">минув термін</span>'
         : c.devices >= c.max_devices ? '<span class="pill full">ліміт пристроїв</span>' : '<span class="pill ok">активний</span>';
-      tr.innerHTML = `<td class="code"></td><td class="note"></td><td>${c.devices} / ${c.max_devices}</td><td>${c.last_seen ? new Date(c.last_seen).toLocaleString('uk-UA') : '—'}</td><td>${status}</td><td class="actions"></td>`;
+      tr.innerHTML = `<td class="code"></td><td class="note"></td><td class="packs"></td><td>${c.devices} / ${c.max_devices}</td><td>${c.last_seen ? new Date(c.last_seen).toLocaleString('uk-UA') : '—'}</td><td>${status}</td><td class="actions"></td>`;
       tr.querySelector('.code').textContent = c.code;
       tr.querySelector('.note').textContent = c.note || '—';
+      tr.querySelector('.packs').textContent = c.packs === '*' ? 'усі' : c.packs;
       const acts = tr.querySelector('.actions');
       const btn = (label, fn, cls) => { const b = document.createElement('button'); b.className = 'small ' + (cls || 'ghost'); b.textContent = label; b.onclick = fn; acts.append(b); };
       btn('Копіювати', () => navigator.clipboard.writeText(c.code));
@@ -102,7 +103,7 @@
 
 Як почати:
 1. Відкрийте ${location.origin}/app на дошці чи комп'ютері.
-2. Введіть код — і всі матеріали відкриються.
+2. Введіть код — і матеріали набору відкриються.
 3. Код працює на ${$('max').value} пристроях (наприклад, дошка, ноутбук і телефон).
 
 Порада: натисніть «Встановити» в браузері — «Дивоурок» з'явиться як програма і працюватиме навіть без інтернету.
