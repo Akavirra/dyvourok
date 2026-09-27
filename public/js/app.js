@@ -37,6 +37,7 @@
     play: '<circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z" fill="currentColor"/>',
     wait: '<path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/>',
     doc: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h8"/>',
+    verified: '<path d="M12 3l7 3v5c0 4.7-2.8 8-7 10-4.2-2-7-5.3-7-10V6z"/><path d="M8.5 12l2.2 2.2 4.8-5"/>',
     lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>'
   };
@@ -210,7 +211,8 @@
         item('clock', 'Машина часу', done ? `Пройдено ${done} з ${pack.stops.length} зупинок — продовжити` : 'Інтерактивна подорож для дошки: 5 епох, 5 завдань, одне слово', `#/pack/${pack.id}/map`, true),
         item('film', 'Мультфільми', 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
         item('print', 'Роздатка', license.allows(pack.id) ? 'Робочі аркуші, плакати, грамоти для друку' : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
-        item('board', 'Для вчителя', 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`))]);
+        item('board', 'Для вчителя', 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`),
+        item('verified', 'Джерела й фактчек', 'Чим підтверджено факти заняття', `#/pack/${pack.id}/sources`))]);
   }
 
   function letterBar(pack) {
@@ -512,6 +514,46 @@
           h('div', { class: 'card-soft' }, h('h3', {}, 'Відповіді'), h('ul', { class: 'clean' }, t.answers.map(x => h('li', {}, x))))))]);
   }
 
+  function sources(pack) {
+    const data = pack.sources;
+    if (!data || !data.groups) return packHome(pack);
+    const sourceCount = data.groups.reduce((count, group) => count + group.items.length, 0);
+    const jump = group => {
+      const target = document.getElementById('sources-' + group.id);
+      if (target) target.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    };
+    const sourceLink = source => h('a', {
+      class: 'source-row', href: source.url, target: '_blank', rel: 'noopener noreferrer',
+      'aria-label': `${source.title}. Відкрити джерело в новій вкладці`
+    },
+      h('span', { class: 'source-kind ' + source.type }, source.label),
+      h('span', { class: 'source-copy' },
+        h('strong', {}, source.title),
+        h('span', {}, source.detail)),
+      h('span', { class: 'source-open', 'aria-hidden': 'true' }, 'Відкрити ↗'));
+    frame([pack.title, ' · ', h('b', {}, 'Джерела й фактчек')], [
+      h('header', { class: 'sources-head' },
+        h('div', { class: 'kicker' }, `Перевірено ${data.checked} · ${sourceCount} джерела`),
+        h('h2', {}, 'Джерела й фактчек'),
+        h('p', { class: 'lead' }, data.intro),
+        h('div', { class: 'evidence-legend', 'aria-label': 'Типи використаних джерел' },
+          h('span', {}, h('b', {}, 'Офіційні'), ' закони та установи'),
+          h('span', {}, h('b', {}, 'Первинні'), ' твори й документи'),
+          h('span', {}, h('b', {}, 'Академічні'), ' енциклопедії та дослідження'))),
+      h('nav', { class: 'source-jumps', 'aria-label': 'Розділи джерел' },
+        data.groups.map(group => h('button', { onclick: () => jump(group) }, group.short || group.title))),
+      h('div', { class: 'source-groups' }, data.groups.map((group, index) => h('section', { class: 'source-group', id: 'sources-' + group.id },
+        h('div', { class: 'source-topic' },
+          h('span', { class: 'source-number', 'aria-hidden': 'true' }, String(index + 1).padStart(2, '0')),
+          h('div', {}, h('h3', {}, group.title), h('p', {}, group.fact))),
+        h('div', { class: 'source-list' }, group.items.map(sourceLink))))),
+      h('aside', { class: 'source-note' },
+        h('div', { class: 'source-note-icon' }, icon('verified')),
+        h('div', {}, h('h3', {}, 'Як ми перевіряємо матеріали'), h('p', {}, data.method))),
+      h('p', { class: 'source-offline muted' }, 'Список джерел зберігається разом із набором. Для відкриття зовнішніх сторінок потрібен інтернет.')
+    ]);
+  }
+
   function account() {
     const l = license.get();
     frame(h('b', {}, 'Доступ'), h('div', { class: 'gate' },
@@ -556,6 +598,7 @@
     if (view === 'cartoons') return cartoons(pack);
     if (view === 'handouts') return handouts(pack);
     if (view === 'teacher') return teacher(pack);
+    if (view === 'sources') return sources(pack);
     return packHome(pack);
   }
 
