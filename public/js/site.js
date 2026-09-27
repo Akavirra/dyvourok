@@ -51,6 +51,38 @@
     }
   }
 
+  // передзамовлення: заявка йде в /api/preorder, джерело береться з ?from= або utm_source
+  const form = document.getElementById('preorder');
+  if (form) form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = document.getElementById('preorder-msg');
+    const btn = form.querySelector('button[type=submit]');
+    const contact = form.contact.value.trim();
+    const fail = text => { msg.textContent = text; msg.classList.add('err'); };
+    form.contact.removeAttribute('aria-invalid');
+    if (!contact) { form.contact.setAttribute('aria-invalid', 'true'); form.contact.focus(); return fail('Вкажіть e-mail, Telegram або телефон, щоб ми могли вам написати.'); }
+    const q = new URLSearchParams(location.search);
+    const data = {
+      contact, name: form.name.value, comment: form.comment.value, website: form.website.value,
+      grade: (form.querySelector('input[name=grade]:checked') || {}).value || '',
+      source: q.get('from') || q.get('utm_source') || (document.referrer && new URL(document.referrer).host !== location.host ? new URL(document.referrer).host : '')
+    };
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/preorder', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
+      if (r.status === 400) { form.contact.setAttribute('aria-invalid', 'true'); form.contact.focus(); return fail('Схоже, в контакті помилка. Перевірте e-mail, @нікнейм у Telegram або номер телефону.'); }
+      if (!r.ok) throw new Error(r.status);
+      form.hidden = true;
+      const done = document.getElementById('preorder-done');
+      done.hidden = false;
+      const h4 = done.querySelector('h4');
+      h4.setAttribute('tabindex', '-1');
+      h4.focus();
+    } catch (err) {
+      fail('Не вдалося надіслати. Спробуйте ще раз або напишіть на info@dyvourok.com.ua.');
+    } finally { btn.disabled = false; }
+  });
+
   const y = document.getElementById('year');
   if (y) y.textContent = new Date().getFullYear();
 })();

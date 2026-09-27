@@ -4,8 +4,8 @@
   let all = [];
   let lastCreated = [];
 
-  async function call(method, body) {
-    const r = await fetch('/api/admin/codes', { method, headers: { 'authorization': 'Bearer ' + token, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  async function call(method, body, path = 'codes') {
+    const r = await fetch('/api/admin/' + path, { method, headers: { 'authorization': 'Bearer ' + token, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
     const data = await r.json().catch(() => ({}));
     if (r.status === 403) throw new Error('forbidden');
     return data;
@@ -15,7 +15,47 @@
     const d = await call('GET');
     all = d.codes || [];
     render();
+    loadPre();
   }
+
+  // ---- передзамовлення
+  let pre = [];
+  async function loadPre() {
+    const d = await call('GET', null, 'preorders');
+    pre = d.preorders || [];
+    const week = pre.filter(p => p.created_at > Date.now() - 7 * 864e5).length;
+    $('pre-count').textContent = pre.length;
+    $('pre-week').textContent = week ? `(+${week} за тиждень)` : '';
+    const tally = key => Object.entries(pre.reduce((m, p) => (m[p[key] || '—'] = (m[p[key] || '—'] || 0) + 1, m), {}))
+      .sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}: ${n}`).join(', ');
+    $('pre-stats').textContent = pre.length ? `Класи — ${tally('grade')}. Звідки — ${tally('source')}.` : 'Заявок поки немає.';
+    $('pre-rows').replaceChildren(...pre.map(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td></td><td class="code"></td><td></td><td></td><td></td><td></td><td class="actions"></td>';
+      const cells = [new Date(p.created_at).toLocaleString('uk-UA'), p.contact, p.name || '—', p.grade || '—', p.comment || '—', p.source || '—'];
+      cells.forEach((t, i) => tr.children[i].textContent = t);
+      const b = document.createElement('button');
+      b.className = 'small ghost'; b.textContent = 'Видалити';
+      b.onclick = async () => { if (confirm('Видалити заявку ' + p.contact + '?')) { await call('POST', { action: 'delete', contact: p.contact }, 'preorders'); loadPre(); } };
+      tr.lastChild.append(b);
+      return tr;
+    }));
+  }
+  const flash = (btn, text) => { const old = btn.textContent; btn.textContent = text; setTimeout(() => btn.textContent = old, 1500); };
+  $('pre-copy').onclick = () => {
+    const emails = pre.map(p => p.contact).filter(c => c.includes('@') && !c.startsWith('@'));
+    navigator.clipboard.writeText(emails.join(', '));
+    flash($('pre-copy'), `Скопійовано ${emails.length} ✓`);
+  };
+  $('pre-csv').onclick = () => {
+    const cols = ['created_at', 'contact', 'name', 'grade', 'comment', 'source'];
+    const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const lines = [cols.join(','), ...pre.map(p => cols.map(c => esc(c === 'created_at' ? new Date(p[c]).toISOString() : p[c])).join(','))];
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'dyvourok-peredzamovlennia.csv';
+    a.click();
+  };
 
   function render() {
     const q = $('filter').value.trim().toLowerCase();

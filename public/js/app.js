@@ -108,8 +108,9 @@
         h('h2', {}, 'Ця частина відкривається з кодом доступу'),
         h('p', {}, 'У демо можна пройти зупинку «Тарас Шевченко». Повний набір — 5 епох, мультфільми, роздатка і сценарій уроку.'),
         h('button', { class: 'btn big', onclick: () => { r.remove(); store.set('dyvo_demo', false); route(); } }, 'Ввести код'),
+        h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Хочу повну версію'),
         h('button', { class: 'btn ghost', onclick: () => r.remove() }, 'Повернутися'),
-        contactLine('Як придбати: ')));
+        contactLine('Питання? Пишіть на ')));
     document.body.append(r);
   }
 

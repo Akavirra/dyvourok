@@ -20,7 +20,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="fonts/Nunito.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="css/site.css?v=69772bcde2">
+<link rel="stylesheet" href="css/site.css?v=1044fb5073">
 </head>
 <body>
 
@@ -195,12 +195,13 @@
       <div class="section-head">
         <span class="kicker">Ціна</span>
         <h2 class="h2">Один раз купили — ваше назавжди</h2>
+        <p class="lead">Продажі стартують незабаром. Залиште заявку, і ми повідомимо першими.</p>
       </div>
       <div class="pricing">
-        <div class="price-card reveal">
-          <span class="ribbon">Новинка</span>
+        <div class="price-card reveal" id="peredzamovlennia">
+          <span class="ribbon">Скоро</span>
           <h3>Машина часу рідної мови</h3>
-          <div class="price"><b>249&nbsp;₴</b><span>одноразово</span></div>
+          <div class="price"><b>249&nbsp;₴</b><span>орієнтовна ціна на старті</span></div>
           <ul class="checks">
             <li>Квест на 5 епох для інтерактивної дошки</li>
             <li>Мультфільми з героями-класиками</li>
@@ -209,11 +210,31 @@
             <li>До 3 пристроїв, працює без інтернету</li>
             <li>Нові мультфільми набору — безкоштовно</li>
           </ul>
-          <div class="cta">
-            <a class="btn" href="mailto:info@dyvourok.com.ua?subject=%D0%97%D0%B0%D0%BC%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D1%8F%3A%20%D0%9C%D0%B0%D1%88%D0%B8%D0%BD%D0%B0%20%D1%87%D0%B0%D1%81%D1%83%20%D1%80%D1%96%D0%B4%D0%BD%D0%BE%D1%97%20%D0%BC%D0%BE%D0%B2%D0%B8">Замовити</a>
-            <a class="btn ghost" href="app/#/demo">Спершу спробувати</a>
+          <form class="preorder" id="preorder" novalidate>
+            <p class="preorder-lead">Повний набір готуємо до 27 жовтня. Залиште контакт — першими повідомимо про старт. Це ні до чого не зобов'язує.</p>
+            <label><span>E-mail, Telegram або телефон</span><input name="contact" required autocomplete="email" inputmode="email" placeholder="olena@gmail.com"></label>
+            <div class="preorder-row">
+              <label><span>Ваше ім'я <small>(необов'язково)</small></span><input name="name" autocomplete="given-name" placeholder="Олена"></label>
+              <fieldset><legend>Ваші класи</legend>
+                <label class="chip"><input type="radio" name="grade" value="1-2"><span>1–2</span></label>
+                <label class="chip"><input type="radio" name="grade" value="3-4"><span>3–4</span></label>
+                <label class="chip"><input type="radio" name="grade" value="інше"><span>Інше</span></label>
+              </fieldset>
+            </div>
+            <label><span>Що вам найважливіше в такому наборі? <small>(необов'язково)</small></span><textarea name="comment" rows="2" placeholder="Наприклад: більше завдань для 1 класу, друковані грамоти…"></textarea></label>
+            <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <div class="cta">
+              <button class="btn" type="submit">Хочу повну версію</button>
+              <a class="btn ghost" href="app/#/demo">Спершу спробувати</a>
+            </div>
+            <p class="price-note" id="preorder-msg" role="status" aria-live="polite">Контакт використаємо лише для повідомлення про старт продажів. <a href="pryvatnist">Політика конфіденційності</a>.</p>
+          </form>
+          <div class="preorder-done" id="preorder-done" hidden>
+            <img src="img/site/star-gold.webp" alt="" width="64" height="64">
+            <h4>Дякуємо, ви в списку!</h4>
+            <p>Щойно набір буде готовий, ми напишемо вам першими. А поки пройдіть безкоштовну зупинку з Тарасом Шевченком разом із класом.</p>
+            <a class="btn gold" href="app/#/demo">Пройти демо-зупинку</a>
           </div>
-          <p class="price-note">Щоб замовити, напишіть на <a href="mailto:info@dyvourok.com.ua">info@dyvourok.com.ua</a> — надішлемо реквізити, а код прийде на пошту одразу після оплати.</p>
         </div>
         <div class="soon-card reveal" id="nezabarom">
           <span class="kicker" style="color:var(--yellow)">Незабаром</span>
@@ -294,6 +315,6 @@
 </footer>
 
 <script src="js/star.js?v=b7e06e2615"></script>
-<script src="js/site.js?v=36dbab42f8"></script>
+<script src="js/site.js?v=5505836dc5"></script>
 </body>
 </html>
