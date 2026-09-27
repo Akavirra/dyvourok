@@ -6,7 +6,7 @@
   subtitle: 'День української писемності та мови · 1–4 клас',
   date: '27 жовтня',
   word: 'СЛОВО',
-  versions: {"media/franko.mp4": "14ebd4f59e", "media/kyrylo.mp4": "a7fd183197", "media/lesya.mp4": "cc9ec12897", "media/nestor.mp4": "1cef886ebf", "media/shevchenko-full.mp4": "8fdb285211", "media/shevchenko.mp4": "5609d9ec27", "docs/robochi-arkushi.pdf": "21917a1bd4", "img/cover-card.jpg": "c5660e5ef7", "img/franko-head.png": "237ec86192", "img/franko-poster.jpg": "4685dabb20", "img/kyrylo-head.png": "9230b66978", "img/kyrylo-poster.jpg": "4c96585f35", "img/lesya-head.png": "48df682c9c", "img/lesya-poster.jpg": "986d35fd15", "img/nestor-head.png": "e490fb8de2", "img/nestor-poster.jpg": "e8fb4b7126", "img/shevchenko-head.png": "051f350828", "img/shevchenko-poster.jpg": "dcdbaed8ab"},
+  versions: {"media/franko.mp4": "14ebd4f59e", "media/kyrylo.mp4": "a7fd183197", "media/lesya.mp4": "cc9ec12897", "media/nestor.mp4": "1cef886ebf", "media/shevchenko-full.mp4": "8fdb285211", "media/shevchenko.mp4": "5609d9ec27", "docs/robochi-arkushi.pdf": "21917a1bd4", "img/cover-card.jpg": "c5660e5ef7", "img/franko-head.png": "237ec86192", "img/franko-poster.jpg": "4685dabb20", "img/handout-01.jpg": "0b5141a8e4", "img/handout-02.jpg": "ae479dd082", "img/handout-03.jpg": "f8233dacbe", "img/handout-04.jpg": "db9fbc2a90", "img/handout-05.jpg": "f25b27ae13", "img/handout-06.jpg": "652d45bcf9", "img/handout-07.jpg": "5cbdc03e02", "img/handout-08.jpg": "7769d9a4df", "img/handout-09.jpg": "3b734e73f8", "img/handout-10.jpg": "a25b0774a4", "img/handout-11.jpg": "3e473b5a19", "img/handout-12.jpg": "239a6e0cb9", "img/handout-13.jpg": "934d461fa8", "img/handout-14.jpg": "f6aed514a5", "img/handout-15.jpg": "d525eb2170", "img/handout-16.jpg": "baed947c65", "img/handout-17.jpg": "5d2a9022d3", "img/handout-18.jpg": "5baf123843", "img/kyrylo-head.png": "9230b66978", "img/kyrylo-poster.jpg": "4c96585f35", "img/lesya-head.png": "48df682c9c", "img/lesya-poster.jpg": "986d35fd15", "img/nestor-head.png": "e490fb8de2", "img/nestor-poster.jpg": "e8fb4b7126", "img/shevchenko-head.png": "051f350828", "img/shevchenko-poster.jpg": "dcdbaed8ab"},
   base: 'packs/mova/',
   cover: 'img/cover-card.jpg',
 
@@ -118,7 +118,8 @@
   ],
 
   handouts: [
-    { title: 'Роздатка: паспорт мандрівника, аркуші-завдання, вертепні ляльки, наліпки, закладки, грамота', note: '19 сторінок A4 · PDF', file: 'docs/robochi-arkushi.pdf' }
+    { title: 'Роздатка: паспорт мандрівника, аркуші-завдання, вертепні ляльки, наліпки, закладки, грамота', note: '19 сторінок A4 · PDF', file: 'docs/robochi-arkushi.pdf',
+      previews: 18 }   // img/handout-01..18.jpg — зразки з водяним знаком для демо (scripts/make_handout_previews.py)
   ],
 
   teacher: {

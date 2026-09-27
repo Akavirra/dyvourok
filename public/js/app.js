@@ -209,7 +209,7 @@
       h('div', { class: 'menu' },
         item('clock', 'Машина часу', done ? `Пройдено ${done} з ${pack.stops.length} зупинок — продовжити` : 'Інтерактивна подорож для дошки: 5 епох, 5 завдань, одне слово', `#/pack/${pack.id}/map`, true),
         item('film', 'Мультфільми', 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
-        item('print', 'Роздатка', 'Робочі аркуші, плакати, грамоти для друку', `#/pack/${pack.id}/handouts`),
+        item('print', 'Роздатка', license.allows(pack.id) ? 'Робочі аркуші, плакати, грамоти для друку' : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
         item('board', 'Для вчителя', 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`))]);
   }
 
@@ -460,8 +460,38 @@
     frame([pack.title, ' · ', h('b', {}, 'Мультфільми')], [h('h2', {}, 'Мультфільми'), list, player]);
   }
 
+  // демо: сторінки роздатки картинками з водяним знаком «ЗРАЗОК», PDF для друку — лише з кодом
+  function handoutSamples(pack) {
+    const pages = pack.handouts.flatMap(d => Array.from({ length: d.previews || 0 }, (_, i) => asset(pack, `img/handout-${String(i + 1).padStart(2, '0')}.jpg`)));
+    if (!pages.length) { lockedDialog(); return packHome(pack); }
+    const open = i => {
+      const img = h('img', { src: pages[i], alt: `Зразок сторінки ${i + 1}` });
+      const count = h('div', { class: 'muted' }, `${i + 1} з ${pages.length}`);
+      const show = n => { i = (n + pages.length) % pages.length; img.src = pages[i]; img.alt = `Зразок сторінки ${i + 1}`; count.textContent = `${i + 1} з ${pages.length}`; };
+      const close = () => { box.remove(); removeEventListener('keydown', keys); };
+      const keys = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') show(i + 1); else if (e.key === 'ArrowLeft') show(i - 1); };
+      const box = h('div', { class: 'lightbox', role: 'dialog', 'aria-label': 'Зразок сторінки роздатки', onclick: e => { if (e.target === box) close(); } },
+        h('button', { class: 'icon-btn nav prev', 'aria-label': 'Попередня сторінка', onclick: () => show(i - 1) }, '‹'),
+        h('figure', {}, img, count),
+        h('button', { class: 'icon-btn nav next', 'aria-label': 'Наступна сторінка', onclick: () => show(i + 1) }, '›'),
+        h('button', { class: 'icon-btn close', 'aria-label': 'Закрити', onclick: close }, '×'));
+      addEventListener('keydown', keys);
+      document.body.append(box);
+    };
+    frame([pack.title, ' · ', h('b', {}, 'Роздатка')], [
+      h('h2', {}, 'Роздатка для друку'),
+      h('div', { class: 'card-soft sample-note' },
+        h('div', { class: 'kicker' }, 'Демо-версія'),
+        h('p', {}, 'Так виглядають сторінки роздатки. У повному наборі — PDF для друку без водяних знаків (' + pack.handouts.map(d => d.note).join(', ') + ') і відповіді для вчителя.'),
+        h('div', { class: 'chips' },
+          h('button', { class: 'btn', onclick: () => { store.set('dyvo_demo', false); route(); } }, 'Ввести код'),
+          h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo-rozdatka#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Хочу повну версію'))),
+      h('div', { class: 'samples' }, pages.map((src, i) => h('button', { class: 'sample', 'aria-label': `Зразок сторінки ${i + 1}`, onclick: () => { Sfx.tap(); open(i); } },
+        h('img', { src, alt: '', loading: 'lazy', onload: e => e.target.naturalWidth > e.target.naturalHeight && e.target.parentNode.classList.add('wide') }))))]);
+  }
+
   function handouts(pack) {
-    if (!license.allows(pack.id)) { lockedDialog(); return packHome(pack); }
+    if (!license.allows(pack.id)) return handoutSamples(pack);
     frame([pack.title, ' · ', h('b', {}, 'Роздатка')], [
       h('h2', {}, 'Роздатка для друку'),
       h('div', { class: 'list' }, pack.handouts.map(d => h('a', { class: 'row', href: asset(pack, d.file), target: '_blank', rel: 'noopener' },
