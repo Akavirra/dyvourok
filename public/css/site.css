@@ -118,7 +118,7 @@ p { margin: 0; }
   .hero .deco.d3 { display: block; width: 58px !important; right: 3% !important; top: 14px !important; }
 }
 
-/* ---------- нічний блок: набір до 9 листопада ---------- */
+/* ---------- нічний блок: набір до 27 жовтня ---------- */
 .night { background: var(--night); color: #F6EEDF; position: relative; overflow: hidden; }
 .night::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(2px 2px at 12% 20%, #F2B530 50%, transparent 51%), radial-gradient(1.5px 1.5px at 30% 70%, #fff 50%, transparent 51%), radial-gradient(2px 2px at 55% 12%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 78% 40%, #F2B530 50%, transparent 51%), radial-gradient(2px 2px at 90% 85%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 42% 90%, #F2B530 50%, transparent 51%); opacity: .7; }
 .night .wrap { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
