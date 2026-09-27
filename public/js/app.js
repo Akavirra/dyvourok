@@ -43,7 +43,8 @@
   const icon = (name, size) => h('span', { class: 'svg-ico', 'aria-hidden': 'true', html:
     `<svg viewBox="0 0 24 24" width="${size || '1em'}" height="${size || '1em'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>` });
   const go = path => { location.hash = path; };
-  const asset = (pack, p) => pack.base + p;
+  // ?v=хеш файлу (scripts/stamp_versions.py): після оновлення адреса інша — браузер не покаже стару копію
+  const asset = (pack, p) => pack.base + p + (pack.versions && pack.versions[p] ? '?v=' + pack.versions[p] : '');
   function toast(msg) { const t = h('div', { class: 'toast' }, msg); document.body.append(t); setTimeout(() => t.remove(), 2200); }
   function shake(el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); Sfx.wrong(); }
 
