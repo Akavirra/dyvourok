@@ -6,7 +6,7 @@
   subtitle: 'День української писемності та мови · 1–4 клас',
   date: '27 жовтня',
   word: 'СЛОВО',
-  versions: {"media/franko.mp4": "5019430372", "media/kyrylo.mp4": "2d3ffa229c", "media/lesya.mp4": "ade963cde2", "media/nestor.mp4": "69f0ae314d", "media/shevchenko-full.mp4": "af7d73723f", "media/shevchenko.mp4": "5609d9ec27", "docs/robochi-arkushi.pdf": "21917a1bd4", "img/cover-card.jpg": "c5660e5ef7", "img/franko-head.png": "237ec86192", "img/franko-poster.jpg": "4685dabb20", "img/kyrylo-head.png": "9230b66978", "img/kyrylo-poster.jpg": "4c96585f35", "img/lesya-head.png": "48df682c9c", "img/lesya-poster.jpg": "986d35fd15", "img/nestor-head.png": "e490fb8de2", "img/nestor-poster.jpg": "e8fb4b7126", "img/shevchenko-head.png": "051f350828", "img/shevchenko-poster.jpg": "476ccbbb2c"},
+  versions: {"media/franko.mp4": "5019430372", "media/kyrylo.mp4": "2d3ffa229c", "media/lesya.mp4": "ade963cde2", "media/nestor.mp4": "69f0ae314d", "media/shevchenko-full.mp4": "7aa071ef3f", "media/shevchenko.mp4": "5609d9ec27", "docs/robochi-arkushi.pdf": "21917a1bd4", "img/cover-card.jpg": "c5660e5ef7", "img/franko-head.png": "237ec86192", "img/franko-poster.jpg": "4685dabb20", "img/kyrylo-head.png": "9230b66978", "img/kyrylo-poster.jpg": "4c96585f35", "img/lesya-head.png": "48df682c9c", "img/lesya-poster.jpg": "986d35fd15", "img/nestor-head.png": "e490fb8de2", "img/nestor-poster.jpg": "e8fb4b7126", "img/shevchenko-head.png": "051f350828", "img/shevchenko-poster.jpg": "476ccbbb2c"},
   base: 'packs/mova/',
   cover: 'img/cover-card.jpg',
 
