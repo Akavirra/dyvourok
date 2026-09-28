@@ -669,11 +669,11 @@
   // ---------------------------------------------------------------- маршрути
   function route() {
     const parts = location.hash.replace(/^#\/?/, '').split('/');
-    // посилання «Спробувати безкоштовно» з сайту: одразу в демо набору
+    // посилання «Спробувати безкоштовно» з сайту: одразу в демо набору (#/demo/mova/sources — одразу на потрібну сторінку)
     if (parts[0] === 'demo') {
       if (!license.get()) store.set('dyvo_demo', true);
       // replaceState з повним шляхом: відносна адреса розв'язалася б від <base> і вела б на головну сайту
-      history.replaceState(null, '', location.pathname + location.search + '#/pack/' + (parts[1] || 'mova'));
+      history.replaceState(null, '', location.pathname + location.search + '#/pack/' + (parts[1] || 'mova') + (parts[2] ? '/' + parts.slice(2).join('/') : ''));
       return route();
     }
     if (!hasAccess()) return gate();
