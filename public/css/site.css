@@ -24,7 +24,7 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 90px; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif; font-size: 18px; line-height: 1.55; overflow-x: hidden; }
-img, video { max-width: 100%; display: block; }
+img, video { max-width: 100%; height: auto; display: block; }
 a { color: inherit; }
 h1, h2, h3 { margin: 0; line-height: 1.1; text-wrap: balance; }
 p { margin: 0; }
