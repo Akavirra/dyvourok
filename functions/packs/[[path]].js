@@ -5,7 +5,7 @@ import { readSession, packAllowed } from '../../lib/auth.js';
 const PUBLIC = [
   /^[a-z0-9-]+\/pack\.js$/,
   /^[a-z0-9-]+\/img\//,
-  /^mova\/media\/shevchenko\.mp4$/          // демо-зупинка
+  /^mova\/media\/shevchenko-full\.mp4$/     // демо-зупинка
 ];
 
 export async function onRequest({ request, env, params }) {

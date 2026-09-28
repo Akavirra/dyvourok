@@ -345,7 +345,7 @@
 
   // ---------------------------------------------------------------- зупинка
   function stop(pack, s) {
-    const vsrc = !license.allows(pack.id) && s.demoVideo ? s.demoVideo : s.video;   // у демо — короткий тизер
+    const vsrc = !license.allows(pack.id) && s.demoVideo ? s.demoVideo : s.video;   // demoVideo — окреме відео для демо, якщо задано
     const video = vsrc
       ? h('div', { class: 'video-box' }, player(pack, vsrc, { poster: s.poster ? asset(pack, s.poster) : null }))
       : h('div', { class: 'video-box soon' }, h('div', { class: 'big' }, icon('film')), 'Мультфільм про цього героя з\'явиться незабаром', h('div', { class: 'muted' }, 'А поки прочитайте розповідь і виконайте завдання'));

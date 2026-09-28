@@ -172,12 +172,6 @@ p { margin: 0; }
 .feature ul { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-size: .95em; }
 .feature li { padding-left: 20px; position: relative; }
 .feature li::before { content: ''; position: absolute; left: 0; top: .55em; width: 8px; height: 8px; background: var(--red); }
-.feature .pic.paper { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 22px; align-items: center; }
-.sheet { background: #fff; border-radius: 6px; aspect-ratio: 210 / 297; box-shadow: 0 10px 20px -12px rgba(42, 23, 20, .45); padding: 10%; display: flex; flex-direction: column; gap: 8%; transform: rotate(var(--r, 0deg)); }
-.sheet i { display: block; height: 6%; background: var(--paper-3); border-radius: 3px; }
-.sheet i.t { background: var(--red); width: 60%; height: 8%; }
-.sheet i.s { width: 40%; }
-.sheet .grid { flex: 1; background: repeating-linear-gradient(90deg, #f4ede1 0 14%, transparent 14% 16%), repeating-linear-gradient(#f4ede1 0 14%, transparent 14% 16%); border-radius: 3px; }
 @media (max-width: 760px) { .inside { grid-template-columns: 1fr; } }
 
 /* ---------- як це працює ---------- */
