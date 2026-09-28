@@ -102,7 +102,7 @@
   }
   const mailLink = () => h('a', { class: 'mail', href: 'mailto:' + CONTACT }, CONTACT);
   const contactLine = (lead = 'Питання чи проблеми з доступом? Пишіть на ') => h('p', { class: 'muted contact' }, lead, mailLink());
-  const buyHint = () => h('div', {}, h('p', { class: 'muted' }, 'Код доступу надходить на пошту одразу після покупки.'), contactLine('Питання? Пишіть на '));
+  const buyHint = () => h('div', {}, h('p', { class: 'muted' }, 'Продажі стартують незабаром. ', h('a', { href: 'https://dyvourok.com.ua/?from=app#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Залиште заявку'), ' — повідомимо першими.'), contactLine('Питання? Пишіть на '));
   function lockedDialog() {
     Sfx.wrong();
     const r = h('div', { class: 'reward', role: 'dialog', 'aria-label': 'Потрібен доступ' },
@@ -181,7 +181,7 @@
     frame('Вхід', h('div', { class: 'gate' },
       h('img', { src: 'brand/dyvourok-mark.svg', alt: '', style: 'width:120px' }),
       h('h1', {}, 'Вітаємо в «Дивоуроці»!'),
-      h('p', { class: 'lead' }, 'Введіть код доступу, який ви отримали після покупки.'),
+      h('p', { class: 'lead' }, 'Введіть код доступу, який ви отримали на пошту.'),
       input, err, btn,
       h('button', { class: 'btn ghost', onclick: () => { store.set('dyvo_demo', true); Sfx.tap(); go('#/library'); route(); } }, 'Спробувати безкоштовно'),
       buyHint()));
