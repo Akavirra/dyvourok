@@ -16,7 +16,53 @@
     all = d.codes || [];
     render();
     loadPre();
+    loadDemo();
   }
+
+  // ---- демо: воронка (app.js шле кроки в /api/track)
+  const STEPS = [
+    ['start', 'Відкрили демо'],
+    ['stop', 'Зайшли на зупинку Шевченка'],
+    ['play', 'Увімкнули мультфільм'],
+    ['half', 'Додивились до половини'],
+    ['end', 'Додивились до кінця'],
+    ['task', 'Відкрили завдання'],
+    ['done', 'Розв\'язали завдання'],
+    ['samples', 'Гортали зразки роздатки', true],
+    ['locked', 'Натрапили на замок', true],
+    ['code', 'Натиснули «Ввести код»', true],
+    ['want', 'Натиснули «Хочу повну версію»'],
+    ['preorder', 'Лишили заявку']
+  ];
+  const COLS = ['start', 'play', 'done', 'want', 'preorder'];
+  async function loadDemo() {
+    const d = await call('GET', null, 'demo?days=' + $('demo-days').value + '&tz=' + new Date().getTimezoneOffset());
+    const f = Object.fromEntries((d.funnel || []).map(r => [r.event, r.n]));
+    const total = f.start || 0;
+    $('demo-funnel').replaceChildren(...STEPS.map(([e, label, side]) => {
+      const n = f[e] || 0, pct = total ? Math.round(n / total * 100) : 0;
+      const row = document.createElement('div');
+      row.className = 'step' + (side ? ' side' : '');
+      row.innerHTML = `<div class="lbl"></div><div class="bar"><i style="width:${n ? pct : 0}%"></i></div><div class="num">${n} <span>${e === 'start' ? '' : '· ' + pct + '%'}</span></div>`;
+      row.firstChild.textContent = label;
+      return row;
+    }));
+    const table = (rows, key, el, empty) => {
+      const m = {};
+      rows.forEach(r => { (m[r[key]] = m[r[key]] || {})[r.event] = r.n; });
+      const keys = Object.keys(m).sort(key === 'day' ? (a, b) => b.localeCompare(a) : (a, b) => (m[b].start || 0) - (m[a].start || 0));
+      $(el).replaceChildren(...(keys.length ? keys : [null]).map(k => {
+        const tr = document.createElement('tr');
+        if (k === null) { tr.innerHTML = `<td colspan="6" class="muted">${empty}</td>`; return tr; }
+        const label = key === 'day' ? new Date(k + 'T12:00').toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' }) : k;
+        [label, ...COLS.map(c => m[k][c] || 0)].forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.append(td); });
+        return tr;
+      }));
+    };
+    table(d.sources || [], 'source', 'demo-src', 'Поки ніхто не відкривав демо за цей період.');
+    table(d.daily || [], 'day', 'demo-daily', '—');
+  }
+  $('demo-days').onchange = loadDemo;
 
   // ---- передзамовлення
   let pre = [];
@@ -82,7 +128,7 @@
 
   $('enter').onclick = async () => {
     token = $('token').value.trim();
-    try { await load(); sessionStorage.setItem('dyvo_admin', token); $('login').hidden = true; $('panel').hidden = false; }
+    try { await load(); sessionStorage.setItem('dyvo_admin', token); localStorage.setItem('dyvo_notrack', 'true'); /* власні проходи демо не псують статистику */ $('login').hidden = true; $('panel').hidden = false; }
     catch (e) { $('login-err').textContent = 'Токен не підходить.'; }
   };
   $('token').addEventListener('keydown', e => { if (e.key === 'Enter') $('enter').click(); });

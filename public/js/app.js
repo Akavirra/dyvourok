@@ -150,6 +150,18 @@
   const hasAccess = () => !!license.get() || isDemo();
   const canOpen = (pack, stopId) => license.allows(pack.id) || DEMO_STOPS.includes(stopId);
 
+  // ---------------------------------------------------------------- статистика демо
+  // Анонімно: випадковий id пристрою + назва кроку — щоб в адмінці бачити, чи хтось проходить демо. З кодом не рахуємо;
+  // на пристрої, де відкривали адмінку, теж (dyvo_notrack). Джерело dyvo_from записує сайт (site.js).
+  const tracked = new Set();
+  function track(e) {
+    if (OFFLINE_FILE || license.get() || store.get('dyvo_notrack', false) || tracked.has(e)) return;
+    tracked.add(e);
+    fetch('/api/track', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ v: deviceId(), e, src: store.get('dyvo_from', '') }) }).catch(() => {});
+  }
+  const enterCode = () => { track('code'); store.set('dyvo_demo', false); route(); };
+
   function deviceId() {
     let id = store.get('dyvo_device', null);
     if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36)); store.set('dyvo_device', id); }
@@ -181,15 +193,15 @@
   const contactLine = (lead = 'Питання чи проблеми з доступом? Пишіть на ') => h('p', { class: 'muted contact' }, lead, mailLink());
   const buyHint = () => h('div', {}, h('p', { class: 'muted' }, 'Продажі стартують незабаром. ', h('a', { href: 'https://dyvourok.com.ua/?from=app#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Залиште заявку'), ' — повідомимо першими.'), contactLine('Питання? Пишіть на '));
   function lockedDialog() {
-    Sfx.wrong();
+    Sfx.wrong(); track('locked');
     const r = h('div', { class: 'reward', role: 'dialog', 'aria-label': 'Потрібен доступ' },
       h('div', { class: 'card pop' },
         h('div', { class: 'kicker' }, 'Демо-версія'),
         h('span', { style: 'font-size:64px;color:var(--red)' }, icon('lock')),
         h('h2', {}, 'Ця частина відкривається з кодом доступу'),
         h('p', {}, 'У демо можна пройти зупинку «Тарас Шевченко». Повний набір — 5 епох, мультфільми, роздатка і сценарій уроку.'),
-        h('button', { class: 'btn big', onclick: () => { r.remove(); store.set('dyvo_demo', false); route(); } }, 'Ввести код'),
-        h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Хочу повну версію'),
+        h('button', { class: 'btn big', onclick: () => { r.remove(); enterCode(); } }, 'Ввести код'),
+        h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo#peredzamovlennia', target: '_blank', rel: 'noopener', onclick: () => track('want') }, 'Хочу повну версію'),
         h('button', { class: 'btn ghost', onclick: () => r.remove() }, 'Повернутися'),
         contactLine('Питання? Пишіть на ')));
     document.body.append(r);
@@ -206,7 +218,7 @@
       h('img', { class: 'logo', src: 'brand/dyvourok-logo.svg', alt: 'Дивоурок', onclick: () => go('#/library') }),
       h('div', { class: 'crumb' }, crumbs),
       h('div', { class: 'spacer' }),
-      isDemo() ? h('button', { class: 'btn', style: 'padding:10px 18px;font-size:.85em', onclick: () => { store.set('dyvo_demo', false); route(); } }, 'Ввести код') : null,
+      isDemo() ? h('button', { class: 'btn', style: 'padding:10px 18px;font-size:.85em', onclick: enterCode }, 'Ввести код') : null,
       userBtn, soundBtn, fsBtn);
     app.replaceChildren(top, h('main', { class: 'screen' }, body));
   }
@@ -391,7 +403,13 @@
     const tick = () => { showSub(); syncTime(); if (!video.paused && box.isConnected) requestAnimationFrame(tick); };
     video.addEventListener('play', () => { syncBtn(); requestAnimationFrame(tick); });
     video.addEventListener('pause', () => { syncBtn(); poke(); });
-    video.addEventListener('ended', syncBtn);
+    video.addEventListener('ended', () => { syncBtn(); track('end'); });
+    video.addEventListener('play', () => track('play'), { once: true });
+    video.addEventListener('timeupdate', () => {
+      const part = video.duration ? video.currentTime / video.duration : 0;
+      if (part >= 0.5) track('half');
+      if (part >= 0.95) track('end');
+    });
     ['loadedmetadata', 'seeked', 'timeupdate'].forEach(ev => video.addEventListener(ev, () => { syncTime(); showSub(); }));
     video.onclick = toggle;
     bigPlay.onclick = toggle;
@@ -423,6 +441,7 @@
 
   // ---------------------------------------------------------------- зупинка
   function stop(pack, s) {
+    track('stop');
     const vsrc = !license.allows(pack.id) && s.demoVideo ? s.demoVideo : s.video;   // demoVideo — окреме відео для демо, якщо задано
     const video = vsrc
       ? h('div', { class: 'video-box' }, player(pack, vsrc, { poster: s.poster ? asset(pack, s.poster) : null }))
@@ -438,8 +457,9 @@
   }
 
   function taskScreen(pack, s) {
+    track('task');
     const solved = () => {
-      Sfx.letter();
+      Sfx.letter(); track('done');
       progress.done(pack, s.id);
       const r = h('div', { class: 'reward', role: 'dialog', 'aria-label': 'Нагорода' },
         h('div', { class: 'card pop' },
@@ -638,6 +658,7 @@
   function handoutSamples(pack) {
     const pages = pack.handouts.flatMap(d => Array.from({ length: d.previews || 0 }, (_, i) => asset(pack, `img/handout-${String(i + 1).padStart(2, '0')}.jpg`)));
     if (!pages.length) { lockedDialog(); return packHome(pack); }
+    track('samples');
     const open = i => {
       const img = h('img', { src: pages[i], alt: `Зразок сторінки ${i + 1}` });
       const count = h('div', { class: 'muted' }, `${i + 1} з ${pages.length}`);
@@ -658,8 +679,8 @@
         h('div', { class: 'kicker' }, 'Демо-версія'),
         h('p', {}, 'Так виглядають сторінки роздатки. У повному наборі — PDF для друку без водяних знаків (' + pack.handouts.map(d => d.note).join(', ') + ') і відповіді для вчителя.'),
         h('div', { class: 'chips' },
-          h('button', { class: 'btn', onclick: () => { store.set('dyvo_demo', false); route(); } }, 'Ввести код'),
-          h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo-rozdatka#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Хочу повну версію'))),
+          h('button', { class: 'btn', onclick: enterCode }, 'Ввести код'),
+          h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo-rozdatka#peredzamovlennia', target: '_blank', rel: 'noopener', onclick: () => track('want') }, 'Хочу повну версію'))),
       h('div', { class: 'samples' }, pages.map((src, i) => h('button', { class: 'sample', 'aria-label': `Зразок сторінки ${i + 1}`, onclick: () => { Sfx.tap(); open(i); } },
         h('img', { src, alt: '', loading: 'lazy', onload: e => e.target.naturalWidth > e.target.naturalHeight && e.target.parentNode.classList.add('wide') }))))]);
   }
@@ -740,7 +761,7 @@
         await clearOffline();   // збережені файли набору не лишаються на пристрої після виходу
         license.clear(); toast('Ви вийшли. Місце для пристрою звільнено.'); go('#/'); route();
       } }, 'Вийти з цього пристрою') : null,
-      !l ? h('button', { class: 'btn big', onclick: () => { store.set('dyvo_demo', false); route(); } }, 'Ввести код') : null,
+      !l ? h('button', { class: 'btn big', onclick: enterCode }, 'Ввести код') : null,
       h('p', { class: 'muted' }, 'Один код працює на кількох пристроях (наприклад, дошка, ноутбук і телефон). Щоб перенести доступ на новий пристрій, вийдіть на старому.'),
       contactLine()));
   }
@@ -756,6 +777,7 @@
       return route();
     }
     if (!hasAccess()) return gate();
+    if (isDemo()) track('start');
     if (parts[0] === 'account') return account();
     const pack = PACKS.find(p => p.id === parts[1]);
     const byId = id => pack && pack.stops.find(s => s.id === id);

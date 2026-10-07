@@ -37,6 +37,12 @@
     }
   }
 
+  // звідки прийшли (?from= / utm_source / чужий реферер) — перше джерело запам'ятовуємо для статистики демо (app.js, dyvo_from)
+  const q0 = new URLSearchParams(location.search);
+  const ref = document.referrer && new URL(document.referrer).host !== location.host ? new URL(document.referrer).host : '';
+  const from = q0.get('from') || q0.get('utm_source') || ref;
+  try { if (from && !localStorage.getItem('dyvo_from')) localStorage.setItem('dyvo_from', JSON.stringify(from.slice(0, 60))); } catch (e) {}
+
   // передзамовлення: заявка йде в /api/preorder, джерело береться з ?from= або utm_source
   const form = document.getElementById('preorder');
   if (form) form.addEventListener('submit', async e => {
@@ -58,6 +64,11 @@
       const r = await fetch('/api/preorder', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
       if (r.status === 400) { form.contact.setAttribute('aria-invalid', 'true'); form.contact.focus(); return fail('Схоже, в контакті помилка. Перевірте e-mail, @нікнейм у Telegram або номер телефону.'); }
       if (!r.ok) throw new Error(r.status);
+      // якщо цей пристрій проходив демо — позначити в статистиці, що після нього лишили заявку
+      try {
+        const v = JSON.parse(localStorage.getItem('dyvo_device') || 'null');
+        if (v && !localStorage.getItem('dyvo_notrack')) fetch('/api/track', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v, e: 'preorder', src: from }) }).catch(() => {});
+      } catch (e) {}
       form.hidden = true;
       const done = document.getElementById('preorder-done');
       done.hidden = false;

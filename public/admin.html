@@ -32,6 +32,15 @@
   .actions { display: flex; gap: 6px; flex-wrap: wrap; }
   .muted { color: var(--muted); font-size: 14px; }
   [hidden] { display: none !important; }
+  .funnel { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+  .step { display: grid; grid-template-columns: 220px 1fr 110px; grid-template-areas: 'lbl bar num'; gap: 4px 12px; align-items: center; }
+  .step .lbl { grid-area: lbl; } .step .bar { grid-area: bar; } .step .num { grid-area: num; }
+  .step .bar { height: 18px; background: #f3eada; border-radius: 6px; overflow: hidden; }
+  .step .bar i { display: block; height: 100%; background: var(--red); border-radius: 6px; min-width: 2px; }
+  .step.side .bar i { background: #d9b48a; }
+  .step .num { font-weight: 800; white-space: nowrap; text-align: right; }
+  .step .num span { color: var(--muted); font-weight: 600; }
+  @media (max-width: 560px) { .step { grid-template-columns: 1fr auto; grid-template-areas: 'lbl num' 'bar bar'; } }
 </style>
 </head>
 <body>
@@ -45,6 +54,22 @@
   </div>
 
   <div id="panel" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <b>Демо: хто проходить</b>
+        <select id="demo-days" style="flex:0 0 auto">
+          <option value="1">Сьогодні й учора (24 год)</option>
+          <option value="7" selected>7 днів</option>
+          <option value="30">30 днів</option>
+          <option value="0">Увесь час</option>
+        </select>
+      </div>
+      <div class="muted">Анонімно: один пристрій = один відвідувач. Рахуються ті, хто <i>почав</i> демо за обраний період. Ваш пристрій (де відкрито адмінку) і входи з кодом не рахуються.</div>
+      <div id="demo-funnel" class="funnel"></div>
+      <div class="table-wrap"><table><thead><tr><th>Звідки прийшли</th><th>Почали</th><th>Мультфільм</th><th>Завдання ✓</th><th>Хочу повну</th><th>Заявка</th></tr></thead><tbody id="demo-src"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>День</th><th>Почали</th><th>Мультфільм</th><th>Завдання ✓</th><th>Хочу повну</th><th>Заявка</th></tr></thead><tbody id="demo-daily"></tbody></table></div>
+    </div>
+
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <b>Передзамовлення: <span id="pre-count">0</span> <span class="muted" id="pre-week"></span></b>
