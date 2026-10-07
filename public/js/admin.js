@@ -105,19 +105,24 @@
 
   function render() {
     const q = $('filter').value.trim().toLowerCase();
-    const rows = all.filter(c => !q || c.code.toLowerCase().includes(q) || (c.note || '').toLowerCase().includes(q));
+    const rows = all.filter(c => !q || [c.code, c.note, c.contact].some(v => (v || '').toLowerCase().includes(q)));
     $('rows').replaceChildren(...rows.map(c => {
       const tr = document.createElement('tr');
       const status = c.revoked ? '<span class="pill bad">заблоковано</span>'
         : c.expires_at && c.expires_at < Date.now() ? '<span class="pill bad">минув термін</span>'
         : c.devices >= c.max_devices ? '<span class="pill full">ліміт пристроїв</span>' : '<span class="pill ok">активний</span>';
-      tr.innerHTML = `<td class="code"></td><td class="note"></td><td class="packs"></td><td>${c.devices} / ${c.max_devices}</td><td>${c.last_seen ? new Date(c.last_seen).toLocaleString('uk-UA') : '—'}</td><td>${status}</td><td class="actions"></td>`;
+      tr.innerHTML = `<td class="code"></td><td class="note"></td><td class="contact"></td><td class="packs"></td><td>${c.devices} / ${c.max_devices}</td><td>${c.last_seen ? new Date(c.last_seen).toLocaleString('uk-UA') : '—'}</td><td>${status}</td><td class="actions"></td>`;
       tr.querySelector('.code').textContent = c.code;
       tr.querySelector('.note').textContent = c.note || '—';
+      tr.querySelector('.contact').textContent = c.contact || '—';
       tr.querySelector('.packs').textContent = c.packs === '*' ? 'усі' : c.packs;
       const acts = tr.querySelector('.actions');
       const btn = (label, fn, cls) => { const b = document.createElement('button'); b.className = 'small ' + (cls || 'ghost'); b.textContent = label; b.onclick = fn; acts.append(b); };
       btn('Копіювати', () => navigator.clipboard.writeText(c.code));
+      btn('Нотатка', async () => {
+        const v = prompt('Контакт / нотатка для ' + c.code + ' (бачите лише ви):', c.contact || '');
+        if (v !== null) { await call('POST', { action: 'set-contact', code: c.code, contact: v }); load(); }
+      });
       btn(c.revoked ? 'Розблокувати' : 'Заблокувати', () => act(c.revoked ? 'restore' : 'revoke', c.code));
       if (c.devices) btn('Скинути пристрої', () => act('reset-devices', c.code));
       return tr;
@@ -134,7 +139,7 @@
   $('token').addEventListener('keydown', e => { if (e.key === 'Enter') $('enter').click(); });
 
   $('create').onclick = async () => {
-    const d = await call('POST', { note: $('note').value, count: $('count').value, maxDevices: $('max').value, packs: $('packs').value, days: $('days').value });
+    const d = await call('POST', { note: $('note').value, contact: $('contact').value, count: $('count').value, maxDevices: $('max').value, packs: $('packs').value, days: $('days').value });
     lastCreated = d.codes || [];
     $('created').hidden = false;
     $('created').textContent = lastCreated.join('\n');

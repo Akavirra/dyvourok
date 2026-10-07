@@ -1,7 +1,8 @@
 // Адмінка (Authorization: Bearer ADMIN_TOKEN)
 // GET  /api/admin/codes            — список кодів з кількістю пристроїв
-// POST /api/admin/codes {note, count, maxDevices, packs, days}   — створити коди
+// POST /api/admin/codes {note, contact, count, maxDevices, packs, days}   — створити коди
 // POST /api/admin/codes {action: 'revoke'|'restore'|'reset-devices', code}
+// POST /api/admin/codes {action: 'set-contact', code, contact}   — змінити приватну нотатку
 import { json, isAdmin, newCode, normalizeCode } from '../../../lib/auth.js';
 
 export async function onRequest({ request, env }) {
@@ -25,6 +26,7 @@ export async function onRequest({ request, env }) {
     if (b.action === 'revoke') await env.DB.prepare('UPDATE codes SET revoked = 1 WHERE code = ?').bind(code).run();
     else if (b.action === 'restore') await env.DB.prepare('UPDATE codes SET revoked = 0 WHERE code = ?').bind(code).run();
     else if (b.action === 'reset-devices') await env.DB.prepare('DELETE FROM devices WHERE code = ?').bind(code).run();
+    else if (b.action === 'set-contact') await env.DB.prepare('UPDATE codes SET contact = ? WHERE code = ?').bind(String(b.contact || '').slice(0, 300), code).run();
     else return json({ error: 'action' }, 400);
     return json({ ok: true });
   }
@@ -35,13 +37,14 @@ export async function onRequest({ request, env }) {
   const packs = String(b.packs || '').trim();
   if (packs !== '*' && !/^[a-z0-9-]+(,[a-z0-9-]+)*$/.test(packs)) return json({ error: 'packs' }, 400);
   const note = String(b.note || '').slice(0, 120);
+  const contact = String(b.contact || '').slice(0, 300);
   const now = Date.now();
   const expires = b.days ? now + Math.max(1, parseInt(b.days, 10)) * 864e5 : null;
   const created = [];
   for (let i = 0; i < count; i++) {
     const code = newCode();
-    await env.DB.prepare('INSERT INTO codes (code, note, packs, max_devices, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(code, note, packs, maxDevices, now, expires).run();
+    await env.DB.prepare('INSERT INTO codes (code, note, contact, packs, max_devices, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(code, note, contact, packs, maxDevices, now, expires).run();
     created.push(code);
   }
   return json({ ok: true, codes: created });
