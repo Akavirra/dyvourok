@@ -107,6 +107,15 @@ h3 { font-weight: 900; font-size: 1.15em; }
 .menu-item.main { background: var(--red); color: #fff; grid-column: span 2; }
 .menu-item.main .muted { color: #ffe3d8; }
 @media (max-width: 640px) { .menu-item.main { grid-column: auto; } }
+/* «Робота без інтернету» під меню набору */
+.card-soft.offline-card { flex-direction: row; align-items: center; gap: 20px; margin-top: 20px; }
+.offline-card [hidden] { display: none !important; }
+.offline-card .ico { font-size: 2.2em; line-height: 1; color: var(--red); }
+.offline-card.ok .ico { color: var(--green); }
+.offline-card .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.offline-bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.offline-bar span { display: block; height: 100%; width: 0; background: var(--yellow); transition: width .3s; }
+@media (max-width: 640px) { .offline-card { flex-wrap: wrap; } .offline-card .btn { width: 100%; } }
 
 /* ---------- мапа часу ---------- */
 .map-wrap { display: flex; flex-direction: column; gap: 22px; height: 100%; }

@@ -42,6 +42,7 @@
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>',
     pause: '<rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/>',
     playbar: '<path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/>',
+    wifi: '<path d="M2 8.5a15 15 0 0 1 20 0M5 12a10.5 10.5 0 0 1 14 0M8.5 15.5a5.5 5.5 0 0 1 7 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/>',
     cc: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M10.5 10.2a2.4 2.4 0 1 0 0 3.6M17 10.2a2.4 2.4 0 1 0 0 3.6"/>'
   };
   const icon = (name, size) => h('span', { class: 'svg-ico', 'aria-hidden': 'true', html:
@@ -57,6 +58,82 @@
     done(pack, stopId) { const p = progress.get(pack); p[stopId] = true; store.set('dyvo_progress_' + pack.id, p); },
     reset(pack) { store.set('dyvo_progress_' + pack.id, {}); }
   };
+  // ---------------------------------------------------------------- без інтернету
+  // Мультфільми, PDF і картинки набору зберігаються цілими файлами в окремий кеш: браузер просить відео частинами (Range),
+  // а sw.js нарізає ці частини з кешу. Ключ — адреса з ?v=, тож після оновлення файлу старий запис просто не підходить.
+  const MEDIA_CACHE = 'dyvourok-media';
+  const canSave = () => !OFFLINE_FILE && 'caches' in window && 'serviceWorker' in navigator;
+  function offlineFiles(pack) {
+    const files = new Set();
+    pack.stops.forEach(s => s.video && files.add(s.video));
+    (pack.cartoons || []).forEach(c => c.ready && c.file && files.add(c.file));
+    (pack.handouts || []).forEach(d => d.file && files.add(d.file));
+    Object.keys(pack.versions || {}).forEach(p => p.startsWith('img/') && files.add(p));
+    return [...files].map(p => new URL(asset(pack, p), document.baseURI).href);
+  }
+  async function offlineMissing(pack) {
+    const c = await caches.open(MEDIA_CACHE);
+    const urls = offlineFiles(pack);
+    const have = await Promise.all(urls.map(u => c.match(u)));
+    return urls.filter((u, i) => !have[i]);
+  }
+  // onProgress(завантажено байт, файлів готово, файлів усього)
+  async function saveOffline(pack, onProgress) {
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+    const c = await caches.open(MEDIA_CACHE);
+    const all = offlineFiles(pack);
+    const todo = await offlineMissing(pack);
+    let bytes = 0, done = all.length - todo.length;
+    onProgress(bytes, done, all.length);
+    for (const url of todo) {
+      const res = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
+      if (res.status === 401) throw new Error('401');
+      if (!res.ok) throw new Error('http ' + res.status);
+      const reader = res.body.getReader(), chunks = [];
+      for (;;) {
+        const { done: end, value } = await reader.read();
+        if (end) break;
+        chunks.push(value); bytes += value.length; onProgress(bytes, done, all.length);
+      }
+      const blob = new Blob(chunks, { type: res.headers.get('content-type') || '' });
+      await c.put(url, new Response(blob, { headers: { 'content-type': blob.type, 'content-length': String(blob.size) } }));
+      onProgress(bytes, ++done, all.length);
+    }
+    // прибрати старі версії файлів цього набору
+    const keep = new Set(all);
+    for (const req of await c.keys()) if (req.url.includes('/' + pack.base) && !keep.has(req.url)) await c.delete(req);
+  }
+  function offlineCard(pack) {
+    if (!canSave() || !license.allows(pack.id)) return null;
+    const status = h('div', { class: 'muted' }, 'Перевіряємо…');
+    const bar = h('div', { class: 'offline-bar', hidden: true }, h('span'));
+    const btn = h('button', { class: 'btn', hidden: true }, 'Зберегти');
+    const card = h('div', { class: 'offline-card card-soft' },
+      h('div', { class: 'ico' }, icon('wifi')),
+      h('div', { class: 'grow' }, h('h3', {}, 'Робота без інтернету'), status, bar), btn);
+    const ready = () => { card.classList.add('ok'); status.textContent = 'Набір збережено на цьому пристрої: мультфільми й роздатка відкриються без інтернету.'; btn.hidden = true; bar.hidden = true; };
+    const idle = (msg) => { status.textContent = msg || 'Збережіть набір один раз — і мультфільми та роздатка працюватимуть навіть без мережі (≈100 МБ).'; btn.hidden = false; btn.disabled = false; btn.textContent = 'Зберегти'; };
+    btn.onclick = async () => {
+      Sfx.tap();
+      btn.disabled = true; btn.textContent = 'Зберігаємо…'; bar.hidden = false;
+      try {
+        await saveOffline(pack, (b, n, total) => {
+          status.textContent = `Зберігаємо: ${n} з ${total} файлів · ${Math.round(b / 1048576)} МБ`;
+          bar.firstChild.style.width = Math.round(n / total * 100) + '%';
+        });
+        ready(); Sfx.right();
+      } catch (e) {
+        bar.hidden = true;
+        idle(e.message === '401' ? 'Сесія завершилась — увійдіть з кодом ще раз і повторіть.'
+          : !navigator.onLine ? 'Немає інтернету. Підключіться й натисніть ще раз — збережене не пропаде.'
+          : 'Не вдалося зберегти все. Натисніть ще раз — продовжимо з того місця.');
+      }
+    };
+    offlineMissing(pack).then(m => m.length ? idle() : ready()).catch(() => { card.hidden = true; });
+    return card;
+  }
+  async function clearOffline() { try { await caches.delete(MEDIA_CACHE); } catch (e) {} }
+
   // ---------------------------------------------------------------- доступ
   // Ліцензія: {note, packs, exp, checked} — копія того, що сервер записав у HttpOnly-кукі сесії.
   const license = {
@@ -97,7 +174,7 @@
     try {
       const r = await api('/api/session', 'POST');
       if (r.ok) license.set(r.data);
-      else if (r.status === 401) { license.clear(); toast('Доступ на цьому пристрої завершено. Введіть код ще раз.'); route(); }
+      else if (r.status === 401) { license.clear(); clearOffline(); toast('Доступ на цьому пристрої завершено. Введіть код ще раз.'); route(); }
     } catch (e) {}
   }
   const mailLink = () => h('a', { class: 'mail', href: 'mailto:' + CONTACT }, CONTACT);
@@ -216,7 +293,8 @@
         item('film', 'Мультфільми', 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
         item('print', 'Роздатка', license.allows(pack.id) ? 'Робочі аркуші, плакати, грамоти для друку' : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
         item('board', 'Для вчителя', 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`),
-        item('verified', 'Джерела й фактчек', 'Чим підтверджено факти заняття', `#/pack/${pack.id}/sources`))]);
+        item('verified', 'Джерела й фактчек', 'Чим підтверджено факти заняття', `#/pack/${pack.id}/sources`)),
+      offlineCard(pack)]);
   }
 
   function letterBar(pack) {
@@ -659,6 +737,7 @@
         : h('p', { class: 'lead' }, 'Без коду доступна зупинка «Тарас Шевченко».'),
       l && !OFFLINE_FILE ? h('button', { class: 'btn ghost', onclick: async () => {
         try { await api('/api/session', 'DELETE'); } catch (e) {}
+        await clearOffline();   // збережені файли набору не лишаються на пристрої після виходу
         license.clear(); toast('Ви вийшли. Місце для пристрою звільнено.'); go('#/'); route();
       } }, 'Вийти з цього пристрою') : null,
       !l ? h('button', { class: 'btn big', onclick: () => { store.set('dyvo_demo', false); route(); } }, 'Ввести код') : null,
