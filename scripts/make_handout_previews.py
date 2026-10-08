@@ -11,9 +11,9 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public')
 FONT = os.path.join(ROOT, 'fonts', 'Nunito.ttf')
 PACKS = {
     # набір: [(PDF, сторінки без прев'ю — відповіді для вчителя не показуємо, префікс файлів у img/ — як preview у pack.js)]
-    'mova': [('docs/robochi-arkushi.pdf', {18}, 'handout-'),
-             ('docs/arkushi-5-7.pdf', {7}, 'handout57-'),
-             ('docs/arkushi-8-11.pdf', {7}, 'handout811-')],
+    'mova': [('docs/robochi-arkushi.pdf', {18, 19}, 'handout-'),
+             ('docs/arkushi-5-7.pdf', {7, 8}, 'handout57-'),
+             ('docs/arkushi-8-11.pdf', {7, 8}, 'handout811-')],
 }
 LONG_SIDE = 760          # px — досить, щоб роздивитися, замало для друку
 RED = (200, 52, 31)
