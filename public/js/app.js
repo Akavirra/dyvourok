@@ -24,6 +24,7 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
   const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const chipLabel = w => { const t = w.replace(/^[«„"(]+|[.,:;!?…»"")\-–—]+$/g, ''); return t.charAt(0).toUpperCase() + t.slice(1); };
   function shuffledNot(arr) { if (arr.length < 2) return arr.slice(); let s; do { s = shuffle(arr); } while (s.every((v, i) => v === arr[i])); return s; }
   // векторні іконки замість емодзі: на частині шкільних дошок кольорових емодзі немає
   const ICONS = {
@@ -555,17 +556,19 @@
         const line = t.rounds[round];
         let i = 0;
         const row = h('div', { class: 'answer-row' }, h('span', { class: 'ph' }, 'З якого слова починається рядок?'));
+        // на картках усі слова з великої букви й без розділових знаків, щоб не підказувати перше й останнє слово;
+        // у зібраному рядку — як в оригіналі. Порівнюємо за написом на картці: однакові слова («Ні… ні») взаємозамінні.
         const chips = h('div', { class: 'chips' }, shuffledNot(line).map(w => h('button', { class: 'chip', onclick: e => {
-          if (w === line[i]) {
+          if (chipLabel(w) === chipLabel(line[i])) {
             if (i === 0) row.replaceChildren();
-            row.append(h('div', { class: 'ans pop' }, w));
+            row.append(h('div', { class: 'ans pop' }, line[i]));
             e.currentTarget.classList.add('picked'); Sfx.pick(i); i++;
             if (i === line.length) {
               round++;
               setTimeout(() => round < t.rounds.length ? (Sfx.right(), play()) : solved(), 700);
             }
           } else shake(e.currentTarget);
-        } }, w)));
+        } }, chipLabel(w))));
         box.replaceChildren(dots, row, chips);
       }
       play();
