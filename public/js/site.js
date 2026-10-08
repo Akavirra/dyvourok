@@ -16,6 +16,12 @@
     burger && burger.setAttribute('aria-expanded', 'false');
   }));
 
+  // ціна: 250 ₴ для перших покупців до 19.10.2026 включно, з 20.10 о 00:00 за Києвом — 300 ₴ (те саме в admin.js і seo_jsonld.py)
+  if (Date.now() >= Date.parse('2026-10-20T00:00:00+03:00')) {
+    document.querySelectorAll('[data-price]').forEach(el => { el.textContent = '300 ₴'; });
+    document.querySelectorAll('[data-early]').forEach(el => { el.hidden = true; });
+  }
+
   // блоки плавно з'являються; без JS або з reduced-motion усе видно одразу
   const reveal = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {

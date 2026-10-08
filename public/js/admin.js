@@ -48,7 +48,9 @@
   }
 
   // ---- дані покупця: нові поля або здогадка зі старої нотатки (коди, створені до окремих полів)
-  const PRICE = 250;
+  const PRICE_SWITCH = Date.parse('2026-10-20T00:00:00+03:00');   // ціна для перших покупців (250 ₴) — до 19.10 включно, далі 300 ₴
+  const priceAt = ms => (ms >= PRICE_SWITCH ? 300 : 250);
+  const PRICE = priceAt(Date.now());
   const SOURCE_LABEL = { messenger: 'Messenger', instagram: 'Instagram', site: 'Сайт', tiktok: 'TikTok', other: 'Інше', '': '—' };
   const GRADE_LABEL = { '1-4': '1–4', '5-7': '5–7', '8-11': '8–11', '': '—' };
   const KIND_LABEL = { sale: 'Продаж', gift: 'Подарунок', test: 'Тест' };
@@ -65,7 +67,7 @@
     const n = m ? parseInt(m[1], 10) : 0;
     return n >= 1 && n <= 4 ? '1-4' : n >= 5 && n <= 7 ? '5-7' : n >= 8 && n <= 11 ? '8-11' : '';
   }
-  const amountOf = c => (c.amount == null ? PRICE : c.amount);
+  const amountOf = c => (c.amount == null ? priceAt(c.created_at) : c.amount);
   const paidOf = c => c.paid_at || c.created_at;
   const isSale = c => kindOf(c) === 'sale' && !c.revoked;
   const notActivated = c => isSale(c) && !c.devices && Date.now() - c.created_at > 864e5;
@@ -368,6 +370,7 @@ ${howto(c)}
 
   // ---- новий код
   $('paid').value = toDateInput(Date.now());
+  $('amount').value = PRICE;
   $('create').onclick = async () => {
     const body = {
       note: $('note').value, hi: $('hi').value, email: $('email').value, source: $('source').value, grade: $('grade').value,

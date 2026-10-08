@@ -7,11 +7,14 @@ import io
 import json
 import os
 import re
+import time
 
 PAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public', 'index.html')
 START, END = '<!-- seo:jsonld -->', '<!-- /seo:jsonld -->'
 SITE = 'https://dyvourok.com.ua/'
-PRICE = '250'
+# ціна для перших покупців 250 ₴ до 19.10.2026 включно, з 20.10 — 300 ₴. Після 20.10 запустіть скрипт знову.
+EARLY = time.time() < 1792443600   # 2026-10-20 00:00 за Києвом
+PRICE = '250' if EARLY else '300'
 
 s = io.open(PAGE, encoding='utf-8').read()
 plain = lambda t: html.unescape(re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', t))).strip()
@@ -28,7 +31,7 @@ graph = [
                     'Нестора Літописця, Тараса Шевченка, Лесю Українку та Івана Франка, роздатка для друку й сценарій на 45 хвилин.',
      'image': SITE + 'img/site/og.jpg', 'brand': {'@id': SITE + '#org'},
      'audience': {'@type': 'EducationalAudience', 'educationalRole': 'teacher'},
-     'offers': {'@type': 'Offer', 'price': PRICE, 'priceCurrency': 'UAH', 'availability': 'https://schema.org/InStock',
+     'offers': {'@type': 'Offer', 'price': PRICE, 'priceCurrency': 'UAH', **({'priceValidUntil': '2026-10-19'} if EARLY else {}), 'availability': 'https://schema.org/InStock',
                 'url': SITE + '#cina', 'seller': {'@id': SITE + '#org'}}},
 ]
 if faq:
