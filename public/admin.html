@@ -229,10 +229,11 @@
     <section class="card" id="demo">
       <details class="demo">
         <summary><h2>Демо</h2><span class="muted" id="demo-sum"></span>
-          <select id="demo-days" class="demo-days" onclick="event.stopPropagation()" style="margin-left:auto">
-            <option value="1">24 год</option><option value="7" selected>7 днів</option><option value="30">30 днів</option><option value="0">Увесь час</option>
-          </select></summary>
+</summary>
         <div class="body">
+          <div class="p-acts"><label class="muted" for="demo-days">Період:</label><select id="demo-days" class="demo-days">
+            <option value="1">24 год</option><option value="7" selected>7 днів</option><option value="30">30 днів</option><option value="0">Увесь час</option>
+          </select></div>
           <div class="muted">Анонімно: один пристрій = один відвідувач. Ваш пристрій (де відкрито адмінку) і входи з кодом не рахуються.</div>
           <div id="demo-funnel" class="funnel"></div>
           <div class="table-wrap"><table><thead><tr><th>Звідки прийшли</th><th>Почали</th><th>Мультфільм</th><th>Завдання ✓</th><th>Хочу повну</th><th>Заявка</th></tr></thead><tbody id="demo-src"></tbody></table></div>

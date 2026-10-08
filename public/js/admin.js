@@ -323,7 +323,7 @@ ${howto(c)}
     const d = await call('GET', null, 'demo?days=' + $('demo-days').value + '&tz=' + new Date().getTimezoneOffset());
     const f = Object.fromEntries((d.funnel || []).map(r => [r.event, r.n]));
     const total = f.start || 0;
-    $('demo-sum').textContent = `${total} відкрили · ${f.play || 0} дивились мультфільм · ${plural(f.preorder || 0, 'заявка', 'заявки', 'заявок')}`;
+    $('demo-sum').textContent = `${$('demo-days').selectedOptions[0].textContent}: ${total} відкрили · ${f.play || 0} дивились мультфільм · ${plural(f.preorder || 0, 'заявка', 'заявки', 'заявок')}`;
     $('demo-funnel').replaceChildren(...STEPS.map(([e, label, side]) => {
       const n = f[e] || 0, pct = total ? Math.round(n / total * 100) : 0;
       const row = el('div', 'step' + (side ? ' side' : ''));
