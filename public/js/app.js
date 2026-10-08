@@ -219,7 +219,7 @@
   }
   const mailLink = () => h('a', { class: 'mail', href: 'mailto:' + CONTACT }, CONTACT);
   const contactLine = (lead = 'Питання чи проблеми з доступом? Пишіть на ') => h('p', { class: 'muted contact' }, lead, mailLink());
-  const buyHint = () => h('div', {}, h('p', { class: 'muted' }, 'Продажі стартують незабаром. ', h('a', { href: 'https://dyvourok.com.ua/?from=app#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Залиште заявку'), ' — повідомимо першими.'), contactLine('Питання? Пишіть на '));
+  const buyHint = () => h('div', {}, h('p', { class: 'muted' }, 'Ще немає коду? ', h('a', { href: 'https://dyvourok.com.ua/?from=app#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Замовте набір'), ' — надішлемо реквізити й код доступу.'), contactLine('Питання? Пишіть на '));
   function lockedDialog() {
     Sfx.wrong(); track('locked');
     const r = h('div', { class: 'reward', role: 'dialog', 'aria-label': 'Потрібен доступ' },
