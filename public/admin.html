@@ -7,150 +7,242 @@
 <title>Дивоурок · Адмінка</title>
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
 <style>
+  /* Робочий стіл продавця: зверху — що потребує уваги й гроші, далі дія (новий код), потім картки покупців і заявок; аналітика демо — згорнута внизу */
   @font-face { font-family: 'Nunito'; src: url('fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; }
-  :root { --red: #C8341F; --paper: #FBF6EC; --ink: #2A1714; --muted: #7A6A60; --line: #E6DAC7; --green: #2E7D4F; }
+  :root {
+    --red: #C8341F; --red-soft: #FBE4DF; --sun: #F2B530; --sun-soft: #FFF3D6; --sun-ink: #8A5A00;
+    --paper: #FBF6EC; --card: #FFFFFF; --ink: #2A1714; --muted: #7A6A60; --line: #EDE3D3; --field: #F7F1E6;
+    --green: #2E7D4F; --green-soft: #E5F3EA; --blue: #1F4E8C; --blue-soft: #E4ECF7;
+    --shadow: 0 1px 2px rgba(42,23,20,.06), 0 8px 24px -16px rgba(42,23,20,.35);
+    --r: 18px;
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.45 'Nunito', 'Segoe UI', sans-serif; padding: 24px 16px 60px; }
-  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-  h1 { margin: 0; font-weight: 900; font-size: 30px; } h1 span { color: var(--red); }
-  .card { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 8px 24px -14px rgba(42,23,20,.3); display: flex; flex-direction: column; gap: 12px; }
-  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
-  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 800; color: var(--muted); }
-  input, select { font: inherit; padding: 10px 12px; border: 2px solid var(--line); border-radius: 10px; min-width: 0; }
-  input:focus, select:focus { outline: none; border-color: var(--red); }
-  button { font: inherit; font-weight: 800; border: none; border-radius: 10px; padding: 10px 16px; cursor: pointer; background: var(--red); color: #fff; }
-  button.ghost { background: #f3eada; color: var(--ink); }
-  button.small { padding: 5px 10px; font-size: 13px; }
-  .out { font-family: Consolas, monospace; background: #f7f2e8; border-radius: 10px; padding: 12px; white-space: pre-wrap; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 500 15.5px/1.45 'Nunito', 'Segoe UI', sans-serif; }
+  [hidden] { display: none !important; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+  /* верхня панель */
+  .top { position: sticky; top: 0; z-index: 20; background: rgba(251,246,236,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .top-in { max-width: 1080px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 14px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 19px; white-space: nowrap; }
+  .brand img { width: 28px; height: 28px; }
+  .brand span { color: var(--muted); font-weight: 700; font-size: 15px; }
+  .tabs { display: flex; gap: 4px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+  .tabs a { text-decoration: none; color: var(--muted); font-weight: 800; font-size: 14px; padding: 7px 12px; border-radius: 99px; white-space: nowrap; }
+  .tabs a:hover { background: var(--field); color: var(--ink); }
+  .tabs .badge { background: var(--red); color: #fff; border-radius: 99px; font-size: 11px; padding: 1px 6px; margin-left: 4px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 20px 16px 80px; display: flex; flex-direction: column; gap: 18px; }
+  .card { background: var(--card); border-radius: var(--r); padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 70px; }
+  .card-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .card-head h2 { margin: 0; font-size: 19px; font-weight: 900; margin-right: auto; }
+  .card-head h2 small { color: var(--muted); font-weight: 700; font-size: 14px; margin-left: 6px; }
+  .muted { color: var(--muted); font-size: 14px; }
+
+  /* кнопки */
+  .btn { display: inline-block; text-decoration: none; border: none; border-radius: 12px; padding: 10px 18px; font-weight: 900; cursor: pointer; background: var(--red); color: #fff; transition: transform .08s, background .15s; }
+  .btn:hover { background: #b02d1a; } .btn:active { transform: translateY(1px); }
+  .btn.soft { background: var(--field); color: var(--ink); } .btn.soft:hover { background: #efe5d4; }
+  .btn.sm { padding: 6px 12px; font-size: 13.5px; border-radius: 10px; }
+  .btn.ghost { background: transparent; color: var(--muted); } .btn.ghost:hover { background: var(--field); color: var(--ink); }
+  .btn.sun { background: var(--sun-soft); color: var(--sun-ink); } .btn.sun:hover { background: #ffe9b8; }
+
+  /* поля */
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; align-items: end; }
+  .f { display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: 13px; font-weight: 800; color: var(--muted); }
+  .f small { font-weight: 600; }
+  .f input, .f select { background: var(--field); border: 2px solid transparent; border-radius: 12px; padding: 10px 12px; font-weight: 700; font-size: 15px; min-width: 0; width: 100%; }
+  .f input:focus, .f select:focus { outline: none; border-color: var(--red); background: #fff; }
+  .f input::placeholder { color: #b9a898; font-weight: 600; }
+  .c3 { grid-column: span 3; } .c4 { grid-column: span 4; } .c5 { grid-column: span 5; } .c6 { grid-column: span 6; } .c12 { grid-column: span 12; } .c2 { grid-column: span 2; }
+  @media (max-width: 760px) { .grid > * { grid-column: span 12 !important; } }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { border: 2px solid var(--line); background: #fff; border-radius: 99px; padding: 6px 12px; font-weight: 800; font-size: 13.5px; cursor: pointer; color: var(--ink); }
+  .chip:hover { border-color: #d8c7ad; }
+  .chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  details.more > summary { cursor: pointer; font-size: 14px; font-weight: 800; color: var(--muted); list-style: none; }
+  details.more > summary::before { content: '＋ '; } details.more[open] > summary::before { content: '－ '; }
+  details.more .grid { margin-top: 12px; }
+  .hint { background: var(--blue-soft); color: var(--blue); border-radius: 12px; padding: 8px 12px; font-size: 14px; font-weight: 700; }
+  .created { background: var(--green-soft); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .created .big { font: 900 22px/1 Consolas, monospace; letter-spacing: .04em; color: var(--green); white-space: pre-wrap; }
+
+  /* продажі */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .kpi { border-radius: 16px; padding: 14px 16px; background: var(--field); }
+  .kpi:first-child { background: var(--red); color: #fff; } .kpi:first-child span { color: #ffe2db; }
+  .kpi b { display: block; font-size: 32px; font-weight: 1000; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 13.5px; color: var(--muted); font-weight: 800; }
+  .todo { display: flex; flex-direction: column; gap: 6px; }
+  .todo div { background: var(--sun-soft); color: var(--sun-ink); border-radius: 12px; padding: 9px 12px; font-size: 14.5px; font-weight: 800; }
+  .todo div::before { content: '● '; color: var(--sun); }
+
+  /* картки людей */
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .person { border: 1.5px solid var(--line); border-radius: 16px; padding: 14px; display: grid; grid-template-columns: 44px 1fr; gap: 4px 12px; transition: border-color .15s; }
+  .person:hover { border-color: #e0d0b8; }
+  .person.warn { border-color: #f3d48a; background: #fffcf3; }
+  .person.off { opacity: .6; }
+  .ava { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 16px; color: #fff; grid-row: span 3; }
+  .p-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+  .p-head .name { font-weight: 900; font-size: 16.5px; }
+  .p-head .hi { color: var(--muted); font-size: 13.5px; }
+  .p-head .right { margin-left: auto; color: var(--muted); font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .p-info { font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+  .p-info .sub { color: var(--muted); }
+  .p-acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+  .codechip { display: inline-flex; align-items: center; gap: 6px; background: var(--field); border: none; border-radius: 10px; padding: 6px 10px; font: 800 13.5px Consolas, monospace; cursor: pointer; }
+  .codechip:hover { background: #efe5d4; } .codechip::after { content: '⧉'; font-family: 'Nunito'; color: var(--muted); }
+  .sep { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 900; }
+  .ok { background: var(--green-soft); color: var(--green); } .bad { background: var(--red-soft); color: var(--red); }
+  .full, .warn-p { background: var(--sun-soft); color: var(--sun-ink); } .gray { background: var(--field); color: var(--muted); }
+  .menu { position: relative; margin-left: auto; }
+  .menu > summary { list-style: none; cursor: pointer; border-radius: 10px; padding: 4px 10px; font-weight: 900; color: var(--muted); }
+  .menu > summary:hover { background: var(--field); }
+  .menu > summary::-webkit-details-marker { display: none; }
+  .menu .pop { position: absolute; right: 0; top: 110%; background: #fff; border-radius: 12px; box-shadow: var(--shadow), 0 0 0 1px var(--line); padding: 6px; display: flex; flex-direction: column; min-width: 190px; z-index: 5; }
+  .menu .pop button { text-align: left; border: none; background: none; padding: 8px 10px; border-radius: 8px; font-weight: 800; cursor: pointer; }
+  .menu .pop button:hover { background: var(--field); }
+  .menu .pop button.danger { color: var(--red); }
+  .edit { grid-column: 1 / -1; background: var(--paper); border-radius: 14px; padding: 14px; margin-top: 8px; display: flex; flex-direction: column; gap: 12px; }
+  .search { background: var(--field); border: 2px solid transparent; border-radius: 12px; padding: 9px 14px; font-weight: 700; min-width: 0; flex: 0 1 300px; }
+  .search:focus { outline: none; border-color: var(--red); background: #fff; }
+  .empty { text-align: center; color: var(--muted); padding: 24px; font-weight: 700; }
+  select.status { border: none; border-radius: 99px; padding: 5px 10px; font-weight: 900; font-size: 13px; cursor: pointer; }
+  select.status.new { background: var(--red-soft); color: var(--red); } select.status.written { background: var(--blue-soft); color: var(--blue); }
+  select.status.paid { background: var(--green-soft); color: var(--green); } select.status.declined { background: var(--field); color: var(--muted); }
+
+  /* демо */
+  details.demo > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  details.demo > summary::-webkit-details-marker { display: none; }
+  details.demo > summary h2 { margin: 0; font-size: 19px; font-weight: 900; }
+  details.demo > summary .muted::after { content: ' · розгорнути ▾'; }
+  details.demo[open] > summary .muted::after { content: ' · згорнути ▴'; }
+  details.demo .body { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+  .funnel { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+  .step { display: grid; grid-template-columns: 220px 1fr 110px; gap: 4px 12px; align-items: center; }
+  .step .bar { height: 14px; background: var(--field); border-radius: 99px; overflow: hidden; }
+  .step .bar i { display: block; height: 100%; background: var(--red); border-radius: 99px; min-width: 2px; }
+  .step.side .bar i { background: #d9b48a; }
+  .step .num { font-weight: 900; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+  .step .num span { color: var(--muted); font-weight: 700; }
+  @media (max-width: 560px) { .step { grid-template-columns: 1fr auto; } .step .bar { grid-column: 1 / -1; grid-row: 2; } }
   .table-wrap { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
   th { text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding: 8px; border-bottom: 2px solid var(--line); }
-  td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  td.code { font-family: Consolas, monospace; font-weight: 700; white-space: nowrap; }
-  .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 12px; font-weight: 800; }
-  .ok { background: #e6f3ea; color: var(--green); } .bad { background: #fbe4df; color: var(--red); } .full { background: #fff1d6; color: #9a6a00; }
-  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .muted { color: var(--muted); font-size: 14px; }
-  [hidden] { display: none !important; }
-  .funnel { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-  .step { display: grid; grid-template-columns: 220px 1fr 110px; grid-template-areas: 'lbl bar num'; gap: 4px 12px; align-items: center; }
-  .step .lbl { grid-area: lbl; } .step .bar { grid-area: bar; } .step .num { grid-area: num; }
-  .step .bar { height: 18px; background: #f3eada; border-radius: 6px; overflow: hidden; }
-  .step .bar i { display: block; height: 100%; background: var(--red); border-radius: 6px; min-width: 2px; }
-  .step.side .bar i { background: #d9b48a; }
-  .step .num { font-weight: 800; white-space: nowrap; text-align: right; }
-  .step .num span { color: var(--muted); font-weight: 600; }
-  @media (max-width: 560px) { .step { grid-template-columns: 1fr auto; grid-template-areas: 'lbl num' 'bar bar'; } }
-  label small { font-weight: 600; }
-  details.more summary { cursor: pointer; font-size: 14px; font-weight: 800; color: var(--muted); }
-  details.more .row { margin-top: 10px; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-  .kpi { background: #f7f2e8; border-radius: 12px; padding: 10px 14px; }
-  .kpi b { display: block; font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; }
-  .kpi span { font-size: 13px; color: var(--muted); font-weight: 700; }
-  .todo { background: #fff1d6; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 700; color: #6b4a00; }
-  td.info { font-size: 13px; line-height: 1.4; } td.info .sub { color: var(--muted); }
-  .pill.warn { background: #fff1d6; color: #9a6a00; } .pill.gray { background: #eee6da; color: var(--muted); }
-  tr.edit td { background: #fbf6ec; }
-  .copyset { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-basis: 100%; padding-bottom: 4px; border-bottom: 1px dashed var(--line); }
-  td.actions { min-width: 250px; }
-  .copyset > span { font-size: 12px; font-weight: 800; color: var(--muted); }
-  select.small { padding: 4px 8px; font-size: 13px; border-radius: 8px; }
+  td { padding: 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .demo-days { background: var(--field); border: none; border-radius: 10px; padding: 7px 10px; font-weight: 800; }
+
+  @media (max-width: 600px) {
+    .brand span { display: none; }
+    .top-in { gap: 8px; padding: 8px 12px; }
+    .card { padding: 16px; }
+    .person { grid-template-columns: 36px 1fr; padding: 12px; }
+    .ava { width: 36px; height: 36px; font-size: 14px; grid-row: span 2; }
+    .p-acts { grid-column: 1 / -1; }
+    .p-head .right { margin-left: 0; width: 100%; }
+    .kpi b { font-size: 26px; }
+  }
+
+  /* вхід і тост */
+  .login { max-width: 380px; margin: 12vh auto 0; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 99px; font-weight: 800; opacity: 0; transition: .2s; pointer-events: none; z-index: 50; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1><span>Дивоурок</span> · адмінка</h1>
+<header class="top" id="topbar" hidden>
+  <div class="top-in">
+    <div class="brand"><img src="icons/favicon.svg" alt="">Дивоурок <span>адмінка</span></div>
+    <nav class="tabs" aria-label="Розділи">
+      <a href="#sales">Продажі</a><a href="#new-code">Новий код</a><a href="#codes">Коди</a><a href="#leads">Заявки<span class="badge" id="lead-badge" hidden></span></a><a href="#demo">Демо</a>
+    </nav>
+    <a class="btn sm" href="#new-code" id="top-new">+ Новий код</a>
+  </div>
+</header>
 
-  <div class="card" id="login">
-    <label for="token">Адмін-токен<input id="token" type="password" autocomplete="off"></label>
-    <div><button id="enter">Увійти</button></div>
+<div class="wrap">
+  <div class="card login" id="login">
+    <div class="brand"><img src="icons/favicon.svg" alt="">Дивоурок <span>адмінка</span></div>
+    <label class="f" for="token">Адмін-токен<input id="token" type="password" autocomplete="off"></label>
+    <div><button class="btn" id="enter">Увійти</button></div>
     <div class="muted" id="login-err"></div>
   </div>
 
-  <div id="panel" hidden>
-    <div class="card">
-      <b>Продажі</b>
+  <div id="panel" hidden style="display:flex;flex-direction:column;gap:18px">
+    <section class="card" id="sales">
+      <div class="card-head"><h2>Продажі</h2></div>
       <div class="kpis" id="kpis"></div>
-      <div class="muted" id="sales-split"></div>
       <div class="todo" id="todo" hidden></div>
-    </div>
+      <div class="muted" id="sales-split"></div>
+    </section>
 
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <b>Демо: хто проходить</b>
-        <select id="demo-days" style="flex:0 0 auto">
-          <option value="1">Сьогодні й учора (24 год)</option>
-          <option value="7" selected>7 днів</option>
-          <option value="30">30 днів</option>
-          <option value="0">Увесь час</option>
-        </select>
-      </div>
-      <div class="muted">Анонімно: один пристрій = один відвідувач. Рахуються ті, хто <i>почав</i> демо за обраний період. Ваш пристрій (де відкрито адмінку) і входи з кодом не рахуються.</div>
-      <div id="demo-funnel" class="funnel"></div>
-      <div class="table-wrap"><table><thead><tr><th>Звідки прийшли</th><th>Почали</th><th>Мультфільм</th><th>Завдання ✓</th><th>Хочу повну</th><th>Заявка</th></tr></thead><tbody id="demo-src"></tbody></table></div>
-      <div class="table-wrap"><table><thead><tr><th>День</th><th>Почали</th><th>Мультфільм</th><th>Завдання ✓</th><th>Хочу повну</th><th>Заявка</th></tr></thead><tbody id="demo-daily"></tbody></table></div>
-    </div>
-
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <b>Заявки з сайту: <span id="pre-count">0</span> <span class="muted" id="pre-week"></span></b>
-        <div class="actions">
-          <button class="ghost small" id="pre-copy">Копіювати e-mail</button>
-          <button class="ghost small" id="pre-csv">Завантажити CSV</button>
-        </div>
-      </div>
-      <div class="muted" id="pre-stats"></div>
-      <div class="table-wrap"><table><thead><tr><th>Коли</th><th>Контакт</th><th>Ім'я</th><th>Класи</th><th>Коментар</th><th>Звідки</th><th>Статус</th><th></th></tr></thead><tbody id="pre-rows"></tbody></table></div>
-    </div>
-
-    <div class="card" id="new-code">
-      <b>Новий код</b>
-      <div class="row">
-        <label for="note" style="flex:2 1 240px">Покупець — ім'я та прізвище <small>(покупець бачить як «Ліцензія: …»)</small><input id="note" placeholder="Олена Коваль"></label>
-        <label for="hi" style="flex:1 1 150px">Звертання <small>(для повідомлень)</small><input id="hi" placeholder="Олено"></label>
-        <label for="email" style="flex:2 1 220px">Пошта<input id="email" type="email" placeholder="olena@ukr.net"></label>
-      </div>
-      <div class="row">
-        <label for="source" style="flex:1 1 150px">Звідки<select id="source">
+    <section class="card" id="new-code">
+      <div class="card-head"><h2>Новий код</h2></div>
+      <div class="hint" id="from-pre" hidden></div>
+      <div class="grid">
+        <label class="f c5" for="note">Покупець — ім'я та прізвище <small>покупець бачить як «Ліцензія: …»</small><input id="note" placeholder="Олена Коваль"></label>
+        <label class="f c3" for="hi">Звертання <small>для повідомлень</small><input id="hi" placeholder="Олено"></label>
+        <label class="f c4" for="email">Пошта <small>&nbsp;</small><input id="email" type="email" placeholder="olena@ukr.net"></label>
+        <div class="f c6">Звідки<select id="source" data-chips>
           <option value="messenger">Messenger</option><option value="instagram">Instagram</option><option value="site">Сайт</option>
-          <option value="tiktok">TikTok</option><option value="other">Інше</option><option value="">—</option></select></label>
-        <label for="grade" style="flex:1 1 120px">Клас<select id="grade">
-          <option value="">—</option><option value="1-4">1–4</option><option value="5-7">5–7</option><option value="8-11">8–11</option></select></label>
-        <label for="amount" style="flex:0 0 110px">Сума, ₴<input id="amount" type="number" value="250" min="0"></label>
-        <label for="paid" style="flex:0 0 160px">Дата оплати<input id="paid" type="date"></label>
-        <label for="kind" style="flex:1 1 140px">Тип<select id="kind">
-          <option value="sale">Продаж</option><option value="gift">Подарунок</option><option value="test">Тест</option></select></label>
-      </div>
-      <div class="row">
-        <label for="contact" style="flex:1 1 300px">Нотатка — бачите лише ви<input id="contact" placeholder="Наприклад: переказ на картку, просила рахунок"></label>
+          <option value="tiktok">TikTok</option><option value="other">Інше</option></select></div>
+        <div class="f c6">Клас<select id="grade" data-chips>
+          <option value="">Не знаю</option><option value="1-4">1–4</option><option value="5-7">5–7</option><option value="8-11">8–11</option></select></div>
+        <label class="f c3" for="amount">Сума, ₴<input id="amount" type="number" value="250" min="0"></label>
+        <label class="f c3" for="paid">Дата оплати<input id="paid" type="date"></label>
+        <div class="f c6">Тип<select id="kind" data-chips>
+          <option value="sale">Продаж</option><option value="gift">Подарунок</option><option value="test">Тест</option></select></div>
+        <label class="f c12" for="contact">Нотатка <small>бачите лише ви</small><input id="contact" placeholder="Наприклад: переказ на картку, просила рахунок"></label>
       </div>
       <details class="more"><summary>Додатково: кількість, пристрої, набір, термін</summary>
-        <div class="row">
-          <label for="count" style="flex:0 0 90px">Кількість<input id="count" type="number" value="1" min="1" max="100"></label>
-          <label for="max" style="flex:0 0 110px">Пристроїв<input id="max" type="number" value="3" min="1" max="50"></label>
-          <label for="packs" style="flex:1 1 220px">Набір<select id="packs">
+        <div class="grid">
+          <label class="f c2" for="count">Кількість<input id="count" type="number" value="1" min="1" max="100"></label>
+          <label class="f c2" for="max">Пристроїв<input id="max" type="number" value="3" min="1" max="50"></label>
+          <label class="f c5" for="packs">Набір<select id="packs">
             <!-- новий набір: додати сюди option з id його папки в public/packs/ -->
             <option value="mova" selected>Машина часу рідної мови</option>
             <option value="*">Усі набори (зокрема майбутні)</option>
           </select></label>
-          <label for="days" style="flex:0 0 130px">Днів (порожньо — назавжди)<input id="days" type="number" min="1"></label>
+          <label class="f c3" for="days">Днів <small>порожньо — назавжди</small><input id="days" type="number" min="1"></label>
         </div>
       </details>
-      <div class="row"><button id="create">Створити</button><span class="muted" id="from-pre"></span></div>
-      <div class="out" id="created" hidden></div>
-      <div id="letter-actions" class="actions" hidden></div>
-    </div>
+      <div><button class="btn" id="create">Створити код</button></div>
+      <div class="created" id="created-box" hidden><div class="big" id="created"></div><div id="letter-actions"></div></div>
+    </section>
 
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <b>Усі коди</b>
-        <input id="filter" placeholder="Пошук за кодом, покупцем чи нотаткою" style="flex:0 1 320px">
-      </div>
-      <div class="table-wrap"><table><thead><tr><th>Код</th><th>Покупець</th><th>Дані</th><th>Пристрої</th><th>Останній вхід</th><th>Статус</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
-    </div>
+    <section class="card" id="codes">
+      <div class="card-head"><h2>Покупці й коди <small id="codes-count"></small></h2><input class="search" id="filter" placeholder="Пошук: ім'я, пошта, код…" aria-label="Пошук"></div>
+      <div class="list" id="rows"></div>
+    </section>
+
+    <section class="card" id="leads">
+      <div class="card-head"><h2>Заявки з сайту <small><span id="pre-count">0</span> <span id="pre-week"></span></small></h2>
+        <button class="btn soft sm" id="pre-copy">Копіювати e-mail</button><button class="btn soft sm" id="pre-csv">CSV</button></div>
+      <div class="muted" id="pre-stats"></div>
+      <div class="list" id="pre-rows"></div>
+    </section>
+
+    <section class="card" id="demo">
+      <details class="demo">
+        <summary><h2>Демо</h2><span class="muted" id="demo-sum"></span>
+          <select id="demo-days" class="demo-days" onclick="event.stopPropagation()" style="margin-left:auto">
+            <option value="1">24 год</option><option value="7" selected>7 днів</option><option value="30">30 днів</option><option value="0">Увесь час</option>
+          </select></summary>
+        <div class="body">
+          <div class="muted">Анонімно: один пристрій = один відвідувач. Ваш пристрій (де відкрито адмінку) і входи з кодом не рахуються.</div>
+          <div id="demo-funnel" class="funnel"></div>
+          <div class="table-wrap"><table><thead><tr><th>Звідки прийшли</th><th>Почали</th><th>Мультфільм</th><th>Завдання ✓</th><th>Хочу повну</th><th>Заявка</th></tr></thead><tbody id="demo-src"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>День</th><th>Почали</th><th>Мультфільм</th><th>Завдання ✓</th><th>Хочу повну</th><th>Заявка</th></tr></thead><tbody id="demo-daily"></tbody></table></div>
+        </div>
+      </details>
+    </section>
   </div>
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/admin.js"></script>
 </body>

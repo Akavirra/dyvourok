@@ -1,9 +1,9 @@
-/* Адмінка: продажі, демо, заявки з сайту, коди доступу. */
+/* Адмінка: продажі, новий код, покупці, заявки з сайту, демо. */
   const $ = id => document.getElementById(id);
   let token = sessionStorage.getItem('dyvo_admin') || '';
   let all = [];
   let pre = [];
-  let editing = '';          // код, рядок якого зараз редагується
+  let editing = '';          // код, картка якого зараз редагується
   let fromPre = '';          // контакт заявки, з якої заповнили форму нового коду
 
   async function call(method, body, path = 'codes') {
@@ -13,13 +13,30 @@
     if (!r.ok) throw new Error(data.error || 'http ' + r.status);
     return data;
   }
+  const plural = (n, one, few, many) => n + ' ' + (n % 10 === 1 && n % 100 !== 11 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? few : many);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const flash = (btn, text) => { const old = btn.textContent; btn.textContent = text; setTimeout(() => btn.textContent = old, 1500); };
-  function copy(text, btn) {
-    const done = () => flash(btn, 'Скопійовано ✓');
+  const button = (label, cls, fn) => { const b = el('button', cls, label); b.type = 'button'; b.onclick = fn; return b; };
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1700);
+  }
+  function copy(text, what) {
+    const done = () => toast((what || 'Текст') + ' — скопійовано ✓');
     try { navigator.clipboard.writeText(text).then(done, () => prompt('Скопіюйте вручну (Ctrl+C):', text)); }
     catch (e) { prompt('Скопіюйте вручну (Ctrl+C):', text); }
   }
+
+  // ---- вибір кнопками-чіпами замість випадного списку; значення лишається в прихованому select
+  function chipify(sel) {
+    const box = el('div', 'chips');
+    sel.hidden = true; sel.after(box);
+    sel._sync = () => box.querySelectorAll('.chip').forEach(b => b.classList.toggle('on', b.dataset.v === sel.value));
+    [...sel.options].forEach(o => { const b = button(o.textContent, 'chip', () => { sel.value = o.value; sel._sync(); }); b.dataset.v = o.value; box.append(b); });
+    sel._sync();
+  }
+  const setSel = (id, v) => { $(id).value = v; if ($(id)._sync) $(id)._sync(); };
+  document.querySelectorAll('select[data-chips]').forEach(chipify);
 
   async function load() {
     const d = await call('GET');
@@ -56,6 +73,20 @@
   const fmtDate = ms => new Date(ms).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
   const toDateInput = ms => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const fromDateInput = v => v ? new Date(v + 'T12:00').getTime() : null;
+  function ago(ms) {
+    const m = Math.round((Date.now() - ms) / 6e4);
+    if (m < 2) return 'щойно';
+    if (m < 60) return m + ' хв тому';
+    const h = Math.round(m / 60);
+    if (h < 24) return h + ' год тому';
+    if (dayKey(ms) === dayKey(Date.now() - 864e5)) return 'учора';
+    return fmtDate(ms);
+  }
+  // аватарка: ініціали й колір, сталий для імені
+  const AVA = ['#C8341F', '#1F4E8C', '#2E7D4F', '#B07A00', '#7A4E9C', '#2F7A7A'];
+  const initials = s => (s || '?').replace(/[«»"']/g, '').split(/\s+/).filter(w => /\p{L}/u.test(w[0] || '')).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+  const colorFor = s => AVA[[...(s || '')].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % AVA.length];
+  function avatar(name) { const a = el('div', 'ava', initials(name)); a.style.background = colorFor(name); a.setAttribute('aria-hidden', 'true'); return a; }
 
   // ---- тексти для покупця (ті самі, що на сторінці шаблонів)
   const APP = location.origin + '/app/';
@@ -95,16 +126,26 @@ ${howto(c)}
 
 Якщо щось не виходить — напишіть, допоможу.`;
 
-  function copySet(c, withLabel) {
-    const box = el('div', 'copyset');
-    if (withLabel) box.append(el('span', null, 'Копіювати:'));
-    [['Код', () => c.code], ['Повідомлення', () => messageFor(c)], ['Лист', () => letterFor(c)], ['Тема листа', () => SUBJECT]].forEach(([label, get]) => {
-      const b = el('button', 'small ghost', label);
-      b.onclick = () => copy(get(), b);
-      box.append(b);
-    });
+  // код-фішка (клік — копіювати лише код) і кнопки готових текстів
+  function copySet(c) {
+    const box = el('div', 'p-acts');
+    const chip = button(c.code, 'codechip', () => copy(c.code, 'Код'));
+    chip.title = 'Копіювати лише код';
+    box.append(chip,
+      button('Повідомлення', 'btn soft sm', () => copy(messageFor(c), 'Повідомлення')),
+      button('Лист', 'btn soft sm', () => copy(letterFor(c), 'Лист')),
+      button('Тема листа', 'btn soft sm', () => copy(SUBJECT, 'Тема листа')));
     return box;
   }
+  function menu(items) {
+    const d = el('details', 'menu');
+    const s = el('summary', null, '⋯'); s.setAttribute('aria-label', 'Ще дії');
+    const pop = el('div', 'pop');
+    items.forEach(([label, fn, danger]) => pop.append(button(label, danger ? 'danger' : '', () => { d.open = false; fn(); })));
+    d.append(s, pop);
+    return d;
+  }
+  document.addEventListener('click', e => document.querySelectorAll('details.menu[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; }));
 
   // ---- продажі
   function renderSales() {
@@ -117,15 +158,148 @@ ${howto(c)}
     $('kpis').replaceChildren(kpi(tToday.length, sum(tToday), 'сьогодні'), kpi(tWeek.length, sum(tWeek), 'за 7 днів'), kpi(sales.length, sum(sales), 'усього'));
     const tally = (fn, labels) => Object.entries(sales.reduce((m, c) => (m[fn(c)] = (m[fn(c)] || 0) + 1, m), {}))
       .sort((a, b) => b[1] - a[1]).map(([k, n]) => `${labels[k] || k} ${n}`).join(', ');
-    $('sales-split').textContent = sales.length ? `Звідки: ${tally(sourceOf, SOURCE_LABEL)}. Клас: ${tally(gradeOf, GRADE_LABEL)}. Тестові й подарункові коди сюди не входять.` : 'Продажів поки немає.';
+    $('sales-split').textContent = sales.length ? `Звідки: ${tally(sourceOf, SOURCE_LABEL)}. Клас: ${tally(gradeOf, GRADE_LABEL)}. Тестові й подарункові коди сюди не входять.` : 'Продажів поки немає — усе попереду 🙂';
     const lazy = sales.filter(notActivated);
     const fresh = pre.filter(p => (p.status || 'new') === 'new');
     const todo = [];
-    if (lazy.length) todo.push(`Не відкрили набір понад добу: ${lazy.map(c => c.note || c.code).join(', ')} — біля коду є кнопка «Нагадування».`);
-    if (fresh.length) todo.push(`Нові заявки з сайту без відповіді: ${fresh.length}.`);
+    if (fresh.length) todo.push(`Нові заявки з сайту без відповіді: ${fresh.length} — нижче в «Заявках».`);
+    if (lazy.length) todo.push(`Не відкрили набір понад добу: ${lazy.map(c => c.note || c.code).join(', ')} — надішліть «Нагадування».`);
     $('todo').hidden = !todo.length;
     $('todo').replaceChildren(...todo.map(t => el('div', null, t)));
   }
+
+  // ---- покупці й коди
+  function statusPill(c) {
+    const [cls, text] = c.revoked ? ['bad', 'заблоковано']
+      : c.expires_at && c.expires_at < Date.now() ? ['bad', 'минув термін']
+      : c.devices >= c.max_devices ? ['full', 'усі пристрої зайняті']
+      : notActivated(c) ? ['warn-p', 'ще не входили']
+      : c.devices ? ['ok', 'користуються'] : ['gray', 'код видано'];
+    return el('span', 'pill ' + cls, text);
+  }
+  function render() {
+    const q = $('filter').value.trim().toLowerCase();
+    const rows = all.filter(c => !q || [c.code, c.note, c.contact, c.email, c.hi].some(v => (v || '').toLowerCase().includes(q)));
+    const n = all.filter(isSale).length;
+    $('codes-count').textContent = n ? plural(n, 'покупець', 'покупці', 'покупців') : '';
+    $('rows').replaceChildren(...(rows.length ? rows.map(personCard) : [el('div', 'empty', q ? 'Нікого не знайдено.' : 'Поки немає жодного коду. Створіть перший вище 🙂')]));
+  }
+  function personCard(c) {
+    const kind = kindOf(c);
+    const lazy = notActivated(c);
+    const card = el('article', 'person' + (lazy ? ' warn' : '') + (c.revoked ? ' off' : ''));
+    const head = el('div', 'p-head');
+    head.append(el('span', 'name', c.note || 'Без імені'));
+    if (c.hi) head.append(el('span', 'hi', '«' + c.hi + '»'));
+    head.append(statusPill(c));
+    if (kind !== 'sale') head.append(el('span', 'pill gray', KIND_LABEL[kind]));
+    head.append(el('span', 'right', `${c.devices}/${c.max_devices} пристроїв${c.last_seen ? ' · вхід ' + ago(c.last_seen) : ''}`));
+    const info = el('div', 'p-info');
+    const parts = [emailOf(c), SOURCE_LABEL[sourceOf(c)], gradeOf(c) ? GRADE_LABEL[gradeOf(c)] + ' клас' : '', kind === 'sale' ? amountOf(c) + ' ₴' : '', 'оплата ' + fmtDate(paidOf(c))].filter(x => x && x !== '—');
+    info.append(el('div', null, parts.join(' · ')));
+    if (c.contact) info.append(el('div', 'sub', c.contact));
+    if (c.packs !== 'mova') info.append(el('div', 'sub', 'Набори: ' + (c.packs === '*' ? 'усі' : c.packs)));
+    const acts = copySet(c);
+    if (lazy) acts.append(button('Нагадування', 'btn sun sm', () => copy(reminderFor(c), 'Нагадування')));
+    acts.append(button(editing === c.code ? 'Закрити' : 'Редагувати', 'btn ghost sm', () => { editing = editing === c.code ? '' : c.code; render(); }));
+    const more = [[c.revoked ? 'Розблокувати код' : 'Заблокувати код', () => act(c.revoked ? 'restore' : 'revoke', c.code), !c.revoked]];
+    if (c.devices) more.push(['Скинути пристрої', () => { if (confirm('Скинути всі пристрої коду ' + c.code + '? Покупцю треба буде ввести код заново.')) act('reset-devices', c.code); }]);
+    acts.append(menu(more));
+    card.append(avatar(c.note || c.code), head, info, acts);
+    if (editing === c.code) card.append(editBox(c));
+    return card;
+  }
+  function editBox(c) {
+    const box = el('div', 'edit');
+    const field = (label, input, span) => { const l = el('label', 'f ' + span); l.append(label, input); return l; };
+    const inp = (v, type) => { const i = el('input'); if (type) i.type = type; i.value = v ?? ''; return i; };
+    const sel = (opts, v) => { const s = el('select'); Object.entries(opts).forEach(([k, label]) => { const o = el('option', null, label); o.value = k; s.append(o); }); s.value = v; return s; };
+    const f = {
+      note: inp(c.note), hi: inp(c.hi), email: inp(emailOf(c), 'email'),
+      source: sel(SOURCE_LABEL, sourceOf(c)), grade: sel(GRADE_LABEL, gradeOf(c)),
+      amount: inp(amountOf(c), 'number'), paid_at: inp(toDateInput(paidOf(c)), 'date'),
+      kind: sel(KIND_LABEL, kindOf(c)), contact: inp(c.contact)
+    };
+    const grid = el('div', 'grid');
+    grid.append(field('Покупець (бачить покупець)', f.note, 'c5'), field('Звертання', f.hi, 'c3'), field('Пошта', f.email, 'c4'),
+      field('Звідки', f.source, 'c3'), field('Клас', f.grade, 'c2'), field('Сума, ₴', f.amount, 'c2'), field('Дата оплати', f.paid_at, 'c3'), field('Тип', f.kind, 'c2'),
+      field('Нотатка', f.contact, 'c12'));
+    const err = el('span', 'muted');
+    const save = button('Зберегти', 'btn sm', async () => {
+      const fields = Object.fromEntries(Object.entries(f).map(([k, i]) => [k, i.value]));
+      fields.paid_at = fromDateInput(fields.paid_at);
+      try { await call('POST', { action: 'update', code: c.code, fields }); editing = ''; toast('Збережено ✓'); load(); }
+      catch (e) { err.textContent = 'Не вдалося зберегти: ' + e.message; }
+    });
+    const row = el('div', 'p-acts'); row.append(save, button('Скасувати', 'btn ghost sm', () => { editing = ''; render(); }), err);
+    box.append(grid, row);
+    return box;
+  }
+  async function act(action, code) { await call('POST', { action, code }); toast('Готово ✓'); load(); }
+
+  // ---- заявки з сайту
+  const STATUS = [['new', 'Нова'], ['written', 'Написали'], ['paid', 'Оплачено'], ['declined', 'Відмова']];
+  async function loadPre() {
+    const d = await call('GET', null, 'preorders');
+    pre = d.preorders || [];
+    const week = pre.filter(p => p.created_at > Date.now() - 7 * 864e5).length;
+    const fresh = pre.filter(p => (p.status || 'new') === 'new').length;
+    $('pre-count').textContent = pre.length;
+    $('pre-week').textContent = week ? `· +${week} за тиждень` : '';
+    $('lead-badge').hidden = !fresh; $('lead-badge').textContent = fresh;
+    const st = Object.fromEntries(STATUS);
+    const tally = fn => Object.entries(pre.reduce((m, p) => (m[fn(p)] = (m[fn(p)] || 0) + 1, m), {})).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(', ');
+    $('pre-stats').textContent = pre.length ? `Статус: ${tally(p => st[p.status || 'new'])}. Класи: ${tally(p => p.grade || '—')}. Звідки: ${tally(p => p.source || '—')}.` : '';
+    $('pre-rows').replaceChildren(...(pre.length ? pre.map(leadCard) : [el('div', 'empty', 'Заявок поки немає. Вони з\'являться тут, щойно хтось залишить контакт на сайті.')]));
+  }
+  function leadCard(p) {
+    const card = el('article', 'person' + ((p.status || 'new') === 'declined' ? ' off' : ''));
+    const head = el('div', 'p-head');
+    head.append(el('span', 'name', p.name || 'Без імені'));
+    if (p.grade) head.append(el('span', 'pill gray', p.grade.replace('-', '–') + ' клас'));
+    head.append(el('span', 'right', ago(p.created_at)));
+    const info = el('div', 'p-info');
+    info.append(el('div', null, p.contact + (p.source ? ' · з ' + p.source : '')));
+    if (p.comment) info.append(el('div', 'sub', '«' + p.comment + '»'));
+    const acts = el('div', 'p-acts');
+    const sel = el('select', 'status ' + (p.status || 'new'));
+    sel.setAttribute('aria-label', 'Статус заявки');
+    STATUS.forEach(([v, label]) => { const o = el('option', null, label); o.value = v; sel.append(o); });
+    sel.value = p.status || 'new';
+    sel.onchange = async () => { await call('POST', { action: 'status', contact: p.contact, status: sel.value }, 'preorders'); p.status = sel.value; toast('Статус змінено ✓'); await loadPre(); renderSales(); };
+    acts.append(sel,
+      button('Створити код', 'btn sm', () => fillFromPreorder(p)),
+      button('Копіювати контакт', 'btn soft sm', () => copy(p.contact, 'Контакт')),
+      menu([['Видалити заявку', async () => { if (confirm('Видалити заявку ' + p.contact + '?')) { await call('POST', { action: 'delete', contact: p.contact }, 'preorders'); toast('Заявку видалено'); loadPre(); } }, true]]));
+    card.append(avatar(p.name || p.contact), head, info, acts);
+    return card;
+  }
+  function fillFromPreorder(p) {
+    fromPre = p.contact;
+    $('note').value = p.name || '';
+    $('hi').value = '';
+    $('email').value = p.contact.includes('@') ? p.contact : '';
+    setSel('source', 'site');
+    setSel('grade', p.grade === '1-2' || p.grade === '3-4' ? '1-4' : (['5-7', '8-11'].includes(p.grade) ? p.grade : ''));
+    $('contact').value = p.contact.includes('@') ? '' : 'Контакт із заявки: ' + p.contact;
+    $('from-pre').hidden = false;
+    $('from-pre').textContent = 'Заповнено із заявки ' + p.contact + '. Допишіть прізвище й звертання. Після створення коду заявка стане «Оплачено».';
+    $('new-code').scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => $('note').focus(), 400);
+  }
+  $('pre-copy').onclick = () => {
+    const emails = pre.map(p => p.contact).filter(c => c.includes('@') && !c.startsWith('@'));
+    copy(emails.join(', '), `E-mail (${emails.length})`);
+  };
+  $('pre-csv').onclick = () => {
+    const cols = ['created_at', 'contact', 'name', 'grade', 'comment', 'source', 'status'];
+    const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const lines = [cols.join(','), ...pre.map(p => cols.map(c => esc(c === 'created_at' ? new Date(p[c]).toISOString() : p[c])).join(','))];
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'dyvourok-zaiavky.csv';
+    a.click();
+  };
 
   // ---- демо: воронка (app.js шле кроки в /api/track)
   const STEPS = [
@@ -149,10 +323,10 @@ ${howto(c)}
     const d = await call('GET', null, 'demo?days=' + $('demo-days').value + '&tz=' + new Date().getTimezoneOffset());
     const f = Object.fromEntries((d.funnel || []).map(r => [r.event, r.n]));
     const total = f.start || 0;
+    $('demo-sum').textContent = `${total} відкрили · ${f.play || 0} дивились мультфільм · ${plural(f.preorder || 0, 'заявка', 'заявки', 'заявок')}`;
     $('demo-funnel').replaceChildren(...STEPS.map(([e, label, side]) => {
       const n = f[e] || 0, pct = total ? Math.round(n / total * 100) : 0;
-      const row = document.createElement('div');
-      row.className = 'step' + (side ? ' side' : '');
+      const row = el('div', 'step' + (side ? ' side' : ''));
       row.innerHTML = `<div class="lbl"></div><div class="bar"><i style="width:${n ? pct : 0}%"></i></div><div class="num">${n} <span>${e === 'start' ? '' : '· ' + pct + '%'}</span></div>`;
       row.firstChild.textContent = label;
       return row;
@@ -165,7 +339,7 @@ ${howto(c)}
         const tr = document.createElement('tr');
         if (k === null) { tr.innerHTML = `<td colspan="6" class="muted">${empty}</td>`; return tr; }
         const label = key === 'day' ? new Date(k + 'T12:00').toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' }) : k;
-        [label, ...COLS.map(c => m[k][c] || 0)].forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.append(td); });
+        [label, ...COLS.map(c => m[k][c] || 0)].forEach(v => tr.append(el('td', null, v)));
         return tr;
       }));
     };
@@ -174,139 +348,20 @@ ${howto(c)}
   }
   $('demo-days').onchange = loadDemo;
 
-  // ---- заявки з сайту
-  const STATUS = [['new', 'Нова'], ['written', 'Написали'], ['paid', 'Оплачено'], ['declined', 'Відмова']];
-  async function loadPre() {
-    const d = await call('GET', null, 'preorders');
-    pre = d.preorders || [];
-    const week = pre.filter(p => p.created_at > Date.now() - 7 * 864e5).length;
-    $('pre-count').textContent = pre.length;
-    $('pre-week').textContent = week ? `(+${week} за тиждень)` : '';
-    const tally = key => Object.entries(pre.reduce((m, p) => (m[p[key] || '—'] = (m[p[key] || '—'] || 0) + 1, m), {}))
-      .sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}: ${n}`).join(', ');
-    const st = Object.fromEntries(STATUS);
-    $('pre-stats').textContent = pre.length ? `Статус — ${Object.entries(pre.reduce((m, p) => (m[st[p.status || 'new']] = (m[st[p.status || 'new']] || 0) + 1, m), {})).map(([k, n]) => `${k}: ${n}`).join(', ')}. Класи — ${tally('grade')}. Звідки — ${tally('source')}.` : 'Заявок поки немає.';
-    $('pre-rows').replaceChildren(...pre.map(p => {
-      const tr = document.createElement('tr');
-      [new Date(p.created_at).toLocaleString('uk-UA'), p.contact, p.name || '—', p.grade || '—', p.comment || '—', p.source || '—'].forEach((t, i) => {
-        const td = el('td', i === 1 ? 'code' : null, t); tr.append(td);
-      });
-      const sel = el('select', 'small');
-      STATUS.forEach(([v, label]) => { const o = el('option', null, label); o.value = v; sel.append(o); });
-      sel.value = p.status || 'new';
-      sel.onchange = async () => { await call('POST', { action: 'status', contact: p.contact, status: sel.value }, 'preorders'); p.status = sel.value; renderSales(); loadPre(); };
-      const tdS = el('td'); tdS.append(sel); tr.append(tdS);
-      const acts = el('td', 'actions');
-      const mk = el('button', 'small', 'Створити код');
-      mk.onclick = () => fillFromPreorder(p);
-      const del = el('button', 'small ghost', 'Видалити');
-      del.onclick = async () => { if (confirm('Видалити заявку ' + p.contact + '?')) { await call('POST', { action: 'delete', contact: p.contact }, 'preorders'); loadPre(); } };
-      acts.append(mk, del); tr.append(acts);
-      return tr;
-    }));
-  }
-  function fillFromPreorder(p) {
-    fromPre = p.contact;
-    $('note').value = p.name || '';
-    $('hi').value = '';
-    $('email').value = p.contact.includes('@') ? p.contact : '';
-    $('source').value = 'site';
-    $('grade').value = p.grade === '1-2' || p.grade === '3-4' ? '1-4' : (['5-7', '8-11'].includes(p.grade) ? p.grade : '');
-    $('contact').value = p.contact.includes('@') ? '' : 'Контакт із заявки: ' + p.contact;
-    $('from-pre').textContent = 'Заповнено із заявки ' + p.contact + ' — допишіть прізвище й звертання. Після створення заявка стане «Оплачено».';
-    $('new-code').scrollIntoView({ behavior: 'smooth' });
-    $('note').focus();
-  }
-  $('pre-copy').onclick = () => {
-    const emails = pre.map(p => p.contact).filter(c => c.includes('@') && !c.startsWith('@'));
-    copy(emails.join(', '), $('pre-copy'));
-  };
-  $('pre-csv').onclick = () => {
-    const cols = ['created_at', 'contact', 'name', 'grade', 'comment', 'source', 'status'];
-    const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-    const lines = [cols.join(','), ...pre.map(p => cols.map(c => esc(c === 'created_at' ? new Date(p[c]).toISOString() : p[c])).join(','))];
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-    a.download = 'dyvourok-zaiavky.csv';
-    a.click();
-  };
-
-  // ---- коди
-  function render() {
-    const q = $('filter').value.trim().toLowerCase();
-    const rows = all.filter(c => !q || [c.code, c.note, c.contact, c.email, c.hi].some(v => (v || '').toLowerCase().includes(q)));
-    const out = [];
-    rows.forEach(c => {
-      const tr = document.createElement('tr');
-      const kind = kindOf(c);
-      const status = c.revoked ? '<span class="pill bad">заблоковано</span>'
-        : c.expires_at && c.expires_at < Date.now() ? '<span class="pill bad">минув термін</span>'
-        : c.devices >= c.max_devices ? '<span class="pill full">ліміт пристроїв</span>'
-        : notActivated(c) ? '<span class="pill warn">ще не входили</span>'
-        : '<span class="pill ok">активний</span>';
-      tr.innerHTML = `<td class="code"></td><td class="note"></td><td class="info"></td><td>${c.devices} / ${c.max_devices}</td><td>${c.last_seen ? new Date(c.last_seen).toLocaleString('uk-UA') : '—'}</td><td>${status}${kind !== 'sale' ? ` <span class="pill gray">${KIND_LABEL[kind]}</span>` : ''}</td><td class="actions"></td>`;
-      tr.querySelector('.code').textContent = c.code;
-      const noteTd = tr.querySelector('.note');
-      noteTd.append(el('div', null, c.note || '—'));
-      if (c.hi) noteTd.append(el('div', 'muted', c.hi + ','));
-      const info = tr.querySelector('.info');
-      const parts = [emailOf(c), SOURCE_LABEL[sourceOf(c)], gradeOf(c) ? GRADE_LABEL[gradeOf(c)] + ' клас' : '', kind === 'sale' ? amountOf(c) + ' ₴' : '', 'оплата ' + fmtDate(paidOf(c))].filter(x => x && x !== '—');
-      info.append(el('div', null, parts.join(' · ')));
-      if (c.contact) info.append(el('div', 'sub', c.contact));
-      if (c.packs !== 'mova') info.append(el('div', 'sub', 'Набори: ' + (c.packs === '*' ? 'усі' : c.packs)));
-      const acts = tr.querySelector('.actions');
-      acts.append(copySet(c, true));
-      const btn = (label, fn, cls) => { const b = el('button', 'small ' + (cls || 'ghost'), label); b.onclick = () => fn(b); acts.append(b); };
-      if (notActivated(c)) btn('Нагадування', b => copy(reminderFor(c), b));
-      btn(editing === c.code ? 'Закрити' : 'Редагувати', () => { editing = editing === c.code ? '' : c.code; render(); });
-      btn(c.revoked ? 'Розблокувати' : 'Заблокувати', () => act(c.revoked ? 'restore' : 'revoke', c.code));
-      if (c.devices) btn('Скинути пристрої', () => { if (confirm('Скинути всі пристрої коду ' + c.code + '? Покупцю треба буде ввести код заново.')) act('reset-devices', c.code); });
-      out.push(tr);
-      if (editing === c.code) out.push(editRow(c));
-    });
-    $('rows').replaceChildren(...out);
-  }
-
-  function editRow(c) {
-    const tr = el('tr', 'edit');
-    const td = el('td'); td.colSpan = 7; tr.append(td);
-    const field = (label, input, flex) => { const l = el('label'); l.style.flex = flex; l.append(label, input); return l; };
-    const inp = (v, type) => { const i = el('input'); if (type) i.type = type; i.value = v ?? ''; return i; };
-    const sel = (opts, v) => { const s = el('select'); Object.entries(opts).forEach(([k, label]) => { const o = el('option', null, label); o.value = k; s.append(o); }); s.value = v; return s; };
-    const f = {
-      note: inp(c.note), hi: inp(c.hi), email: inp(emailOf(c), 'email'),
-      source: sel(SOURCE_LABEL, sourceOf(c)), grade: sel(GRADE_LABEL, gradeOf(c)),
-      amount: inp(amountOf(c), 'number'), paid_at: inp(toDateInput(paidOf(c)), 'date'),
-      kind: sel(KIND_LABEL, kindOf(c)), contact: inp(c.contact)
-    };
-    const r1 = el('div', 'row'), r2 = el('div', 'row'), r3 = el('div', 'row');
-    r1.append(field('Покупець (бачить покупець)', f.note, '2 1 220px'), field('Звертання', f.hi, '1 1 140px'), field('Пошта', f.email, '2 1 200px'));
-    r2.append(field('Звідки', f.source, '1 1 140px'), field('Клас', f.grade, '1 1 110px'), field('Сума, ₴', f.amount, '0 0 100px'), field('Дата оплати', f.paid_at, '0 0 160px'), field('Тип', f.kind, '1 1 130px'));
-    r3.append(field('Нотатка', f.contact, '1 1 300px'));
-    const save = el('button', null, 'Зберегти');
-    const err = el('span', 'muted');
-    save.onclick = async () => {
-      const fields = Object.fromEntries(Object.entries(f).map(([k, i]) => [k, i.value]));
-      fields.paid_at = fromDateInput(fields.paid_at);
-      try { await call('POST', { action: 'update', code: c.code, fields }); editing = ''; load(); }
-      catch (e) { err.textContent = 'Не вдалося зберегти: ' + e.message; }
-    };
-    const actions = el('div', 'row'); actions.append(save, err);
-    const wrap = el('div'); wrap.style.cssText = 'display:flex;flex-direction:column;gap:10px';
-    wrap.append(r1, r2, r3, actions);
-    td.append(wrap);
-    return tr;
-  }
-
-  async function act(action, code) { await call('POST', { action, code }); load(); }
-
+  // ---- вхід
   $('enter').onclick = async () => {
     token = $('token').value.trim();
-    try { await load(); sessionStorage.setItem('dyvo_admin', token); localStorage.setItem('dyvo_notrack', 'true'); /* власні проходи демо не псують статистику */ $('login').hidden = true; $('panel').hidden = false; }
-    catch (e) { $('login-err').textContent = e.message === 'forbidden' ? 'Токен не підходить.' : 'Помилка: ' + e.message; }
+    try {
+      await load();
+      sessionStorage.setItem('dyvo_admin', token);
+      localStorage.setItem('dyvo_notrack', 'true');   // власні проходи демо не псують статистику
+      $('login').hidden = true; $('panel').hidden = false; $('topbar').hidden = false;
+    } catch (e) { $('login-err').textContent = e.message === 'forbidden' ? 'Токен не підходить.' : 'Помилка: ' + e.message; }
   };
   $('token').addEventListener('keydown', e => { if (e.key === 'Enter') $('enter').click(); });
+  $('top-new').addEventListener('click', () => setTimeout(() => $('note').focus(), 400));
 
+  // ---- новий код
   $('paid').value = toDateInput(Date.now());
   $('create').onclick = async () => {
     const body = {
@@ -314,19 +369,20 @@ ${howto(c)}
       amount: $('amount').value, paidAt: fromDateInput($('paid').value), kind: $('kind').value, contact: $('contact').value,
       count: $('count').value, maxDevices: $('max').value, packs: $('packs').value, days: $('days').value
     };
+    if (!body.note.trim() && body.kind === 'sale' && !confirm('Створити код без імені покупця?')) return;
     let d;
     try { d = await call('POST', body); }
-    catch (e) { $('created').hidden = false; $('created').textContent = 'Не вдалося створити: ' + e.message; return; }
+    catch (e) { toast('Не вдалося створити: ' + e.message); return; }
     const codes = d.codes || [];
-    $('created').hidden = false;
+    $('created-box').hidden = false;
     $('created').textContent = codes.join('\n');
-    const first = { code: codes[0], hi: body.hi, email: body.email, max_devices: parseInt(body.maxDevices, 10) || 3 };
-    $('letter-actions').hidden = false;
-    $('letter-actions').replaceChildren(copySet(first, true));
+    $('letter-actions').replaceChildren(copySet({ code: codes[0], hi: body.hi, email: body.email, max_devices: parseInt(body.maxDevices, 10) || 3 }));
+    toast('Код створено ✓');
     if (fromPre) { try { await call('POST', { action: 'status', contact: fromPre, status: 'paid' }, 'preorders'); } catch (e) {} }
-    fromPre = ''; $('from-pre').textContent = '';
+    fromPre = ''; $('from-pre').hidden = true;
     ['note', 'hi', 'email', 'contact'].forEach(id => $(id).value = '');
-    $('amount').value = PRICE; $('paid').value = toDateInput(Date.now()); $('kind').value = 'sale'; $('grade').value = ''; $('source').value = 'messenger';
+    $('amount').value = PRICE; $('paid').value = toDateInput(Date.now());
+    setSel('kind', 'sale'); setSel('grade', ''); setSel('source', 'messenger');
     load();
   };
 
