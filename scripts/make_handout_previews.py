@@ -10,8 +10,10 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public')
 FONT = os.path.join(ROOT, 'fonts', 'Nunito.ttf')
 PACKS = {
-    # набір: (PDF, сторінки без прев'ю — відповіді для вчителя не показуємо)
-    'mova': ('docs/robochi-arkushi.pdf', {18}),
+    # набір: [(PDF, сторінки без прев'ю — відповіді для вчителя не показуємо, префікс файлів у img/ — як preview у pack.js)]
+    'mova': [('docs/robochi-arkushi.pdf', {18}, 'handout-'),
+             ('docs/arkushi-5-7.pdf', {7}, 'handout57-'),
+             ('docs/arkushi-8-11.pdf', {7}, 'handout811-')],
 }
 LONG_SIDE = 760          # px — досить, щоб роздивитися, замало для друку
 RED = (200, 52, 31)
@@ -64,19 +66,20 @@ def watermark(im):
     return base.convert('RGB')
 
 
-for pack, (pdf, skip) in PACKS.items():
+for pack, docs in PACKS.items():
     base = os.path.join(ROOT, 'packs', pack)
-    doc = pymupdf.open(os.path.join(base, pdf))
-    for f in os.listdir(os.path.join(base, 'img')):
-        if f.startswith('handout-'):
-            os.remove(os.path.join(base, 'img', f))
-    n = 0
-    for i, page in enumerate(doc):
-        if i in skip:
-            continue
-        zoom = LONG_SIDE / max(page.rect.width, page.rect.height)
-        pm = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
-        im = Image.frombytes('RGB', (pm.width, pm.height), pm.samples)
-        n += 1
-        watermark(im).save(os.path.join(base, 'img', f'handout-{n:02d}.jpg'), quality=62, optimize=True)
-    print(pack, n, 'previews')
+    for pdf, skip, prefix in docs:
+        doc = pymupdf.open(os.path.join(base, pdf))
+        for f in os.listdir(os.path.join(base, 'img')):
+            if f.startswith(prefix):
+                os.remove(os.path.join(base, 'img', f))
+        n = 0
+        for i, page in enumerate(doc):
+            if i in skip:
+                continue
+            zoom = LONG_SIDE / max(page.rect.width, page.rect.height)
+            pm = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
+            im = Image.frombytes('RGB', (pm.width, pm.height), pm.samples)
+            n += 1
+            watermark(im).save(os.path.join(base, 'img', f'{prefix}{n:02d}.jpg'), quality=62, optimize=True)
+        print(pack, pdf, n, 'previews')

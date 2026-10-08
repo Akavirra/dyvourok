@@ -53,10 +53,37 @@
   function toast(msg) { const t = h('div', { class: 'toast' }, msg); document.body.append(t); setTimeout(() => t.remove(), 2200); }
   function shake(el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); Sfx.wrong(); }
 
+  // ---------------------------------------------------------------- рівень (клас)
+  // pack.grades — вікові версії набору; перша — базова. Для інших зупинка може мати levels[id] = {intro, task},
+  // а будь-який об'єкт набору (teacher, description) — свої levels[id]. Вибір запам'ятовується на пристрої.
+  function levelOf(pack) {
+    const ls = pack.grades;
+    if (!ls) return null;
+    const id = store.get('dyvo_level_' + pack.id, ls[0].id);
+    return ls.find(l => l.id === id) || ls[0];
+  }
+  function byLevel(pack, obj) {
+    const l = levelOf(pack);
+    return obj && l && obj.levels && obj.levels[l.id] ? { ...obj, ...obj.levels[l.id] } : obj;
+  }
+  const levelHandouts = pack => { const l = levelOf(pack); return pack.handouts.filter(d => !l || !d.levels || d.levels.includes(l.id)); };
+  const levelSuffix = pack => { const l = levelOf(pack); return l && l !== pack.grades[0] ? '_' + l.id : ''; };
+  function levelPicker(pack) {
+    if (!pack.grades) return null;
+    const cur = levelOf(pack);
+    return h('div', { class: 'level-pick', role: 'radiogroup', 'aria-label': 'Клас' },
+      h('span', { class: 'lbl' }, 'Клас:'),
+      pack.grades.map(l => h('button', { role: 'radio', 'aria-checked': String(l === cur), class: l === cur ? 'on' : '', onclick: () => {
+        if (l === cur) return;
+        Sfx.tap(); store.set('dyvo_level_' + pack.id, l.id); route();
+      } }, l.label)));
+  }
+
   const progress = {
-    get(pack) { return store.get('dyvo_progress_' + pack.id, {}); },
-    done(pack, stopId) { const p = progress.get(pack); p[stopId] = true; store.set('dyvo_progress_' + pack.id, p); },
-    reset(pack) { store.set('dyvo_progress_' + pack.id, {}); }
+    key: pack => 'dyvo_progress_' + pack.id + levelSuffix(pack),   // у кожного класу свій прогрес
+    get(pack) { return store.get(progress.key(pack), {}); },
+    done(pack, stopId) { const p = progress.get(pack); p[stopId] = true; store.set(progress.key(pack), p); },
+    reset(pack) { store.set(progress.key(pack), {}); }
   };
   // ---------------------------------------------------------------- без інтернету
   // Мультфільми, PDF і картинки набору зберігаються цілими файлами в окремий кеш: браузер просить відео частинами (Range),
@@ -295,11 +322,13 @@
     const done = Object.keys(progress.get(pack)).length;
     const item = (ico, title, note, path, main) => h('button', { class: 'menu-item' + (main ? ' main' : ''), onclick: () => { Sfx.tap(); go(path); } },
       h('div', { class: 'ico' }, icon(ico)), h('h3', {}, title), h('div', { class: 'muted' }, note));
+    const lp = byLevel(pack, pack);
     frame([pack.title], [
       h('div', { class: 'pack-head' },
         h('div', { class: 'kicker' }, pack.subtitle),
         h('h1', {}, pack.title),
-        pack.description ? h('p', { class: 'lead' }, pack.description) : null),
+        lp.description ? h('p', { class: 'lead' }, lp.description) : null,
+        levelPicker(pack)),
       h('div', { class: 'menu' },
         item('clock', 'Машина часу', done ? `Пройдено ${done} з ${pack.stops.length} зупинок — продовжити` : 'Інтерактивна подорож для дошки: 5 епох, 5 завдань, одне слово', `#/pack/${pack.id}/map`, true),
         item('film', 'Мультфільми', 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
@@ -336,7 +365,7 @@
       h('div', { class: 'year' }, 'Сьогодні'),
       h('div', { class: 'who' }, 'Скриня зі словом'));
     frame([pack.title, ' · ', h('b', {}, 'Машина часу')], h('div', { class: 'map-wrap' },
-      h('div', {}, h('div', { class: 'kicker' }, 'Обирайте епоху'), h('h2', {}, 'Машина часу рідної мови')),
+      h('div', {}, h('div', { class: 'kicker' }, 'Обирайте епоху' + (levelOf(pack) ? ' · ' + levelOf(pack).label : '')), h('h2', {}, pack.title)),
       h('div', { class: 'timeline' }, stops, fin),
       letterBar(pack),
       h('div', { style: 'text-align:center' }, h('button', { class: 'btn ghost', onclick: () => { if (confirmReset.armed) { progress.reset(pack); route(); } else { confirmReset.armed = true; toast('Натисніть ще раз, щоб почати спочатку'); setTimeout(() => confirmReset.armed = false, 2500); } } }, '↺ Почати спочатку'))));
@@ -656,7 +685,7 @@
 
   // демо: сторінки роздатки картинками з водяним знаком «ЗРАЗОК», PDF для друку — лише з кодом
   function handoutSamples(pack) {
-    const pages = pack.handouts.flatMap(d => Array.from({ length: d.previews || 0 }, (_, i) => asset(pack, `img/handout-${String(i + 1).padStart(2, '0')}.jpg`)));
+    const pages = levelHandouts(pack).flatMap(d => Array.from({ length: d.previews || 0 }, (_, i) => asset(pack, `img/${d.preview || 'handout-'}${String(i + 1).padStart(2, '0')}.jpg`)));
     if (!pages.length) { lockedDialog(); return packHome(pack); }
     track('samples');
     const open = i => {
@@ -675,9 +704,10 @@
     };
     frame([pack.title, ' · ', h('b', {}, 'Роздатка')], [
       h('h2', {}, 'Роздатка для друку'),
+      levelPicker(pack),
       h('div', { class: 'card-soft sample-note' },
         h('div', { class: 'kicker' }, 'Демо-версія'),
-        h('p', {}, 'Так виглядають сторінки роздатки. У повному наборі — PDF для друку без водяних знаків (' + pack.handouts.map(d => d.note).join(', ') + ') і відповіді для вчителя.'),
+        h('p', {}, 'Так виглядають сторінки роздатки. У повному наборі — PDF для друку без водяних знаків (' + levelHandouts(pack).map(d => d.note).join(', ') + ') і відповіді для вчителя.'),
         h('div', { class: 'chips' },
           h('button', { class: 'btn', onclick: enterCode }, 'Ввести код'),
           h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo-rozdatka#peredzamovlennia', target: '_blank', rel: 'noopener', onclick: () => track('want') }, 'Хочу повну версію'))),
@@ -689,7 +719,8 @@
     if (!license.allows(pack.id)) return handoutSamples(pack);
     frame([pack.title, ' · ', h('b', {}, 'Роздатка')], [
       h('h2', {}, 'Роздатка для друку'),
-      h('div', { class: 'list' }, pack.handouts.map(d => h('a', { class: 'row', href: asset(pack, d.file), target: '_blank', rel: 'noopener' },
+      levelPicker(pack),
+      h('div', { class: 'list' }, levelHandouts(pack).map(d => h('a', { class: 'row', href: asset(pack, d.file), target: '_blank', rel: 'noopener' },
         h('span', { style: 'font-size:1.8em;color:var(--red)' }, icon('doc')),
         h('div', { class: 'grow' }, h('h3', {}, d.title), h('div', { class: 'muted' }, d.note)),
         h('span', { class: 'btn' }, 'Відкрити'))))]);
@@ -697,9 +728,10 @@
 
   function teacher(pack) {
     if (!license.allows(pack.id)) { lockedDialog(); return packHome(pack); }
-    const t = pack.teacher;
+    const t = byLevel(pack, pack.teacher);
     frame([pack.title, ' · ', h('b', {}, 'Для вчителя')], [
       h('h2', {}, 'Сценарій заходу на 45 хвилин'),
+      levelPicker(pack),
       h('div', { class: 'teacher' },
         h('div', { class: 'card-soft' }, h('table', { class: 'plan' }, t.minutes.map(([m, txt]) => h('tr', {}, h('td', {}, m), h('td', {}, txt))))),
         h('div', { style: 'display:flex;flex-direction:column;gap:22px' },
@@ -785,7 +817,7 @@
     const view = parts[2];
     if (!view) return packHome(pack);
     if (view === 'map') return map(pack);
-    const s = byId(parts[3]);
+    const s = byLevel(pack, byId(parts[3]));
     if ((view === 'stop' || view === 'task') && s && !canOpen(pack, s.id)) { lockedDialog(); return map(pack); }
     if (view === 'stop' && s) return stop(pack, s);
     if (view === 'task' && s) return taskScreen(pack, s);

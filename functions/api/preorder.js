@@ -5,7 +5,7 @@ import { json } from '../../lib/auth.js';
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TG = /^@?[a-z0-9_]{5,32}$/i;
 const PHONE = /^\+?[\d\s()-]{9,20}$/;
-const GRADES = ['1-2', '3-4', 'інше'];
+const GRADES = ['1-2', '3-4', '5-7', '8-11', 'інше'];
 
 export async function onRequestPost({ request, env }) {
   let b;
