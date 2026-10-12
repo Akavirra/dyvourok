@@ -157,7 +157,36 @@ ${howto(c)}
   }
   document.addEventListener('click', e => document.querySelectorAll('details.menu[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; }));
 
-  // ---- продажі
+  // ---- розділи: один на екрані, адреса #розділ; «Новий код» — висувна панель поверх будь-якого розділу
+  const VIEWS = ['sales', 'codes', 'leads', 'accounts', 'news', 'demo'];
+  function show(v) {
+    if (v === 'new-code') { openNew(); v = current; }
+    if (!VIEWS.includes(v)) v = 'sales';
+    current = v;
+    VIEWS.forEach(id => { $(id).hidden = id !== v; });
+    document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.dataset.view === v));
+    if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v);
+    window.scrollTo(0, 0);
+  }
+  let current = 'sales';
+  window.addEventListener('hashchange', () => show(location.hash.slice(1)));
+  function openNew() {
+    $('new-code').classList.add('on'); $('scrim').classList.add('on'); $('new-code').setAttribute('aria-hidden', 'false');
+    setTimeout(() => $('note').focus(), 230);
+  }
+  function closeNew() { $('new-code').classList.remove('on'); $('scrim').classList.remove('on'); $('new-code').setAttribute('aria-hidden', 'true'); }
+  $('top-new').onclick = openNew;
+  document.querySelectorAll('[data-new]').forEach(b => { b.onclick = openNew; });
+  $('new-close').onclick = closeNew;
+  $('scrim').onclick = closeNew;
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('new-code').classList.contains('on')) closeNew();
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === 'т') && !$('panel').hidden) { e.preventDefault(); openNew(); }
+  });
+  const go = (v, after) => { location.hash = v; show(v); if (after) after(); };
+
+  // ---- огляд: гроші, що зробити, останні продажі й заявки
   function renderSales() {
     const sales = all.filter(isSale);
     const now = Date.now(), today = dayKey(now);
@@ -165,17 +194,45 @@ ${howto(c)}
     const tToday = sales.filter(c => dayKey(paidOf(c)) === today);
     const tWeek = sales.filter(c => paidOf(c) > now - 7 * 864e5);
     const kpi = (n, money, label) => { const d = el('div', 'kpi'); d.append(el('b', null, n), el('span', null, `${label} · ${money.toLocaleString('uk-UA')} ₴`)); return d; };
-    $('kpis').replaceChildren(kpi(tToday.length, sum(tToday), 'сьогодні'), kpi(tWeek.length, sum(tWeek), 'за 7 днів'), kpi(sales.length, sum(sales), 'усього'));
-    const tally = (fn, labels) => Object.entries(sales.reduce((m, c) => (m[fn(c)] = (m[fn(c)] || 0) + 1, m), {}))
-      .sort((a, b) => b[1] - a[1]).map(([k, n]) => `${labels[k] || k} ${n}`).join(', ');
-    $('sales-split').textContent = sales.length ? `Звідки: ${tally(sourceOf, SOURCE_LABEL)}. Клас: ${tally(gradeOf, GRADE_LABEL)}. Тестові й подарункові коди сюди не входять.` : 'Продажів поки немає — усе попереду 🙂';
     const lazy = sales.filter(notActivated);
     const fresh = pre.filter(p => (p.status || 'new') === 'new');
+    const used = sales.filter(c => c.devices || c.user_id).length;
+    const plain = (n, label) => { const d = el('div', 'kpi'); d.append(el('b', null, n), el('span', null, label)); return d; };
+    $('kpis').replaceChildren(kpi(tToday.length, sum(tToday), 'сьогодні'), kpi(tWeek.length, sum(tWeek), 'за 7 днів'), kpi(sales.length, sum(sales), 'усього'),
+      plain(sales.length ? Math.round(used / sales.length * 100) + '%' : '—', `відкрили набір · ${used} з ${sales.length}`));
+    $('ov-date').textContent = new Date().toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const tally = (fn, labels) => Object.entries(sales.reduce((m, c) => (m[fn(c)] = (m[fn(c)] || 0) + 1, m), {})).sort((a, b) => b[1] - a[1]);
+    const splitRow = (title, rows, labels) => {
+      const r = el('div', 'split-row'); const chips = el('div', 'chips');
+      rows.forEach(([k, n]) => { const s = el('span', null, (labels[k] || k) + ' '); s.append(el('b', null, n)); chips.append(s); });
+      r.append(el('span', null, title), chips); return r;
+    };
+    $('sales-split').replaceChildren(...(sales.length
+      ? [splitRow('Звідки', tally(sourceOf, SOURCE_LABEL), SOURCE_LABEL), splitRow('Клас', tally(gradeOf, GRADE_LABEL), { ...GRADE_LABEL, '': 'не вказано' }),
+         el('div', 'muted', 'Тестові й подарункові коди сюди не входять.')]
+      : [el('div', 'muted', 'Продажів поки немає — усе попереду 🙂')]));
+
     const todo = [];
-    if (fresh.length) todo.push(`Нові заявки з сайту без відповіді: ${fresh.length} — нижче в «Заявках».`);
-    if (lazy.length) todo.push(`Не відкрили набір понад добу: ${lazy.map(c => c.note || c.code).join(', ')} — надішліть «Нагадування».`);
+    if (fresh.length) todo.push([`Нові заявки з сайту без відповіді: ${fresh.length}.`, 'Відкрити заявки', () => go('leads', () => setLeadTab('new'))]);
+    if (lazy.length) todo.push([`Не відкрили набір понад добу: ${lazy.map(c => c.note || c.code).join(', ')} — надішліть «Нагадування».`, 'Показати', () => go('codes', () => setCodeTab('lazy'))]);
     $('todo').hidden = !todo.length;
-    $('todo').replaceChildren(...todo.map(t => el('div', null, t)));
+    $('todo').replaceChildren(...todo.map(([t, label, fn]) => { const d = el('div'); d.append(el('span', null, t), button(label, 'btn sun sm', fn)); return d; }));
+
+    const recent = sales.slice().sort((a, b) => paidOf(b) - paidOf(a)).slice(0, 6);
+    $('ov-sales').replaceChildren(...(recent.length ? recent.map(c => mini(c.note || c.code, [SOURCE_LABEL[sourceOf(c)], gradeOf(c) ? GRADE_LABEL[gradeOf(c)] + ' клас' : ''].filter(x => x && x !== '—').join(' · ') || c.code,
+      [el('span', null, amountOf(c) + ' ₴ · ' + ago(paidOf(c))), statusPill(c)])) : [el('div', 'empty', 'Ще немає продажів.')]));
+    const leads = fresh.slice(0, 6);
+    $('ov-leads').replaceChildren(...(leads.length ? leads.map(p => {
+      const m = mini(p.name || p.contact, p.contact + (p.grade ? ' · ' + p.grade.replace('-', '–') + ' клас' : ''), [el('span', null, ago(p.created_at)), button('Створити код', 'btn sm', () => fillFromPreorder(p))]);
+      return m;
+    }) : [el('div', 'empty', 'Нових заявок немає ✓')]));
+  }
+  function mini(name, sub, right) {
+    const row = el('div', 'mini');
+    const r = el('div', 'r'); r.append(...right);
+    row.append(avatar(name), el('b', null, name), r, el('div', 'sub', sub));
+    return row;
   }
 
   // ---- покупці й коди
@@ -188,17 +245,32 @@ ${howto(c)}
       : c.devices ? ['ok', 'користуються'] : ['gray', 'код видано'];
     return el('span', 'pill ' + cls, text);
   }
+  // вкладки-фільтри над списком; лічильник у кожній
+  function tabs(boxId, defs, active, pick) {
+    $(boxId).replaceChildren(...defs.map(([v, label, n]) => {
+      const b = button(label + (n != null ? ' · ' + n : ''), 'chip' + (v === active ? ' on' : ''), () => pick(v));
+      return b;
+    }));
+  }
+  const CODE_TABS = [['all', 'Усі', () => true], ['sale', 'Продажі', isSale], ['lazy', 'Ще не входили', notActivated],
+    ['free', 'Подарунки й тести', c => kindOf(c) !== 'sale' && !c.revoked], ['off', 'Заблоковані', c => !!c.revoked]];
+  let codeTab = 'all';
+  function setCodeTab(v) { codeTab = v; render(); }
   function render() {
     const q = $('filter').value.trim().toLowerCase();
-    const rows = all.filter(c => !q || [c.code, c.note, c.contact, c.email, c.hi].some(v => (v || '').toLowerCase().includes(q)));
+    const match = c => !q || [c.code, c.note, c.contact, c.email, c.hi, c.account_email].some(v => (v || '').toLowerCase().includes(q));
+    const test = (CODE_TABS.find(t => t[0] === codeTab) || CODE_TABS[0])[2];
+    const rows = all.filter(c => test(c) && match(c));
     const n = all.filter(isSale).length;
     $('codes-count').textContent = n ? plural(n, 'покупець', 'покупці', 'покупців') : '';
-    $('rows').replaceChildren(...(rows.length ? rows.map(personCard) : [el('div', 'empty', q ? 'Нікого не знайдено.' : 'Поки немає жодного коду. Створіть перший вище 🙂')]));
+    $('nav-codes').textContent = n || '';
+    tabs('code-tabs', CODE_TABS.map(([v, label, fn]) => [v, label, all.filter(c => fn(c) && match(c)).length]), codeTab, setCodeTab);
+    $('rows').replaceChildren(...(rows.length ? rows.map(personCard) : [el('div', 'empty', q || codeTab !== 'all' ? 'Нікого не знайдено.' : 'Поки немає жодного коду. Натисніть «+ Новий код» 🙂')]));
   }
   function personCard(c) {
     const kind = kindOf(c);
     const lazy = notActivated(c);
-    const card = el('article', 'person' + (lazy ? ' warn' : '') + (c.revoked ? ' off' : ''));
+    const card = el('article', 'person' + (lazy ? ' warn' : '') + (c.revoked ? ' off' : '') + (editing === c.code ? ' editing' : ''));
     const head = el('div', 'p-head');
     head.append(el('span', 'name', c.note || 'Без імені'));
     if (c.hi) head.append(el('span', 'hi', '«' + c.hi + '»'));
@@ -257,6 +329,7 @@ ${howto(c)}
     const withCodes = accounts.filter(a => a.codes.length).length;
     const news = accounts.filter(a => a.news === 1).length;
     const week = accounts.filter(a => a.created_at > Date.now() - 7 * 864e5).length;
+    $('nav-acc').textContent = accounts.length || '';
     $('acc-count').textContent = accounts.length ? plural(accounts.length, 'акаунт', 'акаунти', 'акаунтів') + (week ? ` · +${week} за тиждень` : '') : '';
     $('acc-stats').textContent = accounts.length ? `З кодом: ${withCodes}. Без покупки: ${accounts.length - withCodes}. Погодилися на листи: ${news}. Через Google: ${accounts.filter(a => a.google).length}.` : '';
     renderAccounts();
@@ -307,6 +380,7 @@ ${howto(c)}
   const AUD_LABEL = { all: 'усім', buyers: 'тим, хто купив', demo: 'без покупки' };
   async function loadNews() {
     try { newsItems = (await call('GET', null, 'news')).items || []; } catch (e) { $('n-err').textContent = 'Не вдалося завантажити оголошення: ' + e.message; return; }
+    $('nav-news').textContent = newsItems.filter(n => newsState(n)[1] === 'показується').length || '';
     $('news-count').textContent = newsItems.length ? plural(newsItems.length, 'оголошення', 'оголошення', 'оголошень') : '';
     $('news-rows').replaceChildren(...(newsItems.length ? newsItems.map(newsCard) : [el('div', 'empty', 'Оголошень ще немає. Напишіть перше вище — його побачать усі, хто відкриє застосунок.')]));
   }
@@ -339,7 +413,7 @@ ${howto(c)}
     setSel('n-aud', 'all');
     document.querySelectorAll('#n-grades input').forEach(i => { i.checked = false; });
     $('n-important').checked = false;
-    $('n-save').textContent = 'Опублікувати'; $('n-cancel').hidden = true; $('n-err').textContent = '';
+    $('n-save').textContent = 'Опублікувати'; $('n-cancel').hidden = true; $('n-head').textContent = 'Нове оголошення'; $('n-err').textContent = '';
   }
   function fillNews(n) {
     newsEditing = n;
@@ -348,8 +422,9 @@ ${howto(c)}
     setSel('n-aud', n.audience);
     document.querySelectorAll('#n-grades input').forEach(i => { i.checked = (n.grades || '').split(',').includes(i.value); });
     $('n-important').checked = !!n.important;
-    $('n-save').textContent = 'Зберегти зміни'; $('n-cancel').hidden = false;
-    $('news').scrollIntoView({ behavior: 'smooth' });
+    $('n-save').textContent = 'Зберегти зміни'; $('n-cancel').hidden = false; $('n-head').textContent = 'Редагування: ' + n.title;
+    $('news-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('n-title').focus({ preventScroll: true });
   }
   $('n-cancel').onclick = resetNewsForm;
   $('n-save').onclick = async () => {
@@ -383,7 +458,16 @@ ${howto(c)}
     const st = Object.fromEntries(STATUS);
     const tally = fn => Object.entries(pre.reduce((m, p) => (m[fn(p)] = (m[fn(p)] || 0) + 1, m), {})).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(', ');
     $('pre-stats').textContent = pre.length ? `Статус: ${tally(p => st[p.status || 'new'])}. Класи: ${tally(p => p.grade || '—')}. Звідки: ${tally(p => p.source || '—')}.` : '';
-    $('pre-rows').replaceChildren(...(pre.length ? pre.map(leadCard) : [el('div', 'empty', 'Заявок поки немає. Вони з\'являться тут, щойно хтось залишить контакт на сайті.')]));
+    $('nav-leads').textContent = pre.length || '';
+    renderLeads();
+  }
+  let leadTab = 'all';
+  function setLeadTab(v) { leadTab = v; renderLeads(); }
+  function renderLeads() {
+    const stOf = p => p.status || 'new';
+    tabs('lead-tabs', [['all', 'Усі', pre.length], ...STATUS.map(([v, label]) => [v, label, pre.filter(p => stOf(p) === v).length])], leadTab, setLeadTab);
+    const rows = pre.filter(p => leadTab === 'all' || stOf(p) === leadTab);
+    $('pre-rows').replaceChildren(...(rows.length ? rows.map(leadCard) : [el('div', 'empty', pre.length ? 'У цьому статусі заявок немає.' : 'Заявок поки немає. Вони з\'являться тут, щойно хтось залишить контакт на сайті.')]));
   }
   function leadCard(p) {
     const card = el('article', 'person' + ((p.status || 'new') === 'declined' ? ' off' : ''));
@@ -417,8 +501,8 @@ ${howto(c)}
     $('contact').value = p.contact.includes('@') ? '' : 'Контакт із заявки: ' + p.contact;
     $('from-pre').hidden = false;
     $('from-pre').textContent = 'Заповнено із заявки ' + p.contact + '. Допишіть прізвище й звертання. Після створення коду заявка стане «Оплачено».';
-    $('new-code').scrollIntoView({ behavior: 'smooth' });
-    setTimeout(() => $('note').focus(), 400);
+    $('created-box').hidden = true;
+    openNew();
   }
   $('pre-copy').onclick = () => {
     const emails = pre.map(p => p.contact).filter(c => c.includes('@') && !c.startsWith('@'));
@@ -488,11 +572,11 @@ ${howto(c)}
       await load();
       sessionStorage.setItem('dyvo_admin', token);
       localStorage.setItem('dyvo_notrack', 'true');   // власні проходи демо не псують статистику
-      $('login').hidden = true; $('panel').hidden = false; $('topbar').hidden = false;
+      $('login-wrap').hidden = true; $('panel').hidden = false; $('topbar').hidden = false;
+      show(location.hash.slice(1));
     } catch (e) { $('login-err').textContent = e.message === 'forbidden' ? 'Токен не підходить.' : 'Помилка: ' + e.message; }
   };
   $('token').addEventListener('keydown', e => { if (e.key === 'Enter') $('enter').click(); });
-  $('top-new').addEventListener('click', () => setTimeout(() => $('note').focus(), 400));
 
   // ---- новий код
   $('paid').value = toDateInput(Date.now());
