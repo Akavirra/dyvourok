@@ -47,6 +47,7 @@
     loadAccounts();
     loadNews();
     loadDemo();
+    loadTemplates();
   }
 
   // ---- дані покупця: нові поля або здогадка зі старої нотатки (коди, створені до окремих полів)
@@ -172,6 +173,7 @@ ${howto(c)}
   window.addEventListener('hashchange', () => show(location.hash.slice(1)));
   function openNew() {
     $('new-code').classList.add('on'); $('scrim').classList.add('on'); $('new-code').setAttribute('aria-hidden', 'false');
+    if (msgsOpen() && ($('note').value || $('email').value)) syncFromNew();
     setTimeout(() => $('note').focus(), 230);
   }
   function closeNew() { $('new-code').classList.remove('on'); $('scrim').classList.remove('on'); $('new-code').setAttribute('aria-hidden', 'true'); }
@@ -180,9 +182,12 @@ ${howto(c)}
   $('new-close').onclick = closeNew;
   $('scrim').onclick = closeNew;
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && $('new-code').classList.contains('on')) closeNew();
+    if (e.key === 'Escape') { if ($('new-code').classList.contains('on')) closeNew(); else if (msgsOpen()) closeMsgs(); }
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-    if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === 'т') && !$('panel').hidden) { e.preventDefault(); openNew(); }
+    if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && !$('panel').hidden) {
+      if (e.key === 'n' || e.key === 'т') { e.preventDefault(); openNew(); }
+      if (e.key === 'm' || e.key === 'ь') { e.preventDefault(); toggleMsgs(); }
+    }
   });
   const go = (v, after) => { location.hash = v; show(v); if (after) after(); };
 
@@ -285,6 +290,7 @@ ${howto(c)}
     if (c.packs !== 'mova') info.append(el('div', 'sub', 'Набори: ' + (c.packs === '*' ? 'усі' : c.packs)));
     const acts = copySet(c);
     if (lazy) acts.append(button('Нагадування', 'btn sun sm', () => copy(reminderFor(c), 'Нагадування')));
+    acts.append(button('Шаблони', 'btn soft sm', () => openMsgs({ hi: c.hi || '', name: c.note || '', code: c.code, email: emailOf(c) }, 'покупець ' + (c.note || c.code))));
     acts.append(button(editing === c.code ? 'Закрити' : 'Редагувати', 'btn ghost sm', () => { editing = editing === c.code ? '' : c.code; render(); }));
     const more = [[c.revoked ? 'Розблокувати код' : 'Заблокувати код', () => act(c.revoked ? 'restore' : 'revoke', c.code), !c.revoked]];
     if (c.user_id) more.push(['Відв’язати від акаунта', async () => { if (confirm('Відв’язати код ' + c.code + ' від акаунта ' + (c.account_email || '') + '? Код лишиться дійсним.')) { await call('POST', { action: 'unlink', code: c.code }, 'accounts'); toast('Відв’язано ✓'); load(); } }]);
@@ -487,6 +493,7 @@ ${howto(c)}
     acts.append(sel,
       button('Створити код', 'btn sm', () => fillFromPreorder(p)),
       button('Копіювати контакт', 'btn soft sm', () => copy(p.contact, 'Контакт')),
+      button('Шаблони', 'btn soft sm', () => openMsgs({ name: p.name || '', email: p.contact.includes('@') ? p.contact : '' }, 'заявка ' + p.contact)),
       menu([['Видалити заявку', async () => { if (confirm('Видалити заявку ' + p.contact + '?')) { await call('POST', { action: 'delete', contact: p.contact }, 'preorders'); toast('Заявку видалено'); loadPre(); } }, true]]));
     card.append(avatar(p.name || p.contact), head, info, acts);
     return card;
@@ -565,6 +572,193 @@ ${howto(c)}
   }
   $('demo-days').onchange = loadDemo;
 
+  // ---- повідомлення: шаблони відповідей (D1 reply_templates) з підстановкою даних клієнта
+  let tpls = [];
+  let tplSettings = {};
+  let mSec = 'all';
+  let mEdit = null;               // id шаблону, що редагується, або 'new'
+  const client = { hi: '', name: '', code: '', email: '' };
+  const CHANNEL = { msg: 'Messenger', mail: 'Лист', com: 'Коментар' };
+  const PH_LABEL = { hi: 'звертання', name: 'ім\'я та прізвище', code: 'код', email: 'пошта', card: 'номер картки', owner: 'отримувач', paylink: 'посилання на оплату', sign: 'підпис' };
+  const PH_ALL = ['hi', 'name', 'code', 'email', 'price', 'price_note', 'link', 'howto', 'wish', 'follow', 'paylink', 'card', 'owner', 'sign', 'app', 'mail'];
+  const DEMO_LINK = location.origin + '/?from=fb-ads';
+  function phValue(k) {
+    if (client[k]) return client[k];
+    if (tplSettings[k]) return tplSettings[k];
+    switch (k) {
+      case 'hi': return 'Добрий день';
+      case 'sign': return 'Команда «Дивоурок»';
+      case 'price': return PRICE + ' ₴';
+      case 'price_note': return PRICE < 300 ? ' Стартова ціна діє до 19 жовтня включно, з 20 жовтня набір коштуватиме 300 ₴.' : '';
+      case 'link': return DEMO_LINK;
+      case 'app': return APP;
+      case 'mail': return 'info@dyvourok.com.ua';
+      case 'howto': return howto({ email: client.email });
+      case 'wish': return WISH;
+      case 'follow': return FOLLOW;
+    }
+    return null;
+  }
+  const fillText = s => s.replace(/\{(\w+)\}/g, (m, k) => { const v = phValue(k); return v == null ? '[' + (PH_LABEL[k] || k) + ']' : v; });
+  // те саме, але DOM: порожні місця червоним
+  function fillNode(node, s) {
+    node.replaceChildren();
+    let last = 0;
+    s.replace(/\{(\w+)\}/g, (m, k, i) => {
+      node.append(s.slice(last, i));
+      const v = phValue(k);
+      node.append(v == null ? el('mark', null, '[' + (PH_LABEL[k] || k) + ']') : v);
+      last = i + m.length;
+      return m;
+    });
+    node.append(s.slice(last));
+    return node;
+  }
+
+  async function loadTemplates() {
+    try { const d = await call('GET', null, 'templates'); tpls = d.templates || []; tplSettings = d.settings || {}; }
+    catch (e) { $('m-list').replaceChildren(el('div', 'empty', 'Не вдалося завантажити шаблони: ' + e.message)); return; }
+    document.querySelectorAll('#msgs [data-s]').forEach(i => { i.value = tplSettings[i.dataset.s] || ''; });
+    renderMsgs();
+  }
+  const sectionsOf = () => [...new Set(tpls.map(t => t.section))];
+  const expired = t => t.show_until && t.show_until <= Date.now();
+
+  function renderMsgs() {
+    const q = $('m-q').value.trim().toLowerCase();
+    const match = t => !q || [t.title, t.hint, t.note, t.subject, t.body, t.section].some(v => (v || '').toLowerCase().includes(q));
+    const live = tpls.filter(t => !expired(t));
+    const old = tpls.filter(expired);
+    const secs = sectionsOf();
+    $('m-sections').replaceChildren(...secs.map(s => { const o = el('option'); o.value = s; return o; }));
+    const defs = [['all', 'Усі', live.filter(match).length], ...secs.map(s => [s, s, live.filter(t => t.section === s && match(t)).length]).filter(d => d[2] || d[0] === mSec)];
+    if (old.length) defs.push(['old', 'Сховані', old.filter(match).length]);
+    tabs('m-secs', defs, mSec, v => { mSec = v; renderMsgs(); });
+    const list = (mSec === 'old' ? old : live).filter(t => match(t) && (mSec === 'all' || mSec === 'old' || t.section === mSec));
+    const out = [];
+    if (mEdit === 'new') out.push(tplEditor({ section: mSec !== 'all' && mSec !== 'old' ? mSec : '', channel: 'msg', title: '', hint: '', note: '', subject: '', body: '' }));
+    let sec = null;
+    list.forEach(t => {
+      if (mSec === 'all' && t.section !== sec) { sec = t.section; out.push(el('div', 'msgs-sec', sec)); }
+      out.push(mEdit === t.id ? tplEditor(t) : tplCard(t));
+    });
+    if (!list.length && mEdit !== 'new') out.push(el('div', 'empty', q ? 'Нічого не знайдено. Спробуйте інше слово.' : 'Тут поки порожньо.'));
+    $('m-list').replaceChildren(...out);
+  }
+
+  function tplCard(t) {
+    const card = el('article', 'tpl' + (expired(t) ? ' off' : ''));
+    const head = el('div', 'tpl-head');
+    head.append(el('h3', null, t.title), el('span', 'pill ch-' + t.channel, CHANNEL[t.channel] || t.channel));
+    if (t.show_until) head.append(el('span', 'pill gray', (expired(t) ? 'сховано з ' : 'до ') + fmtDate(t.show_until - 1)));
+    head.append(menu([
+      ['Вище', () => moveTpl(t, -1)], ['Нижче', () => moveTpl(t, 1)],
+      ['Дублювати', () => saveTpl({ ...t, id: undefined, title: t.title + ' (копія)' })],
+      ['Видалити', async () => { if (confirm('Видалити шаблон «' + t.title + '»?')) { await call('POST', { action: 'delete', id: t.id }, 'templates'); toast('Видалено'); loadTemplates(); } }, true]]));
+    card.append(head);
+    if (t.hint) card.append(el('div', 'hint2', t.hint));
+    if (t.note) card.append(el('div', 'warn2', t.note));
+    if (t.channel === 'mail' && t.subject) { const sj = el('div', 'subj'); sj.append(el('b', null, 'Тема: ')); const sp = el('span'); fillNode(sp, t.subject); sj.append(sp); card.append(sj); }
+    card.append(fillNode(el('div', 'text'), t.body));
+    const acts = el('div', 'p-acts');
+    acts.append(button(t.channel === 'mail' ? 'Копіювати лист' : 'Копіювати', 'btn sm', () => copy(fillText(t.body), t.title)));
+    if (t.channel === 'mail' && t.subject) acts.append(button('Копіювати тему', 'btn soft sm', () => copy(fillText(t.subject), 'Тему')));
+    acts.append(button('Редагувати', 'btn ghost sm', () => { mEdit = t.id; renderMsgs(); }));
+    card.append(acts);
+    return card;
+  }
+
+  function tplEditor(t) {
+    const box = el('article', 'tpl');
+    const inp = (v, attrs = {}) => { const i = el('input'); i.value = v ?? ''; Object.assign(i, attrs); return i; };
+    const field = (label, input, cls = 'c12') => { const l = el('label', 'f ' + cls); l.append(label, input); return l; };
+    const f = {
+      title: inp(t.title, { maxLength: 120, placeholder: 'Наприклад: «Дорого»' }),
+      section: inp(t.section, { maxLength: 60, placeholder: 'Розділ' }),
+      hint: inp(t.hint, { maxLength: 300, placeholder: 'Коли надсилати' }),
+      note: inp(t.note, { maxLength: 300, placeholder: 'Необов’язково: застереження для себе' }),
+      subject: inp(t.subject, { maxLength: 200, placeholder: 'Тема листа' }),
+      until: inp(t.show_until ? toDateInput(t.show_until - 1) : '', { type: 'date' }),
+      body: el('textarea')
+    };
+    f.section.setAttribute('list', 'm-sections');
+    f.body.value = t.body || ''; f.body.maxLength = 6000;
+    const ch = el('select'); Object.entries(CHANNEL).forEach(([k, label]) => { const o = el('option', null, label); o.value = k; ch.append(o); }); ch.value = t.channel || 'msg';
+    const chWrap = el('div', 'f c12'); chWrap.append('Канал', ch);
+    const subjField = field('Тема листа', f.subject);
+    const syncSubj = () => { subjField.hidden = ch.value !== 'mail'; };
+    // плейсхолдери: клік — вставити в текст там, де курсор
+    const ph = el('div', 'ph');
+    PH_ALL.forEach(k => ph.append(button('{' + k + '}', '', () => {
+      const ta = f.body, a = ta.selectionStart ?? ta.value.length, z = ta.selectionEnd ?? a;
+      ta.value = ta.value.slice(0, a) + '{' + k + '}' + ta.value.slice(z);
+      ta.focus(); ta.selectionStart = ta.selectionEnd = a + k.length + 2;
+    })));
+    const grid = el('div', 'grid');
+    grid.append(field('Назва', f.title, 'c7'), field('Розділ', f.section, 'c5'), chWrap, field('Коли надсилати', f.hint), field('Застереження', f.note),
+      subjField, field('Текст', f.body));
+    const phRow = el('div', 'f c12'); phRow.append('Вставити дані клієнта чи сталі частини', ph); grid.append(phRow);
+    grid.append(field('Показувати до', f.until, 'c6'));
+    const err = el('span', 'muted');
+    const acts = el('div', 'p-acts');
+    acts.append(button(t.id ? 'Зберегти' : 'Додати шаблон', 'btn sm', async () => {
+      const body = { id: t.id, title: f.title.value, section: f.section.value, channel: ch.value, hint: f.hint.value, note: f.note.value,
+        subject: f.subject.value, body: f.body.value, show_until: f.until.value ? new Date(f.until.value + 'T00:00').getTime() + 864e5 : null };
+      if (!body.title.trim()) { err.textContent = 'Напишіть назву.'; return; }
+      try { await saveTpl(body); } catch (e) { err.textContent = 'Не вдалося зберегти: ' + e.message; }
+    }), button('Скасувати', 'btn ghost sm', () => { mEdit = null; renderMsgs(); }), err);
+    box.append(grid, acts);
+    chipify(ch); syncSubj();
+    ch.nextSibling.addEventListener('click', syncSubj);
+    setTimeout(() => (t.id ? f.body : f.title).focus({ preventScroll: true }), 0);
+    return box;
+  }
+  async function saveTpl(body) {
+    const d = await call('POST', { action: 'save', ...body }, 'templates');
+    mEdit = null; toast(body.id ? 'Шаблон збережено ✓' : 'Шаблон додано ✓');
+    await loadTemplates();
+    return d;
+  }
+  async function moveTpl(t, dir) { await call('POST', { action: 'move', id: t.id, dir }, 'templates'); loadTemplates(); }
+
+  // клієнт: заповнюється вручну, з картки покупця або з форми «Новий код»
+  function setClient(c, from) {
+    Object.assign(client, { hi: '', name: '', code: '', email: '' }, c);
+    document.querySelectorAll('#msgs [data-c]').forEach(i => { i.value = client[i.dataset.c] || ''; });
+    $('m-from').textContent = from || '';
+    renderMsgs();
+  }
+  document.querySelectorAll('#msgs [data-c]').forEach(i => i.addEventListener('input', () => { client[i.dataset.c] = i.value.trim(); $('m-from').textContent = ''; renderMsgs(); }));
+  $('m-clear').onclick = () => setClient({}, '');
+  $('m-save-set').onclick = async () => {
+    const settings = Object.fromEntries([...document.querySelectorAll('#msgs [data-s]')].map(i => [i.dataset.s, i.value.trim()]));
+    try { await call('POST', { action: 'settings', settings }, 'templates'); tplSettings = settings; toast('Реквізити збережено ✓'); renderMsgs(); }
+    catch (e) { toast('Не вдалося зберегти: ' + e.message); }
+  };
+  $('m-q').addEventListener('input', renderMsgs);
+  $('m-add').onclick = () => { mEdit = 'new'; $('m-q').value = ''; renderMsgs(); $('msgs').scrollTop = 0; };
+
+  const msgsOpen = () => $('msgs').classList.contains('on');
+  function openMsgs(c, from) {
+    if (c) setClient(c, from);
+    else if (newOpen()) syncFromNew();
+    $('msgs').classList.add('on'); $('msgs').setAttribute('aria-hidden', 'false'); document.body.classList.add('msgs-on');
+    document.querySelectorAll('.msgs-btn').forEach(b => b.classList.add('on'));
+    if (!tpls.length) loadTemplates();
+  }
+  function closeMsgs() {
+    $('msgs').classList.remove('on'); $('msgs').setAttribute('aria-hidden', 'true'); document.body.classList.remove('msgs-on');
+    document.querySelectorAll('.msgs-btn').forEach(b => b.classList.remove('on'));
+  }
+  const toggleMsgs = () => (msgsOpen() ? closeMsgs() : openMsgs());
+  $('msgs-toggle').onclick = toggleMsgs;
+  document.querySelectorAll('[data-msgs]').forEach(b => { b.onclick = toggleMsgs; });
+  $('m-close').onclick = closeMsgs;
+  // поки відкрито «Новий код», дані з форми одразу йдуть у шаблони
+  const newOpen = () => $('new-code').classList.contains('on');
+  function syncFromNew() { setClient({ name: $('note').value.trim(), hi: $('hi').value.trim(), email: $('email').value.trim() }, 'з форми «Новий код»'); }
+  ['note', 'hi', 'email'].forEach(id => $(id).addEventListener('input', () => { if (msgsOpen()) syncFromNew(); }));
+
   // ---- вхід
   $('enter').onclick = async () => {
     token = $('token').value.trim();
@@ -596,6 +790,7 @@ ${howto(c)}
     $('created').textContent = codes.join('\n');
     $('letter-actions').replaceChildren(copySet({ code: codes[0], hi: body.hi, email: body.email, max_devices: parseInt(body.maxDevices, 10) || 3 }));
     toast('Код створено ✓');
+    if (msgsOpen()) setClient({ name: body.note.trim(), hi: body.hi.trim(), email: body.email.trim(), code: codes[0] || '' }, 'щойно створений код');
     if (fromPre) { try { await call('POST', { action: 'status', contact: fromPre, status: 'paid' }, 'preorders'); } catch (e) {} }
     fromPre = ''; $('from-pre').hidden = true;
     ['note', 'hi', 'email', 'contact'].forEach(id => $(id).value = '');

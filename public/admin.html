@@ -141,6 +141,42 @@
   .drawer .grid > .w2 { grid-column: span 2; } .drawer .grid > .w3 { grid-column: span 3; } .drawer .grid > .w6 { grid-column: span 6; }
   @media (max-width: 520px) { .drawer .grid > * { grid-column: span 6 !important; } }
 
+  /* панель «Повідомлення»: праворуч, не блокує сторінку; разом із «Новим кодом» стає поруч */
+  .msgs { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100%); z-index: 33; background: #fff; border-left: 1px solid var(--line); box-shadow: -12px 0 40px -24px rgba(42,23,20,.5); transform: translateX(105%); visibility: hidden; transition: transform .22s cubic-bezier(.2,.8,.2,1); overflow-y: auto; display: flex; flex-direction: column; }
+  .msgs.on { transform: none; visibility: visible; }
+  .msgs-top { position: sticky; top: 0; z-index: 2; background: #fff; padding: 16px 16px 10px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
+  .msgs-top .card-head h2 { font-size: 19px; }
+  .client { background: var(--paper); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .client-head { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--red); }
+  .client-head .from { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 700; font-size: 12.5px; margin-right: auto; }
+  .client .grid { grid-template-columns: repeat(2, 1fr); gap: 6px 8px; }
+  .client .f { font-size: 12px; gap: 2px; }
+  .client .f input { padding: 6px 10px; font-size: 14px; border-radius: 9px; background: #fff; }
+  .client details.more .grid { margin-top: 8px; }
+  .msgs .search { flex: none; width: 100%; }
+  #m-secs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+  #m-secs .chip { white-space: nowrap; flex: none; }
+  .msgs-list { padding: 12px 16px 60px; display: flex; flex-direction: column; gap: 10px; }
+  .msgs-sec { font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--red); margin: 8px 0 -2px; }
+  .tpl { border: 1.5px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .tpl.off { opacity: .6; }
+  .tpl-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .tpl-head h3 { margin: 0 auto 0 0; font-size: 15.5px; font-weight: 900; }
+  .tpl .hint2 { color: var(--muted); font-size: 13px; }
+  .tpl .warn2 { background: var(--sun-soft); color: var(--sun-ink); font-size: 13px; font-weight: 700; border-radius: 9px; padding: 5px 9px; }
+  .tpl .subj { font-size: 13.5px; } .tpl .subj b { font-weight: 900; }
+  .tpl .text { white-space: pre-wrap; font-size: 14.5px; background: var(--field); border-radius: 10px; padding: 9px 11px; overflow-wrap: anywhere; max-height: 260px; overflow-y: auto; }
+  .tpl .text mark, .tpl .subj mark { background: transparent; color: var(--red); font-weight: 900; }
+  .ch-msg { background: var(--blue-soft); color: var(--blue); } .ch-mail { background: var(--sun-soft); color: var(--sun-ink); } .ch-com { background: var(--green-soft); color: var(--green); }
+  .tpl .f textarea { min-height: 220px; font-size: 14.5px; line-height: 1.45; }
+  .ph { display: flex; gap: 4px; flex-wrap: wrap; }
+  .ph button { border: none; background: var(--blue-soft); color: var(--blue); border-radius: 8px; padding: 3px 8px; font: 800 12px Consolas, monospace; cursor: pointer; }
+  .ph button:hover { filter: brightness(.95); }
+  .sidebar .msgs-btn { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .msgs-btn.on { background: var(--ink); color: #fff; }
+  @media (min-width: 1100px) { body.msgs-on .drawer { right: 520px; } }
+  @media (min-width: 1500px) { body.msgs-on #panel { margin-right: 520px; } }
+
   /* картки людей */
   .list { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); align-items: start; }
   .list > .empty, .person.editing { grid-column: 1 / -1; }
@@ -219,6 +255,8 @@
     .brand span { display: none; }
     .nav a i { display: none; }
     .sidebar .btn { padding: 7px 12px; font-size: 14px; }
+    .sidebar .msgs-btn .lbl { display: none; }
+    .msgs-top { position: static; }
     .view-head h1 { font-size: 22px; }
     .card { padding: 16px; }
     .person { grid-template-columns: 36px 1fr; padding: 12px; }
@@ -248,7 +286,8 @@
     <a href="#demo" data-view="demo"><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg></i>Демо</a>
   </nav>
   <button class="btn" type="button" id="top-new">+ Новий код</button>
-  <div class="foot muted">Клавіша <b>N</b> — новий код</div>
+  <button class="btn soft msgs-btn" type="button" id="msgs-toggle" title="Клавіша M"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/><path d="M8 10h8M8 14h5"/></svg><span class="lbl">Повідомлення</span></button>
+  <div class="foot muted">Клавіші: <b>N</b> — новий код, <b>M</b> — повідомлення</div>
 </aside>
 
 <div class="wrap" id="login-wrap">
@@ -359,7 +398,7 @@
 <!-- Новий код: висувна панель праворуч, відкривається з будь-якого розділу -->
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="new-code" aria-label="Новий код" aria-hidden="true">
-  <div class="card-head"><h2>Новий код</h2><button class="btn ghost sm" type="button" id="new-close">✕ Закрити</button></div>
+  <div class="card-head"><h2>Новий код</h2><button class="btn soft sm msgs-btn" type="button" data-msgs><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/><path d="M8 10h8M8 14h5"/></svg>Повідомлення</button><button class="btn ghost sm" type="button" id="new-close">✕ Закрити</button></div>
   <div class="card">
     <div class="hint" id="from-pre" hidden></div>
     <div class="grid">
@@ -392,6 +431,34 @@
     <div><button class="btn" id="create">Створити код</button></div>
     <div class="created" id="created-box" hidden><div class="big" id="created"></div><div id="letter-actions"></div></div>
   </div>
+</aside>
+<!-- Повідомлення: шаблони відповідей з підстановкою даних клієнта; відкривається разом із «Новим кодом» -->
+<aside class="msgs" id="msgs" aria-label="Повідомлення" aria-hidden="true">
+  <div class="msgs-top">
+    <div class="card-head"><h2>Повідомлення</h2><button class="btn soft sm" type="button" id="m-add">+ Шаблон</button><button class="btn ghost sm" type="button" id="m-close">✕</button></div>
+    <div class="client">
+      <div class="client-head">Клієнт <span class="from" id="m-from"></span><button class="btn ghost sm" type="button" id="m-clear">Очистити</button></div>
+      <div class="grid">
+        <label class="f" for="m-hi">Звертання<input id="m-hi" data-c="hi" placeholder="Надіє"></label>
+        <label class="f" for="m-name">Ім'я та прізвище<input id="m-name" data-c="name" placeholder="Надія Котелюк"></label>
+        <label class="f" for="m-code">Код доступу<input id="m-code" data-c="code" placeholder="DYVO-XXXX-XXXX"></label>
+        <label class="f" for="m-email">Пошта<input id="m-email" data-c="email" placeholder="name@ukr.net"></label>
+      </div>
+      <details class="more"><summary>Мої реквізити</summary>
+        <div class="grid">
+          <label class="f" for="m-card">Номер картки<input id="m-card" data-s="card" placeholder="5168 …"></label>
+          <label class="f" for="m-owner">Отримувач<input id="m-owner" data-s="owner" placeholder="Ім'я Прізвище"></label>
+          <label class="f" for="m-paylink">Посилання на оплату<input id="m-paylink" data-s="paylink" placeholder="https://…"></label>
+          <label class="f" for="m-sign">Підпис<input id="m-sign" data-s="sign" placeholder="Команда «Дивоурок»"></label>
+        </div>
+        <div class="p-acts"><button class="btn sm" type="button" id="m-save-set">Зберегти реквізити</button></div>
+      </details>
+    </div>
+    <input class="search" id="m-q" type="search" placeholder="Пошук: «пристрої», «спам», «дорого»…" aria-label="Пошук шаблону">
+    <div class="chips" id="m-secs"></div>
+  </div>
+  <div class="msgs-list" id="m-list"></div>
+  <datalist id="m-sections"></datalist>
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
