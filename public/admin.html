@@ -70,7 +70,20 @@
   .f textarea { background: var(--field); border: 2px solid transparent; border-radius: 12px; padding: 10px 12px; font-weight: 600; font-size: 15px; min-height: 96px; resize: vertical; width: 100%; }
   .f textarea:focus { outline: none; border-color: var(--red); background: #fff; }
   .checks { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; color: var(--ink, #2A1714); font-weight: 700; font-size: 14px; }
-  .checks label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .checks label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; white-space: nowrap; }
+  .checks input, .flag input { width: auto; padding: 0; margin: 0; accent-color: var(--red); }
+  /* галочки-перемикачі, як чіпи */
+  .checks.toggles { gap: 6px; }
+  .checks.toggles label { position: relative; border: 2px solid var(--line); background: #fff; border-radius: 99px; padding: 6px 12px; font-weight: 800; font-size: 13.5px; }
+  .checks.toggles label:hover { border-color: #d8c7ad; }
+  .checks.toggles input { position: absolute; opacity: 0; pointer-events: none; }
+  .checks.toggles label:has(input:checked) { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .checks.toggles label:has(input:focus-visible) { outline: 3px solid var(--sun); outline-offset: 2px; }
+  .flag { display: flex; gap: 12px; align-items: center; background: var(--field); border: 2px solid transparent; border-radius: 12px; padding: 10px 14px; cursor: pointer; }
+  .flag input { width: 20px; height: 20px; flex: none; }
+  .flag span { display: flex; flex-direction: column; font-size: 14.5px; }
+  .flag small { color: var(--muted); font-weight: 600; font-size: 13px; }
+  .flag:has(input:checked) { background: var(--sun-soft); border-color: var(--sun); }
   .news-body { white-space: pre-line; }
   .f input:focus, .f select:focus { outline: none; border-color: var(--red); background: #fff; }
   .f input::placeholder { color: #b9a898; font-weight: 600; }
@@ -312,11 +325,11 @@
           <label class="f c7" for="n-url">Посилання кнопки <small>#/pack/mova або https://…</small><input id="n-url" placeholder="#/pack/mova"></label>
           <div class="f c12">Кому<select id="n-aud" data-chips>
             <option value="all">Усім</option><option value="buyers">Тим, хто купив</option><option value="demo">Без покупки (демо)</option></select></div>
-          <div class="f c12">Вікова версія <small>нічого не позначено — усім</small><div class="checks" id="n-grades">
-            <label><input type="checkbox" value="1-4">1–4</label><label><input type="checkbox" value="5-7">5–7</label><label><input type="checkbox" value="8-11">8–11</label></div></div>
-          <label class="f c6" for="n-from">Показувати з<input id="n-from" type="date"></label>
+          <div class="f c12">Вікова версія <small>нічого не позначено — усім</small><div class="checks toggles" id="n-grades">
+            <label><input type="checkbox" value="1-4">1–4 клас</label><label><input type="checkbox" value="5-7">5–7 клас</label><label><input type="checkbox" value="8-11">8–11 клас</label></div></div>
+          <label class="f c6" for="n-from">Показувати з <small>сьогодні — одразу</small><input id="n-from" type="date"></label>
           <label class="f c6" for="n-to">по <small>порожньо — без кінця</small><input id="n-to" type="date"></label>
-          <div class="f c12"><div class="checks"><label><input type="checkbox" id="n-important"> Важливе — показати банером</label></div></div>
+          <label class="flag c12" for="n-important"><input type="checkbox" id="n-important"><span><b>Важливе</b><small>Ще й банер у бібліотеці та на сторінці набору</small></span></label>
         </div>
         <div class="p-acts"><button class="btn" id="n-save">Опублікувати</button><button class="btn ghost" id="n-cancel" hidden>Скасувати редагування</button><span class="muted" id="n-err"></span></div>
       </div>
