@@ -26,18 +26,19 @@
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 19px; white-space: nowrap; }
   .brand img { width: 28px; height: 28px; }
   .brand span { color: var(--muted); font-weight: 700; font-size: 15px; }
-  .side { position: fixed; inset: 0 auto 0 0; width: 232px; z-index: 20; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 18px; padding: 18px 12px; }
-  .side .brand { padding: 0 8px; }
+  .sidebar { position: fixed; inset: 0 auto 0 0; width: 232px; z-index: 20; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 18px; padding: 18px 12px; }
+  .sidebar .brand { padding: 0 8px; }
   .nav { display: flex; flex-direction: column; gap: 2px; }
   .nav a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--muted); font-weight: 800; font-size: 15px; padding: 9px 12px; border-radius: 12px; white-space: nowrap; }
-  .nav a i { font-style: normal; width: 22px; text-align: center; }
+  .nav a i { font-style: normal; width: 22px; display: grid; place-items: center; flex: none; }
+  .nav a i svg { display: block; }
   .nav a:hover { background: var(--field); color: var(--ink); }
   .nav a.on { background: var(--ink); color: #fff; }
   .nav .cnt { margin-left: auto; font-size: 12.5px; font-weight: 800; color: inherit; opacity: .7; font-variant-numeric: tabular-nums; }
   .nav .badge { margin-left: auto; background: var(--red); color: #fff; border-radius: 99px; font-size: 11.5px; padding: 1px 7px; }
   .nav .badge + .cnt { margin-left: 6px; }
-  .side .btn { margin-top: 4px; text-align: center; }
-  .side .foot { margin-top: auto; padding: 0 8px; font-size: 12.5px; }
+  .sidebar .btn { margin-top: 4px; text-align: center; }
+  .sidebar .foot { margin-top: auto; padding: 0 8px; font-size: 12.5px; }
 
   .wrap { padding: 24px 28px 80px; display: flex; flex-direction: column; gap: 18px; }
   #panel { margin-left: 232px; }
@@ -201,13 +202,14 @@
 
   /* вузький екран: меню стає смугою вкладок угорі */
   @media (max-width: 900px) {
-    .side { position: sticky; top: 0; inset: auto; width: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 12px; border-right: none; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.95); backdrop-filter: blur(8px); }
-    .side .brand span, .side .foot, .nav .cnt { display: none; }
+    .sidebar { position: sticky; top: 0; inset: auto; width: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 12px; border-right: none; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.95); backdrop-filter: blur(8px); }
+    .sidebar .brand span, .sidebar .foot, .nav .cnt { display: none; }
     .nav { flex-direction: row; overflow-x: auto; flex: 1 1 auto; min-width: 0; scrollbar-width: none; }
-    .side .btn { margin-left: auto; }
+    .sidebar .brand { flex: 1; }
+    .nav { order: 3; flex-basis: 100%; }
     .nav a { padding: 7px 10px; font-size: 14px; gap: 6px; }
     .nav .badge { margin-left: 2px; }
-    .side .btn { margin-top: 0; white-space: nowrap; }
+    .sidebar .btn { margin-top: 0; white-space: nowrap; }
     #panel { margin-left: 0; }
     .wrap { padding: 16px 14px 70px; }
     .cols, .cols.form-list { grid-template-columns: 1fr; }
@@ -216,9 +218,7 @@
   @media (max-width: 600px) {
     .brand span { display: none; }
     .nav a i { display: none; }
-    .side .brand { flex: 1; }
-    .nav { order: 3; flex-basis: 100%; }
-    .side .btn { padding: 7px 12px; font-size: 14px; }
+    .sidebar .btn { padding: 7px 12px; font-size: 14px; }
     .view-head h1 { font-size: 22px; }
     .card { padding: 16px; }
     .person { grid-template-columns: 36px 1fr; padding: 12px; }
@@ -237,15 +237,15 @@
 </style>
 </head>
 <body>
-<aside class="side" id="topbar" hidden>
+<aside class="sidebar" id="topbar" hidden>
   <div class="brand"><img src="icons/favicon.svg" alt="">Дивоурок <span>адмінка</span></div>
   <nav class="nav" aria-label="Розділи">
-    <a href="#sales" data-view="sales"><i>📊</i>Огляд</a>
-    <a href="#codes" data-view="codes"><i>🎟</i>Покупці<span class="cnt" id="nav-codes"></span></a>
-    <a href="#leads" data-view="leads"><i>📨</i>Заявки<span class="badge" id="lead-badge" hidden></span><span class="cnt" id="nav-leads"></span></a>
-    <a href="#accounts" data-view="accounts"><i>👩‍🏫</i>Акаунти<span class="cnt" id="nav-acc"></span></a>
-    <a href="#news" data-view="news"><i>🔔</i>Оголошення<span class="cnt" id="nav-news"></span></a>
-    <a href="#demo" data-view="demo"><i>🧭</i>Демо</a>
+    <a href="#sales" data-view="sales"><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></i>Огляд</a>
+    <a href="#codes" data-view="codes"><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v2M14 11v2M14 16v2"/></svg></i>Покупці<span class="cnt" id="nav-codes"></span></a>
+    <a href="#leads" data-view="leads"><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></svg></i>Заявки<span class="badge" id="lead-badge" hidden></span><span class="cnt" id="nav-leads"></span></a>
+    <a href="#accounts" data-view="accounts"><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1"/><path d="M16 3.5a4 4 0 0 1 0 8M22 21v-1a6 6 0 0 0-4-5.6"/></svg></i>Акаунти<span class="cnt" id="nav-acc"></span></a>
+    <a href="#news" data-view="news"><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></i>Оголошення<span class="cnt" id="nav-news"></span></a>
+    <a href="#demo" data-view="demo"><i><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg></i>Демо</a>
   </nav>
   <button class="btn" type="button" id="top-new">+ Новий код</button>
   <div class="foot muted">Клавіша <b>N</b> — новий код</div>

@@ -211,7 +211,7 @@ ${howto(c)}
     $('sales-split').replaceChildren(...(sales.length
       ? [splitRow('Звідки', tally(sourceOf, SOURCE_LABEL), SOURCE_LABEL), splitRow('Клас', tally(gradeOf, GRADE_LABEL), { ...GRADE_LABEL, '': 'не вказано' }),
          el('div', 'muted', 'Тестові й подарункові коди сюди не входять.')]
-      : [el('div', 'muted', 'Продажів поки немає — усе попереду 🙂')]));
+      : [el('div', 'muted', 'Продажів поки немає — усе попереду.')]));
 
     const todo = [];
     if (fresh.length) todo.push([`Нові заявки з сайту без відповіді: ${fresh.length}.`, 'Відкрити заявки', () => go('leads', () => setLeadTab('new'))]);
@@ -265,7 +265,7 @@ ${howto(c)}
     $('codes-count').textContent = n ? plural(n, 'покупець', 'покупці', 'покупців') : '';
     $('nav-codes').textContent = n || '';
     tabs('code-tabs', CODE_TABS.map(([v, label, fn]) => [v, label, all.filter(c => fn(c) && match(c)).length]), codeTab, setCodeTab);
-    $('rows').replaceChildren(...(rows.length ? rows.map(personCard) : [el('div', 'empty', q || codeTab !== 'all' ? 'Нікого не знайдено.' : 'Поки немає жодного коду. Натисніть «+ Новий код» 🙂')]));
+    $('rows').replaceChildren(...(rows.length ? rows.map(personCard) : [el('div', 'empty', q || codeTab !== 'all' ? 'Нікого не знайдено.' : 'Поки немає жодного коду. Натисніть «+ Новий код».')]));
   }
   function personCard(c) {
     const kind = kindOf(c);
