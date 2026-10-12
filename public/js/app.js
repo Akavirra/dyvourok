@@ -41,9 +41,11 @@
     verified: '<path d="M12 3l7 3v5c0 4.7-2.8 8-7 10-4.2-2-7-5.3-7-10V6z"/><path d="M8.5 12l2.2 2.2 4.8-5"/>',
     lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>',
+    bell: '<path d="M6 17v-6a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21.5a2.2 2.2 0 0 0 4 0"/>',
     pause: '<rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/>',
     playbar: '<path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/>',
     wifi: '<path d="M2 8.5a15 15 0 0 1 20 0M5 12a10.5 10.5 0 0 1 14 0M8.5 15.5a5.5 5.5 0 0 1 7 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/>',
+    download: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
     cc: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M10.5 10.2a2.4 2.4 0 1 0 0 3.6M17 10.2a2.4 2.4 0 1 0 0 3.6"/>'
   };
   const icon = (name, size) => h('span', { class: 'svg-ico', 'aria-hidden': 'true', html:
@@ -54,38 +56,148 @@
   function toast(msg) { const t = h('div', { class: 'toast' }, msg); document.body.append(t); setTimeout(() => t.remove(), 2200); }
   function shake(el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); Sfx.wrong(); }
 
-  // ---------------------------------------------------------------- рівень (клас)
+  // ---------------------------------------------------------------- класи й прогрес
+  // Стан вчителя: {classes: {t, list: [{id, name, grade}]}, prog: {"<клас або ->|<набір>|<рівень>": {t, s: {<зупинка>: 1}}}}.
+  // Лежить на пристрої (dyvo_state); якщо вчитель увійшов в акаунт — синхронізується через /api/state.
+  // Злиття: новіший запис перемагає — та сама логіка, що в lib/state.js. Обраний клас — лише на цьому пристрої (dyvo_class).
+  const newer = (a, b) => (!a ? b : !b ? a : (b.t || 0) > (a.t || 0) ? b : a);
+  function mergeState(a, b) {
+    const out = { classes: newer(a.classes, b.classes), prog: {} };
+    new Set([...Object.keys(a.prog || {}), ...Object.keys(b.prog || {})]).forEach(k => { out.prog[k] = newer((a.prog || {})[k], (b.prog || {})[k]); });
+    return out;
+  }
+  const cloud = {
+    get() {
+      let s = store.get('dyvo_state', null);
+      if (!s) { s = cloud.migrate(); store.set('dyvo_state', s); }
+      s.prog = s.prog || {};
+      return s;
+    },
+    // до появи класів прогрес лежав у dyvo_progress_<набір>[_<рівень>]
+    migrate() {
+      const s = { classes: null, prog: {} };
+      PACKS.forEach(p => (p.grades || [{ id: '' }]).forEach((l, i) => {
+        const old = store.get('dyvo_progress_' + p.id + (i ? '_' + l.id : ''), null);
+        if (old && Object.keys(old).length) s.prog[['-', p.id, l.id].join('|')] = { t: 1, s: old };
+      }));
+      return s;
+    },
+    update(fn) { const s = cloud.get(); fn(s); store.set('dyvo_state', s); cloud.schedule(); },
+    clear() { try { localStorage.removeItem('dyvo_state'); localStorage.removeItem('dyvo_class'); } catch (e) {} },
+    timer: null,
+    lastSync: 0,
+    schedule() { if (!isAccount()) return; clearTimeout(cloud.timer); cloud.timer = setTimeout(() => cloud.sync(false), 1500); },
+    // rerender — перемалювати бібліотеку, набір чи мапу, якщо з іншого пристрою прийшли зміни
+    async sync(rerender) {
+      if (OFFLINE_FILE || !isAccount() || !navigator.onLine) return;
+      cloud.lastSync = Date.now();
+      const before = JSON.stringify(cloud.get());
+      try {
+        const r = await api('/api/state', 'PUT', { state: cloud.get() });
+        if (!r.ok || !r.data.state) return;
+        const merged = mergeState(cloud.get(), r.data.state);   // зміни, зроблені поки йшов запит, не губимо
+        store.set('dyvo_state', merged);
+        const calm = /^#\/(library|pack\/[^/]+(\/map)?)?$/.test(location.hash || '#/') && !document.querySelector('.reward');
+        if (rerender && calm && JSON.stringify(merged) !== before) route();
+      } catch (e) {}
+    }
+  };
+  const classes = () => ((cloud.get().classes || {}).list || []);
+  const currentClass = () => { const id = store.get('dyvo_class', null); return classes().find(c => c.id === id) || null; };
+  const saveClasses = list => cloud.update(s => { s.classes = { t: Date.now(), list }; });
+  const className = c => (/клас/i.test(c.name) ? c.name : c.name + ' клас');
+
+  // ---------------------------------------------------------------- рівень (вікова версія)
   // pack.grades — вікові версії набору; перша — базова. Для інших зупинка може мати levels[id] = {intro, task},
-  // а будь-який об'єкт набору (teacher, description) — свої levels[id]. Вибір запам'ятовується на пристрої.
-  function levelOf(pack) {
+  // а будь-який об'єкт набору (teacher, description) — свої levels[id]. Вибір запам'ятовується за класом (c.grade),
+  // а без класу — на пристрої.
+  function levelIdFor(pack, c) {
     const ls = pack.grades;
-    if (!ls) return null;
-    const id = store.get('dyvo_level_' + pack.id, ls[0].id);
-    return ls.find(l => l.id === id) || ls[0];
+    if (!ls) return '';
+    const id = c && c.grade && ls.some(l => l.id === c.grade) ? c.grade : store.get('dyvo_level_' + pack.id, ls[0].id);
+    return (ls.find(l => l.id === id) || ls[0]).id;
+  }
+  function levelOf(pack) {
+    return pack.grades ? pack.grades.find(l => l.id === levelIdFor(pack, currentClass())) : null;
   }
   function byLevel(pack, obj) {
     const l = levelOf(pack);
     return obj && l && obj.levels && obj.levels[l.id] ? { ...obj, ...obj.levels[l.id] } : obj;
   }
   const levelHandouts = pack => { const l = levelOf(pack); return pack.handouts.filter(d => !l || !d.levels || d.levels.includes(l.id)); };
-  const levelSuffix = pack => { const l = levelOf(pack); return l && l !== pack.grades[0] ? '_' + l.id : ''; };
   function levelPicker(pack) {
     if (!pack.grades) return null;
     const cur = levelOf(pack);
-    return h('div', { class: 'level-pick', role: 'radiogroup', 'aria-label': 'Клас' },
-      h('span', { class: 'lbl' }, 'Клас:'),
+    return h('div', { class: 'level-pick', role: 'radiogroup', 'aria-label': 'Вікова версія' },
+      h('span', { class: 'lbl' }, 'Версія:'),
       pack.grades.map(l => h('button', { role: 'radio', 'aria-checked': String(l === cur), class: l === cur ? 'on' : '', onclick: () => {
         if (l === cur) return;
-        Sfx.tap(); store.set('dyvo_level_' + pack.id, l.id); route();
+        Sfx.tap(); store.set('dyvo_level_' + pack.id, l.id);
+        const c = currentClass();
+        if (c) saveClasses(classes().map(x => x.id === c.id ? { ...x, grade: l.id } : x));   // клас запам'ятовує свою версію
+        route();
       } }, l.label)));
   }
 
+  // прогрес квесту — окремо для кожного класу й вікової версії
+  const progKey = (pack, c) => [c ? c.id : '-', pack.id, levelIdFor(pack, c)].join('|');
   const progress = {
-    key: pack => 'dyvo_progress_' + pack.id + levelSuffix(pack),   // у кожного класу свій прогрес
-    get(pack) { return store.get(progress.key(pack), {}); },
-    done(pack, stopId) { const p = progress.get(pack); p[stopId] = true; store.set(progress.key(pack), p); },
-    reset(pack) { store.set(progress.key(pack), {}); }
+    key: pack => progKey(pack, currentClass()),
+    get(pack) { return (cloud.get().prog[progress.key(pack)] || {}).s || {}; },
+    done(pack, stopId) { const k = progress.key(pack); cloud.update(s => { const e = s.prog[k] || { s: {} }; s.prog[k] = { t: Date.now(), s: { ...e.s, [stopId]: 1 } }; }); },
+    reset(pack) { const k = progress.key(pack); cloud.update(s => { s.prog[k] = { t: Date.now(), s: {} }; }); }
   };
+
+  // «Мій клас»: 3-А, 3-Б… — у кожного свій прогрес. Без акаунта класи живуть на пристрої, з акаунтом — на всіх пристроях.
+  function classPicker(pack) {
+    const cur = currentClass();
+    const list = classes();
+    const done = c => Object.keys((cloud.get().prog[progKey(pack, c)] || {}).s || {}).length;
+    const isCur = c => (c ? c.id : null) === (cur ? cur.id : null);
+    const chip = (c, label) => h('button', { role: 'radio', 'aria-checked': String(isCur(c)), class: isCur(c) ? 'on' : '', onclick: () => {
+      if (isCur(c)) return;
+      Sfx.tap(); store.set('dyvo_class', c ? c.id : null); route();
+    } }, label, h('span', { class: 'cnt' }, `${done(c)}/${pack.stops.length}`));
+    return h('div', { class: 'level-pick class-pick', role: 'radiogroup', 'aria-label': 'Мій клас' },
+      h('span', { class: 'lbl' }, 'Мій клас:'),
+      list.length ? [chip(null, 'Без класу'), ...list.map(c => chip(c, c.name))] : null,
+      h('button', { class: 'add', onclick: () => classDialog(null, pack) }, list.length ? '+ Клас' : '+ Додати клас'),
+      cur ? h('button', { class: 'add', title: 'Перейменувати або видалити клас', 'aria-label': 'Змінити клас', onclick: () => classDialog(cur, pack) }, '✎') : null,
+      list.length ? null : h('span', { class: 'muted hint' }, 'щоб вести прогрес окремо для 3-А, 3-Б…'));
+  }
+  function classDialog(c, pack) {
+    const grades = (pack && pack.grades) || (PACKS.find(p => p.grades) || {}).grades || [];
+    let grade = c ? c.grade : (pack ? levelIdFor(pack, null) : '');
+    const name = h('input', { class: 'name-input', value: c ? c.name : '', maxlength: '40', placeholder: 'Наприклад, 3-А', 'aria-label': 'Назва класу' });
+    const gradeRow = grades.length ? h('div', { class: 'level-pick' }, h('span', { class: 'lbl' }, 'Версія:'),
+      grades.map(l => { const b = h('button', { class: l.id === grade ? 'on' : '', onclick: () => { grade = l.id; gradeRow.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); } }, l.label); return b; })) : null;
+    const close = () => r.remove();
+    const save = () => {
+      const n = name.value.trim().slice(0, 40);
+      if (!n) { shake(name); return; }
+      if (c) saveClasses(classes().map(x => x.id === c.id ? { ...x, name: n, grade } : x));
+      else {
+        const id = Math.random().toString(36).slice(2, 10);
+        saveClasses([...classes(), { id, name: n, grade }]);
+        store.set('dyvo_class', id);
+      }
+      Sfx.right(); close(); route();
+    };
+    name.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+    const r = h('div', { class: 'reward', role: 'dialog', 'aria-label': c ? 'Змінити клас' : 'Новий клас' },
+      h('div', { class: 'card pop class-dialog' },
+        h('h2', {}, c ? 'Клас ' + c.name : 'Новий клас'),
+        h('p', { class: 'muted' }, 'У кожного класу свій прогрес у квесті.' + (isAccount() ? ' Класи збережуться в акаунті й будуть на всіх ваших пристроях.' : ' Увійдіть в акаунт, щоб класи були на всіх ваших пристроях.')),
+        name, gradeRow,
+        h('button', { class: 'btn big', onclick: save }, c ? 'Зберегти' : 'Додати клас'),
+        c ? h('button', { class: 'linkish danger', onclick: () => {
+          if (!confirm('Видалити клас ' + c.name + '? Його прогрес у квесті зникне.')) return;
+          saveClasses(classes().filter(x => x.id !== c.id)); store.set('dyvo_class', null); close(); route();
+        } }, 'Видалити клас') : null,
+        h('button', { class: 'btn ghost', onclick: close }, 'Скасувати')));
+    document.body.append(r);
+    setTimeout(() => name.focus(), 50);
+  }
   // ---------------------------------------------------------------- без інтернету
   // Мультфільми, PDF і картинки набору зберігаються цілими файлами в окремий кеш: браузер просить відео частинами (Range),
   // а sw.js нарізає ці частини з кешу. Ключ — адреса з ?v=, тож після оновлення файлу старий запис просто не підходить.
@@ -96,6 +208,10 @@
     pack.stops.forEach(s => s.video && files.add(s.video));
     (pack.cartoons || []).forEach(c => c.ready && c.file && files.add(c.file));
     (pack.handouts || []).forEach(d => d.file && files.add(d.file));
+    if (pack.teacher) {
+      if (pack.teacher.file) files.add(pack.teacher.file);
+      Object.values(pack.teacher.levels || {}).forEach(t => t.file && files.add(t.file));
+    }
     Object.keys(pack.versions || {}).forEach(p => p.startsWith('img/') && files.add(p));
     return [...files].map(p => new URL(asset(pack, p), document.baseURI).href);
   }
@@ -134,13 +250,14 @@
   function offlineCard(pack) {
     if (!canSave() || !license.allows(pack.id)) return null;
     const status = h('div', { class: 'muted' }, 'Перевіряємо…');
+    const note = h('div', { class: 'offline-note muted' }, 'Матеріали зберігаються в цьому браузері, а не в папці «Завантаження». Очищення даних браузера видалить цю копію.');
     const bar = h('div', { class: 'offline-bar', hidden: true }, h('span'));
-    const btn = h('button', { class: 'btn', hidden: true }, 'Зберегти');
+    const btn = h('button', { class: 'btn', hidden: true }, 'Зберегти весь набір');
     const card = h('div', { class: 'offline-card card-soft' },
       h('div', { class: 'ico' }, icon('wifi')),
-      h('div', { class: 'grow' }, h('h3', {}, 'Робота без інтернету'), status, bar), btn);
-    const ready = () => { card.classList.add('ok'); status.textContent = 'Набір збережено на цьому пристрої: мультфільми й роздатка відкриються без інтернету.'; btn.hidden = true; bar.hidden = true; };
-    const idle = (msg) => { status.textContent = msg || 'Збережіть набір один раз — і мультфільми та роздатка працюватимуть навіть без мережі (≈100 МБ).'; btn.hidden = false; btn.disabled = false; btn.textContent = 'Зберегти'; };
+      h('div', { class: 'grow' }, h('h3', {}, 'Увесь набір без інтернету'), status, note, bar), btn);
+    const ready = () => { card.classList.add('ok'); status.textContent = 'Готово. Квест, мультфільми, поради, відповіді та роздатка відкриються без інтернету на цьому пристрої.'; btn.hidden = true; bar.hidden = true; };
+    const idle = (msg) => { status.textContent = msg || 'Збережіть один раз, щоб провести весь урок без мережі (≈100 МБ).'; btn.hidden = false; btn.disabled = false; btn.textContent = 'Зберегти весь набір'; };
     btn.onclick = async () => {
       Sfx.tap();
       btn.disabled = true; btn.textContent = 'Зберігаємо…'; bar.hidden = false;
@@ -164,19 +281,26 @@
 
   // ---------------------------------------------------------------- доступ
   // Ліцензія: {note, packs, exp, checked} — копія того, що сервер записав у HttpOnly-кукі сесії.
+  // Вхід в акаунт додає {account: true, email, name}; packs тоді — з усіх кодів, прив'язаних до акаунта (може бути порожнім).
   const license = {
     get() {
       if (OFFLINE_FILE) return { note: 'Офлайн-версія', packs: '*', exp: Infinity };
       const l = store.get('dyvo_lic', null);
       return l && l.exp > Date.now() ? l : null;
     },
-    set(l) { store.set('dyvo_lic', { ...l, checked: Date.now() }); store.set('dyvo_demo', false); },
+    set(l) {
+      store.set('dyvo_lic', { ...l, checked: Date.now() }); store.set('dyvo_demo', false);
+      if (l.account && Date.now() - cloud.lastSync > 3000) setTimeout(() => cloud.sync(true), 0);   // щойно увійшли — підтягнути класи й прогрес
+      if (Date.now() - news.lastLoad > 3000) setTimeout(() => news.load(), 0);
+    },
     clear() { try { localStorage.removeItem('dyvo_lic'); } catch (e) {} },
     allows(packId) { const l = license.get(); return !!l && (l.packs === '*' || l.packs.split(',').includes(packId)); }
   };
   const isDemo = () => !license.get() && store.get('dyvo_demo', false);
   const hasAccess = () => !!license.get() || isDemo();
   const canOpen = (pack, stopId) => license.allows(pack.id) || DEMO_STOPS.includes(stopId);
+  const isAccount = () => !!(license.get() || {}).account;
+  const ownsAny = () => PACKS.some(p => license.allows(p.id));
 
   // ---------------------------------------------------------------- статистика демо
   // Анонімно: випадковий id пристрою + назва кроку — щоб в адмінці бачити, чи хтось проходить демо. З кодом не рахуємо;
@@ -188,7 +312,8 @@
     fetch('/api/track', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ v: deviceId(), e, src: store.get('dyvo_from', '') }) }).catch(() => {});
   }
-  const enterCode = () => { track('code'); store.set('dyvo_demo', false); route(); };
+  // в акаунті код додається на сторінці «Акаунт», без акаунта — екран входу
+  const enterCode = () => { track('code'); if (isAccount()) { go('#/account'); return; } store.set('dyvo_demo', false); route(); };
 
   function deviceId() {
     let id = store.get('dyvo_device', null);
@@ -214,7 +339,7 @@
     try {
       const r = await api('/api/session', 'POST');
       if (r.ok) license.set(r.data);
-      else if (r.status === 401) { license.clear(); clearOffline(); toast('Доступ на цьому пристрої завершено. Введіть код ще раз.'); route(); }
+      else if (r.status === 401) { if (l.account) cloud.clear(); license.clear(); clearOffline(); toast(l.account ? 'Сесія завершилася. Увійдіть ще раз.' : 'Доступ на цьому пристрої завершено. Введіть код ще раз.'); route(); }
     } catch (e) {}
   }
   const mailLink = () => h('a', { class: 'mail', href: 'mailto:' + CONTACT }, CONTACT);
@@ -228,27 +353,112 @@
         h('span', { style: 'font-size:64px;color:var(--red)' }, icon('lock')),
         h('h2', {}, 'Ця частина відкривається з кодом доступу'),
         h('p', {}, 'У демо можна пройти зупинку «Тарас Шевченко». Повний набір — 5 епох, мультфільми, роздатка і сценарій уроку.'),
-        h('button', { class: 'btn big', onclick: () => { r.remove(); enterCode(); } }, 'Ввести код'),
+        h('button', { class: 'btn big', onclick: () => { r.remove(); enterCode(); } }, isAccount() ? 'Додати код доступу' : 'Увійти або ввести код'),
         h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo#peredzamovlennia', target: '_blank', rel: 'noopener', onclick: () => track('want') }, 'Хочу повну версію'),
         h('button', { class: 'btn ghost', onclick: () => r.remove() }, 'Повернутися'),
         contactLine('Питання? Пишіть на ')));
     document.body.append(r);
   }
 
+  // ---------------------------------------------------------------- оголошення
+  // Новини «Дивоуроку»: дзвіночок у верхній панелі й банер для важливих. Створюються в адмінці (розділ «Оголошення»).
+  // Банер — лише в бібліотеці й на сторінці набору, щоб не з'явитися посеред уроку. Копія списку — у dyvo_news (без інтернету).
+  const news = {
+    items() { return OFFLINE_FILE ? [] : store.get('dyvo_news', []); },
+    unread() { return news.items().filter(n => !n.read); },
+    // вікові версії, з якими працює вчитель: класи + обрана версія набору на пристрої
+    grades() {
+      const g = new Set(classes().map(c => c.grade).filter(Boolean));
+      PACKS.forEach(p => { const id = levelIdFor(p, null); if (id) g.add(id); });
+      return [...g].join(',');
+    },
+    lastLoad: 0,
+    seenSent: new Set(),
+    async load() {
+      if (OFFLINE_FILE || !navigator.onLine) return;
+      news.lastLoad = Date.now();
+      try {
+        const r = await api('/api/news?d=' + encodeURIComponent(deviceId()) + '&g=' + encodeURIComponent(news.grades()), 'GET');
+        if (!r.ok || !Array.isArray(r.data.items)) return;
+        const before = JSON.stringify(news.items());
+        store.set('dyvo_news', r.data.items);
+        news.paintBadge();
+        const calm = /^#\/(library|pack\/[^/]+)?$/.test(location.hash || '#/') && !document.querySelector('.reward');
+        if (calm && before !== JSON.stringify(r.data.items) && news.unread().some(n => n.important)) route();   // показати новий банер
+      } catch (e) {}
+    },
+    // event: seen — банер показано, read — прочитано (дзвіночок або закрили банер), click — натиснули кнопку
+    mark(ids, event) {
+      if (!ids.length) return;
+      if (event !== 'seen') store.set('dyvo_news', news.items().map(n => ids.includes(n.id) ? { ...n, read: true } : n));
+      news.paintBadge();
+      fetch('/api/news', { method: 'POST', keepalive: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ids, event, d: deviceId() }) }).catch(() => {});
+    },
+    paintBadge() {
+      const b = document.getElementById('news-badge');
+      if (!b) return;
+      const n = news.unread().length;
+      b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n);
+    }
+  };
+  // кнопка оголошення: сторінка застосунку (#/…) або зовнішнє https-посилання в новій вкладці
+  function newsButton(n, after) {
+    if (!n.button_label || !n.button_url) return null;
+    const ext = /^https:\/\//.test(n.button_url);
+    const onclick = e => { news.mark([n.id], 'click'); if (after) after(); if (!ext) { e.preventDefault(); go(n.button_url); } };
+    return ext ? h('a', { class: 'btn compact', href: n.button_url, target: '_blank', rel: 'noopener', onclick }, n.button_label)
+      : h('button', { class: 'btn compact', onclick }, n.button_label);
+  }
+  function newsDialog() {
+    Sfx.tap();
+    const items = news.items();
+    const close = () => r.remove();
+    const r = h('div', { class: 'reward', role: 'dialog', 'aria-label': 'Новини' },
+      h('div', { class: 'card pop news-dialog' },
+        h('h2', {}, 'Новини «Дивоуроку»'),
+        items.length ? h('div', { class: 'news-list' }, items.map(n => h('article', { class: 'news-item' + (n.read ? '' : ' unread') },
+          h('div', { class: 'news-date' }, new Date(n.starts_at).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })),
+          h('h3', {}, n.title),
+          n.body ? h('p', { class: 'news-body' }, n.body) : null,
+          newsButton(n, close))))
+          : h('p', { class: 'muted' }, navigator.onLine ? 'Поки що новин немає. Тут з\'являтимуться анонси нових наборів і функцій.' : 'Новини завантажаться, коли з\'явиться інтернет.'),
+        h('button', { class: 'btn ghost', onclick: close }, 'Закрити')));
+    r.addEventListener('click', e => { if (e.target === r) close(); });
+    document.body.append(r);
+    news.mark(items.filter(n => !n.read).map(n => n.id), 'read');
+  }
+  function newsBanner() {
+    const n = news.unread().find(x => x.important);
+    if (!n) return null;
+    if (!news.seenSent.has(n.id)) { news.seenSent.add(n.id); news.mark([n.id], 'seen'); }
+    const card = h('div', { class: 'card-soft news-banner', role: 'status' },
+      h('div', { class: 'ico' }, icon('bell')),
+      h('div', { class: 'grow' }, h('h3', {}, n.title), n.body ? h('p', { class: 'news-body' }, n.body) : null),
+      h('div', { class: 'news-acts' },
+        newsButton(n, () => news.mark([n.id], 'read')),
+        h('button', { class: 'icon-btn', title: 'Закрити', 'aria-label': 'Закрити оголошення', onclick: () => { news.mark([n.id], 'read'); card.remove(); } }, '×')));
+    return card;
+  }
+
   // ---------------------------------------------------------------- каркас
   function frame(crumbs, body) {
     const soundBtn = h('button', { class: 'icon-btn', title: 'Звук', 'aria-label': 'Увімкнути або вимкнути звук', onclick: () => { soundBtn.replaceChildren(icon(Sfx.toggle() ? 'sound' : 'mute')); } }, icon(Sfx.on ? 'sound' : 'mute'));
-    const fsBtn = h('button', { class: 'icon-btn', title: 'На весь екран', 'aria-label': 'На весь екран', onclick: () => {
+    const fsBtn = h('button', { class: 'icon-btn fs-btn', title: 'На весь екран', 'aria-label': 'На весь екран', onclick: () => {
       if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
     } }, icon('full'));
-    const userBtn = hasAccess() ? h('button', { class: 'icon-btn', title: 'Доступ', 'aria-label': 'Доступ і вихід', onclick: () => go('#/account') }, icon('user')) : null;
+    const userBtn = hasAccess() ? h('button', { class: 'icon-btn', title: isAccount() ? 'Акаунт' : 'Доступ', 'aria-label': 'Акаунт, доступ і вихід', onclick: () => go('#/account') }, icon('user')) : null;
     const top = h('header', { class: 'topbar' },
       h('img', { class: 'logo', src: 'brand/dyvourok-logo.svg', alt: 'Дивоурок', onclick: () => go('#/library') }),
       h('div', { class: 'crumb' }, crumbs),
       h('div', { class: 'spacer' }),
-      isDemo() ? h('button', { class: 'btn', style: 'padding:10px 18px;font-size:.85em', onclick: enterCode }, 'Ввести код') : null,
+      isDemo() ? h('button', { class: 'btn', style: 'padding:10px 18px;font-size:.85em', onclick: enterCode }, 'Увійти') : null,
+      isAccount() && !ownsAny() ? h('button', { class: 'btn', style: 'padding:10px 18px;font-size:.85em', onclick: enterCode }, 'Додати код') : null,
+      OFFLINE_FILE ? null : h('button', { class: 'icon-btn bell', title: 'Новини', 'aria-label': 'Новини «Дивоуроку»', onclick: newsDialog },
+        icon('bell'), h('span', { class: 'news-badge', id: 'news-badge', hidden: true })),
       userBtn, soundBtn, fsBtn);
     app.replaceChildren(top, h('main', { class: 'screen' }, body));
+    news.paintBadge();
   }
 
   // ---------------------------------------------------------------- заставка
@@ -271,41 +481,174 @@
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') start(); });
   }
 
-  // ---------------------------------------------------------------- вхід за кодом
-  function gate() {
-    const input = h('input', { id: 'code', placeholder: 'КОД ДОСТУПУ', autocomplete: 'off', 'aria-label': 'Код доступу' });
+  // ---------------------------------------------------------------- вхід: акаунт (Google / пошта) або код
+  const CODE_ERRORS = {
+    invalid: 'Такого коду немає. Перевірте, чи немає помилки.',
+    revoked: `Цей код заблоковано. Напишіть нам на ${CONTACT} — розберемося.`,
+    expired: `Термін дії коду завершився. Щоб продовжити, напишіть на ${CONTACT}.`,
+    devices: 'Код уже активовано на максимальній кількості пристроїв. Вийдіть з нього на одному з них або увійдіть в акаунт — там обмежень на пристрої немає.',
+    taken: `Цей код уже прив'язано до іншого акаунта. Якщо це ваш код, напишіть на ${CONTACT}.`
+  };
+  const LOGIN_ERRORS = {
+    email: 'Перевірте адресу пошти.',
+    slow: 'Лист уже надіслано. Зачекайте хвилину й спробуйте ще раз.',
+    'mail-off': 'Вхід через пошту тимчасово недоступний. Скористайтеся кодом доступу.',
+    'mail-failed': 'Не вдалося надіслати лист. Спробуйте ще раз за хвилину.',
+    code: 'Код не підходить. Перевірте цифри з листа.',
+    expired: 'Код застарів або використаний. Надішліть новий.'
+  };
+  const offlineMsg = 'Немає зв\'язку з сервером. Для входу потрібен інтернет.';
+  // Код/посилання одноразові: якщо вчитель уже увійшов кнопкою з листа в іншій вкладці, кука сесії вже є —
+  // тоді «використаний код» не помилка, просто підхоплюємо сесію акаунта.
+  async function alreadySignedIn() {
+    try { const r = await api('/api/session', 'POST'); if (r.ok && r.data.account) { license.set(r.data); return true; } } catch (e) {}
+    return false;
+  }
+  const authConfig = { google: true, email: true };
+  let authLoaded = null;
+  const loadAuthConfig = () => authLoaded || (authLoaded = api('/api/auth/config', 'GET').then(r => { if (r.ok) Object.assign(authConfig, r.data); }).catch(() => {}));
+
+  // Поле коду доступу. Без акаунта — активація на пристрої (/api/activate), в акаунті — прив'язка до акаунта (/api/me).
+  function codeBox(onDone) {
+    const input = h('input', { class: 'code-input', placeholder: 'КОД ДОСТУПУ', autocomplete: 'off', 'aria-label': 'Код доступу' });
     const err = h('div', { class: 'err', role: 'status' });
-    const MESSAGES = {
-      invalid: 'Такого коду немає. Перевірте, чи немає помилки.',
-      revoked: `Цей код заблоковано. Напишіть нам на ${CONTACT} — розберемося.`,
-      expired: `Термін дії коду завершився. Щоб продовжити, напишіть на ${CONTACT}.`,
-      devices: `Код уже активовано на максимальній кількості пристроїв. Вийдіть з нього на одному з них або напишіть на ${CONTACT}.`
-    };
-    const btn = h('button', { class: 'btn big', onclick: () => submit() }, 'Увійти');
+    const btn = h('button', { class: 'btn', onclick: () => submit() }, isAccount() ? 'Додати' : 'Увійти з кодом');
     async function submit() {
       err.textContent = '';
       btn.disabled = true;
       try {
-        const r = await api('/api/activate', 'POST', { code: input.value, deviceId: deviceId(), label: deviceLabel() });
-        if (r.ok) { license.set(r.data); Sfx.right(); go('#/library'); route(); return; }
-        err.textContent = MESSAGES[r.data.error] || 'Не вдалося перевірити код. Спробуйте ще раз.';
+        const r = isAccount() ? await api('/api/me', 'POST', { code: input.value })
+          : await api('/api/activate', 'POST', { code: input.value, deviceId: deviceId(), label: deviceLabel() });
+        if (r.ok) { license.set(r.data); Sfx.right(); onDone(); return; }
+        err.textContent = CODE_ERRORS[r.data.error] || 'Не вдалося перевірити код. Спробуйте ще раз.';
         shake(input);
-      } catch (e) {
-        err.textContent = 'Немає зв\'язку з сервером. Для першого входу потрібен інтернет.';
-      } finally { btn.disabled = false; }
+      } catch (e) { err.textContent = offlineMsg; } finally { btn.disabled = false; }
     }
     input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    return h('div', { class: 'code-box' }, h('div', { class: 'code-row' }, input, btn), err);
+  }
+
+  const legal = () => h('p', { class: 'muted legal' }, 'Входячи, ви погоджуєтеся з ',
+    h('a', { href: '/oferta', target: '_blank', rel: 'noopener' }, 'умовами'), ' та ',
+    h('a', { href: '/pryvatnist', target: '_blank', rel: 'noopener' }, 'політикою конфіденційності'), '.');
+
+  // Вхід в акаунт: Google або 6-значний код з листа
+  function loginBox(onDone) {
+    const box = h('div', { class: 'login-box' });
+    const err = h('div', { class: 'err', role: 'status' });
+    const google = h('a', { class: 'btn big google-btn', href: '/api/auth/google', onclick: () => { Sfx.tap(); track('login_google'); } },
+      h('span', { class: 'g-mark', 'aria-hidden': 'true' }, 'G'), 'Увійти через Google');
+    const email = h('input', { class: 'email-input', type: 'email', placeholder: 'Ваша пошта', autocomplete: 'email', 'aria-label': 'Електронна пошта' });
+    const send = h('button', { class: 'btn ghost', onclick: () => sendMail() }, 'Отримати код');
+    let sentTo = '';
+    async function sendMail() {
+      err.textContent = '';
+      send.disabled = true;
+      const to = sentTo && !email.isConnected ? sentTo : email.value.trim();
+      try {
+        const r = await api('/api/auth/email', 'POST', { email: to });
+        if (r.ok) { sentTo = to; track('login_email'); stepCode(r.data.devCode); return; }
+        err.textContent = r.data.error === 'slow' && r.data.wait > 60 ? 'Забагато спроб. Спробуйте трохи пізніше.'
+          : LOGIN_ERRORS[r.data.error] || 'Не вдалося надіслати лист. Спробуйте ще раз.';
+        if (email.isConnected) shake(email);
+      } catch (e) { err.textContent = offlineMsg; } finally { send.disabled = false; }
+    }
+    function stepCode(devCode) {
+      const code = h('input', { class: 'code-input digits', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '6', placeholder: '••••••', 'aria-label': 'Код з листа' });
+      const ok = h('button', { class: 'btn big', onclick: () => verify() }, 'Увійти');
+      async function verify() {
+        err.textContent = '';
+        ok.disabled = true;
+        try {
+          const r = await api('/api/auth/verify', 'POST', { email: sentTo, code: code.value });
+          if (r.ok) { license.set(r.data); Sfx.right(); onDone(); return; }
+          if (r.data.error === 'expired' && await alreadySignedIn() && license.get().email === sentTo.toLowerCase()) { Sfx.right(); onDone(); return; }
+          err.textContent = LOGIN_ERRORS[r.data.error] || 'Не вдалося увійти. Спробуйте ще раз.';
+          shake(code);
+        } catch (e) { err.textContent = offlineMsg; } finally { ok.disabled = false; }
+      }
+      code.addEventListener('input', () => { code.value = code.value.replace(/\D/g, '').slice(0, 6); if (code.value.length === 6) verify(); });
+      code.addEventListener('keydown', e => { if (e.key === 'Enter') verify(); });
+      box.replaceChildren(...[
+        h('p', { class: 'lead' }, 'Ми надіслали 6-значний код на ', h('b', {}, sentTo), '. Введіть його тут або натисніть кнопку в листі.'),
+        devCode ? h('p', { class: 'muted' }, 'Локальна перевірка: код ' + devCode) : null,
+        code, err, ok,
+        h('p', { class: 'muted' }, 'Не бачите листа? Перевірте «Спам» або «Промоакції». ',
+          h('button', { class: 'linkish', onclick: () => sendMail() }, 'Надіслати ще раз'), ' · ',
+          h('button', { class: 'linkish', onclick: () => { err.textContent = ''; stepEmail(); } }, 'Інша пошта'))].filter(Boolean));
+      setTimeout(() => code.focus(), 50);
+    }
+    function stepEmail() {
+      if (sentTo) email.value = sentTo;
+      box.replaceChildren(...[
+        authConfig.google ? google : null,
+        authConfig.google && authConfig.email ? h('div', { class: 'or' }, 'або') : null,
+        authConfig.email ? h('div', { class: 'email-row' }, email, send) : null,
+        err, legal()].filter(Boolean));
+    }
+    email.addEventListener('keydown', e => { if (e.key === 'Enter') sendMail(); });
+    stepEmail();
+    loadAuthConfig().then(() => { if (!sentTo) stepEmail(); });
+    return box;
+  }
+
+  function gate() {
+    const done = () => { go('#/library'); route(); };
     frame('Вхід', h('div', { class: 'gate' },
-      h('img', { src: 'brand/dyvourok-mark.svg', alt: '', style: 'width:120px' }),
+      h('img', { src: 'brand/dyvourok-mark.svg', alt: '', style: 'width:110px' }),
       h('h1', {}, 'Вітаємо в «Дивоуроці»!'),
-      h('p', { class: 'lead' }, 'Введіть код доступу, який ви отримали на пошту.'),
-      input, err, btn,
+      h('p', { class: 'lead' }, 'Увійдіть, щоб ваші набори відкривалися на будь-якому пристрої: дошці, ноутбуці чи телефоні.'),
+      loginBox(done),
+      h('div', { class: 'card-soft code-card' },
+        h('h3', {}, 'Маєте код доступу з листа?'),
+        h('p', { class: 'muted' }, 'Введіть його тут. А якщо увійдете в акаунт, код збережеться в ньому, і вводити його більше не доведеться.'),
+        codeBox(done)),
       h('button', { class: 'btn ghost', onclick: () => { store.set('dyvo_demo', true); Sfx.tap(); go('#/library'); route(); } }, 'Спробувати безкоштовно'),
       buyHint()));
-    setTimeout(() => input.focus(), 50);
+  }
+
+  // Повернення після входу: #/login/<токен> — посилання з листа, #/login-ok — після Google, #/login-error/<причина>
+  async function finishLogin(kind, arg) {
+    frame('Вхід', h('div', { class: 'gate' }, h('h1', {}, 'Входимо…')));
+    const fail = msg => {
+      history.replaceState(null, '', location.pathname + location.search + '#/');
+      frame('Вхід', h('div', { class: 'gate' }, h('h1', {}, 'Не вдалося увійти'), h('p', { class: 'lead' }, msg),
+        h('button', { class: 'btn big', onclick: () => { go(license.get() ? '#/account' : '#/'); route(); } }, 'Спробувати ще раз'), contactLine()));
+    };
+    if (kind === 'login-error') {
+      const why = { cancelled: 'Вхід через Google скасовано.', 'google-off': 'Вхід через Google ще не налаштовано. Скористайтеся поштою або кодом доступу.' };
+      return fail(why[arg] || 'Google не підтвердив вхід. Спробуйте ще раз або увійдіть через пошту.');
+    }
+    try {
+      const r = kind === 'login' ? await api('/api/auth/verify', 'POST', { token: arg }) : await api('/api/session', 'POST');
+      // повторне натискання кнопки в листі, коли вже увійшли, — просто відкриваємо бібліотеку
+      if (!r.ok && kind === 'login' && await alreadySignedIn()) { history.replaceState(null, '', location.pathname + location.search + '#/library'); return route(); }
+      if (!r.ok) return fail(kind === 'login' ? 'Посилання застаріло або вже використане. Надішліть новий лист.' : 'Сесію не знайдено. Спробуйте ще раз.');
+      license.set(r.data); Sfx.right();
+      toast(r.data.email ? 'Ви увійшли як ' + r.data.email : 'Ви увійшли');
+      history.replaceState(null, '', location.pathname + location.search + '#/library');
+      route();
+    } catch (e) { fail(offlineMsg); }
   }
 
   // ---------------------------------------------------------------- бібліотека
+  // Згода на листи: питаємо один раз (news === null), відповідь зберігається в акаунті
+  function newsAsk() {
+    const l = license.get();
+    if (!l || !l.account || l.news === 0 || l.news === 1) return null;
+    const answer = async yes => {
+      const r = await api('/api/me', 'POST', { news: yes }).catch(() => ({ ok: false }));
+      if (!r.ok) { toast(offlineMsg); return; }
+      license.set(r.data); card.remove();
+      toast(yes ? 'Дякуємо! Нагадаємо перед святами.' : 'Добре, без листів. Змінити можна в акаунті.');
+    };
+    const card = h('div', { class: 'card-soft news-card' },
+      h('div', { class: 'grow' }, h('h3', {}, 'Нагадувати про свята?'),
+        h('p', { class: 'muted' }, 'Напишемо, коли вийде новий набір, і нагадаємо за тиждень до свята. Не частіше двох листів на місяць, відписатися можна будь-коли.')),
+      h('div', { class: 'news-acts' }, h('button', { class: 'btn', onclick: () => answer(true) }, 'Так, нагадуйте'), h('button', { class: 'btn ghost', onclick: () => answer(false) }, 'Ні, дякую')));
+    return card;
+  }
+
   function library() {
     const cards = PACKS.map(p => h('button', { class: 'pack-card', onclick: () => { Sfx.tap(); go('#/pack/' + p.id); } },
       h('div', { class: 'cover' }, h('span', { class: 'date' }, p.date), h('img', { src: asset(p, p.cover), alt: '' })),
@@ -315,6 +658,7 @@
     frame(h('b', {}, 'Бібліотека'), [
       h('div', { class: 'kicker' }, 'Ваші набори'),
       h('h1', {}, 'Що будемо дивувати сьогодні?'),
+      newsBanner() || newsAsk(),   // не дві великі картки поспіль: спершу оголошення, потім питання про листи
       h('div', { class: 'shelf' }, cards, soon)]);
   }
 
@@ -325,17 +669,20 @@
       h('div', { class: 'ico' }, icon(ico)), h('h3', {}, title), h('div', { class: 'muted' }, note));
     const lp = byLevel(pack, pack);
     frame([pack.title], [
+      newsBanner(),
       h('div', { class: 'pack-head' },
         h('div', { class: 'kicker' }, pack.subtitle),
         h('h1', {}, pack.title),
         lp.description ? h('p', { class: 'lead' }, lp.description) : null,
+        classPicker(pack),
         levelPicker(pack)),
       h('div', { class: 'menu' },
         item('clock', 'Машина часу', done ? `Пройдено ${done} з ${pack.stops.length} зупинок — продовжити` : 'Інтерактивна подорож для дошки: 5 епох, 5 завдань, одне слово', `#/pack/${pack.id}/map`, true),
         item('film', 'Мультфільми', 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
         item('print', 'Роздатка', license.allows(pack.id) ? 'Робочі аркуші, плакати, грамоти для друку' : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
         item('board', 'Для вчителя', 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`),
-        item('verified', 'Джерела й фактчек', 'Чим підтверджено факти заняття', `#/pack/${pack.id}/sources`)),
+        item('verified', 'Джерела й фактчек', 'Чим підтверджено факти заняття', `#/pack/${pack.id}/sources`),
+        license.allows(pack.id) ? item('download', 'Завантажити матеріали', 'Мультфільми, роздатка та сценарій окремими файлами', `#/pack/${pack.id}/downloads`) : null),
       offlineCard(pack)]);
   }
 
@@ -366,7 +713,7 @@
       h('div', { class: 'year' }, 'Сьогодні'),
       h('div', { class: 'who' }, 'Скриня зі словом'));
     frame([pack.title, ' · ', h('b', {}, 'Машина часу')], h('div', { class: 'map-wrap' },
-      h('div', {}, h('div', { class: 'kicker' }, 'Обирайте епоху' + (levelOf(pack) ? ' · ' + levelOf(pack).label : '')), h('h2', {}, pack.title)),
+      h('div', {}, h('div', { class: 'kicker' }, 'Обирайте епоху' + (levelOf(pack) ? ' · ' + levelOf(pack).label : '')), h('h2', {}, pack.title), classPicker(pack)),
       h('div', { class: 'timeline' }, stops, fin),
       letterBar(pack),
       h('div', { style: 'text-align:center' }, h('button', { class: 'btn ghost', onclick: () => { if (confirmReset.armed) { progress.reset(pack); route(); } else { confirmReset.armed = true; toast('Натисніть ще раз, щоб почати спочатку'); setTimeout(() => confirmReset.armed = false, 2500); } } }, '↺ Почати спочатку'))));
@@ -632,6 +979,13 @@
     return h('div', { html: s + '</svg>' });
   }
 
+  // рядок на дипломі: школа й педагог із профілю акаунта
+  function teacherLine() {
+    const l = license.get() || {};
+    const parts = [l.school, l.name ? 'Педагог: ' + l.name : ''].filter(Boolean);
+    return l.account && parts.length ? h('div', { class: 'diploma-teacher' }, parts.join(' · ')) : null;
+  }
+
   function final(pack) {
     const target = pack.word;
     let i = 0;
@@ -661,9 +1015,10 @@
             h('img', { src: 'brand/dyvourok-logo.svg', alt: 'Дивоурок', style: 'height:48px' }),
             h('div', { class: 'dtitle' }, 'ДИПЛОМ'),
             h('div', { class: 'lead' }, 'мандрівника в часі'),
-            h('input', { id: 'diploma-name', placeholder: 'Ім\'я або назва класу', 'aria-label': 'Ім\'я' }),
+            h('input', { id: 'diploma-name', placeholder: 'Ім\'я або назва класу', 'aria-label': 'Ім\'я', value: currentClass() ? className(currentClass()) : null }),
             h('p', { class: 'lead' }, `за подорож від першої абетки до сьогодення та слово «${target}», яке ми зберегли разом`),
             h('div', { class: 'muted' }, `${pack.date} · День української писемності та мови`),
+            teacherLine(),
             h('div', { class: 'license-mark' }, 'Ліцензія: ' + ((license.get() || {}).note || 'Дивоурок'))),
           h('div', { class: 'chips no-print' },
             h('button', { class: 'btn', onclick: () => window.print() }, icon('print'), 'Надрукувати диплом'),
@@ -742,6 +1097,32 @@
           h('div', { class: 'card-soft' }, h('h3', {}, 'Відповіді'), h('ul', { class: 'clean' }, t.answers.map(x => h('li', {}, x))))))]);
   }
 
+  function downloads(pack) {
+    if (!license.allows(pack.id)) { lockedDialog(); return packHome(pack); }
+    const fileRow = (title, note, file, kind) => h('a', {
+      class: 'row download-row', href: asset(pack, file), download: file.split('/').pop(),
+      onclick: () => track('download_' + kind)
+    }, h('span', { class: 'download-ico' }, icon('download')),
+    h('div', { class: 'grow' }, h('h3', {}, title), h('div', { class: 'muted' }, note)),
+    h('span', { class: 'btn ghost compact' }, 'Завантажити'));
+    const cartoonsList = pack.cartoons.filter(c => c.ready).map(c => fileRow(c.title, 'MP4 з озвученням', c.file, 'video'));
+    const handoutsList = levelHandouts(pack).map(d => fileRow(d.title, d.note, d.file, 'pdf'));
+    const teacherData = byLevel(pack, pack.teacher);
+    const guide = fileRow('Сценарій, поради та відповіді', '1 сторінка A4 · PDF', teacherData.file, 'teacher');
+    frame([pack.title, ' · ', h('b', {}, 'Завантаження')], [
+      h('div', { class: 'download-head' },
+        h('h2', {}, 'Завантажити окремі матеріали'),
+        h('p', { class: 'lead' }, 'Файли з’являться у папці «Завантаження». Для інтерактивного квесту скористайтеся кнопкою «Зберегти весь набір» на головній сторінці набору.')),
+      levelPicker(pack),
+      h('section', { class: 'download-section' }, h('h3', {}, 'Мультфільми'), h('p', { class: 'muted download-note' }, 'У файлах є озвучення. Субтитри вмикаються лише у плеєрі «Дивоуроку».'), h('div', { class: 'list' }, cartoonsList)),
+      h('section', { class: 'download-section' }, h('h3', {}, 'Роздатка для обраного класу'), h('div', { class: 'list' }, handoutsList)),
+      h('section', { class: 'download-section' }, h('h3', {}, 'Для вчителя'), h('div', { class: 'list' }, guide)),
+      h('div', { class: 'muted download-foot' },
+        h('p', {}, 'Завантажені файли не оновлюються автоматично. Актуальна версія завжди залишається у «Дивоуроці».'),
+        h('p', {}, 'На iPhone або iPad файл може спочатку відкритися. Тоді натисніть «Поділитися» та виберіть «Зберегти у Файли».'))
+    ]);
+  }
+
   function sources(pack) {
     const data = pack.sources;
     if (!data || !data.groups) return packHome(pack);
@@ -784,20 +1165,98 @@
 
   function account() {
     const l = license.get();
+    const logout = async () => {
+      try { await api('/api/session', 'DELETE'); } catch (e) {}
+      await clearOffline();   // збережені файли набору не лишаються на пристрої після виходу
+      if (l.account) cloud.clear();   // класи й прогрес лишаються в акаунті, на чужій дошці — ні
+      license.clear(); toast(l.account ? 'Ви вийшли з акаунта на цьому пристрої.' : 'Ви вийшли. Місце для пристрою звільнено.'); go('#/'); route();
+    };
+    const packNames = packs => packs === '*' ? 'усі' : packs ? packs.split(',').map(id => (PACKS.find(p => p.id === id) || { title: id }).title).join(', ') : 'поки немає';
+    const day = ms => new Date(ms).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    if (l && l.account) {
+      const nameInput = h('input', { class: 'name-input', value: l.name || '', maxlength: '120', placeholder: 'Ім\'я та прізвище', 'aria-label': 'Ім\'я' });
+      const schoolInput = h('input', { class: 'name-input', value: l.school || '', maxlength: '160', placeholder: 'Наприклад, Ліцей № 5, м. Житомир', 'aria-label': 'Школа' });
+      const saveProfile = h('button', { class: 'btn ghost compact', onclick: async () => {
+        const r = await api('/api/me', 'POST', { name: nameInput.value, school: schoolInput.value }).catch(() => ({ ok: false }));
+        if (r.ok) { license.set(r.data); Sfx.right(); toast('Збережено'); } else toast(offlineMsg);
+      } }, 'Зберегти');
+      const news = h('input', { type: 'checkbox', checked: l.news === 1, onchange: async () => {
+        const r = await api('/api/me', 'POST', { news: news.checked }).catch(() => ({ ok: false }));
+        if (r.ok) { license.set(r.data); toast(news.checked ? 'Дякуємо! Повідомимо про нові набори.' : 'Листів більше не надсилатимемо.'); }
+        else { news.checked = !news.checked; toast(offlineMsg); }
+      } });
+      const purchases = h('div', { class: 'account-details' }, h('p', { class: 'muted' }, 'Завантажуємо…'));
+      const devices = h('div', { class: 'account-details' });
+      api('/api/me', 'GET').then(r => {
+        if (!r.ok) { purchases.replaceChildren(h('p', { class: 'muted' }, 'Не вдалося завантажити дані акаунта.')); return; }
+        const d = r.data;
+        purchases.replaceChildren(d.codes.length
+          ? h('ul', { class: 'clean' }, d.codes.map(c => h('li', {}, h('b', {}, packNames(c.packs)), c.since ? ' · з ' + day(c.since) : '', ' · код ', c.code,
+            c.expires_at ? ' · діє до ' + day(c.expires_at) : '')))
+          : h('p', { class: 'muted' }, 'Покупок ще немає. Додайте код з листа нижче, і набір відкриється на всіх пристроях, де ви увійшли.'));
+        const others = d.sessions.filter(x => !x.current).length;
+        devices.replaceChildren(...[
+          h('ul', { class: 'clean' }, d.sessions.map(x => h('li', {}, x.label || 'Пристрій', x.current ? ' (цей пристрій)' : ' · востаннє ' + new Date(x.last_seen).toLocaleDateString('uk-UA')))),
+          others ? h('button', { class: 'linkish', onclick: async () => {
+            if (!confirm('Вийти з акаунта на всіх інших пристроях (' + others + ')?')) return;
+            const r2 = await api('/api/me', 'POST', { action: 'logout-others' }).catch(() => ({ ok: false }));
+            if (r2.ok) { toast('Готово: інші пристрої вийшли з акаунта'); route(); } else toast(offlineMsg);
+          } }, 'Вийти на всіх інших пристроях') : null].filter(Boolean));
+      }).catch(() => purchases.replaceChildren(h('p', { class: 'muted' }, offlineMsg)));
+      const list = classes();
+
+      return frame(h('b', {}, 'Акаунт'), h('div', { class: 'gate account' },
+        h('h1', {}, 'Ваш акаунт'),
+        h('div', { class: 'card-soft account-card' },
+          h('div', {}, h('b', {}, 'Пошта: '), l.email),
+          h('label', { class: 'name-label' }, h('b', {}, 'Ім\'я'), nameInput),
+          h('label', { class: 'name-label' }, h('b', {}, 'Школа'), schoolInput),
+          h('p', { class: 'muted small' }, 'Ім\'я й школа з\'являться на дипломах учнів.'),
+          h('div', {}, saveProfile),
+          h('label', { class: 'check' }, news, h('span', {}, 'Повідомляти про нові набори й нагадувати за тиждень до свята. Не частіше двох листів на місяць.'))),
+        h('div', { class: 'card-soft account-card' },
+          h('h3', {}, 'Мої набори'),
+          purchases),
+        h('div', { class: 'card-soft code-card' },
+          h('h3', {}, 'Додати код доступу'),
+          h('p', { class: 'muted' }, 'Код прив\'яжеться до акаунта. Обмеження на кількість пристроїв для акаунта немає.'),
+          codeBox(() => { toast('Код додано'); route(); })),
+        h('div', { class: 'card-soft account-card' },
+          h('h3', {}, 'Мої класи'),
+          list.length ? h('div', { class: 'chips' }, list.map(c => h('button', { class: 'chip', onclick: () => classDialog(c, PACKS[0]) }, c.name, ' ✎')))
+            : h('p', { class: 'muted' }, 'Класів ще немає. Додайте їх на сторінці набору («Мій клас»), щоб вести прогрес квесту окремо для кожного.'),
+          h('button', { class: 'linkish', onclick: () => classDialog(null, PACKS[0]) }, '+ Додати клас')),
+        h('div', { class: 'card-soft account-card' },
+          h('h3', {}, 'Де ви увійшли'),
+          devices),
+        h('button', { class: 'btn ghost', onclick: logout }, 'Вийти на цьому пристрої'),
+        ownsAny() ? contactLine() : buyHint(),   // у buyHint уже є рядок з поштою
+        h('button', { class: 'linkish danger', onclick: async () => {
+          if (!confirm('Видалити акаунт ' + l.email + '? Класи й прогрес зникнуть. Куплені коди лишаться дійсними: їх можна буде ввести знову.')) return;
+          if (!confirm('Точно видалити? Цю дію не можна скасувати.')) return;
+          const r = await api('/api/me', 'DELETE').catch(() => ({ ok: false }));
+          if (!r.ok) { toast(offlineMsg); return; }
+          await clearOffline(); cloud.clear(); license.clear();
+          toast('Акаунт видалено.'); go('#/'); route();
+        } }, 'Видалити акаунт')));
+    }
+
     frame(h('b', {}, 'Доступ'), h('div', { class: 'gate' },
       h('h1', {}, l ? 'Ваш доступ' : 'Демо-режим'),
       l ? h('div', { class: 'card-soft', style: 'width:100%;text-align:left' },
         h('div', {}, h('b', {}, 'Власник: '), l.note || '—'),
-        h('div', {}, h('b', {}, 'Набори: '), l.packs === '*' ? 'усі' : l.packs),
+        h('div', {}, h('b', {}, 'Набори: '), packNames(l.packs)),
         OFFLINE_FILE ? null : h('div', {}, h('b', {}, 'Сесія до: '), new Date(l.exp).toLocaleDateString('uk-UA')))
         : h('p', { class: 'lead' }, 'Без коду доступна зупинка «Тарас Шевченко».'),
-      l && !OFFLINE_FILE ? h('button', { class: 'btn ghost', onclick: async () => {
-        try { await api('/api/session', 'DELETE'); } catch (e) {}
-        await clearOffline();   // збережені файли набору не лишаються на пристрої після виходу
-        license.clear(); toast('Ви вийшли. Місце для пристрою звільнено.'); go('#/'); route();
-      } }, 'Вийти з цього пристрою') : null,
-      !l ? h('button', { class: 'btn big', onclick: enterCode }, 'Ввести код') : null,
-      h('p', { class: 'muted' }, 'Один код працює на кількох пристроях (наприклад, дошка, ноутбук і телефон). Щоб перенести доступ на новий пристрій, вийдіть на старому.'),
+      OFFLINE_FILE ? null : h('div', { class: 'card-soft code-card' },
+        h('h3', {}, l ? 'Збережіть доступ в акаунті' : 'Увійдіть'),
+        h('p', { class: 'muted' }, l ? 'Увійдіть через Google або пошту: ваш код перейде в акаунт, набір відкриватиметься на будь-якому пристрої без коду, а класи й прогрес синхронізуються.'
+          : 'Увійдіть в акаунт, щоб відкрити свої набори.'),
+        loginBox(() => { toast('Ви увійшли'); route(); })),
+      l && !OFFLINE_FILE ? h('button', { class: 'btn ghost', onclick: logout }, 'Вийти з цього пристрою') : null,
+      !l ? h('button', { class: 'btn ghost', onclick: () => { store.set('dyvo_demo', false); go('#/'); route(); } }, 'Ввести код доступу') : null,
+      l ? h('p', { class: 'muted' }, 'Один код працює на кількох пристроях (наприклад, дошка, ноутбук і телефон). Щоб перенести доступ на новий пристрій, вийдіть на старому.') : null,
       contactLine()));
   }
 
@@ -811,6 +1270,7 @@
       history.replaceState(null, '', location.pathname + location.search + '#/pack/' + (parts[1] || 'mova') + (parts[2] ? '/' + parts.slice(2).join('/') : ''));
       return route();
     }
+    if (parts[0] === 'login' || parts[0] === 'login-ok' || parts[0] === 'login-error') return finishLogin(parts[0], parts[1]);
     if (!hasAccess()) return gate();
     if (isDemo()) track('start');
     if (parts[0] === 'account') return account();
@@ -829,6 +1289,7 @@
     if (view === 'handouts') return handouts(pack);
     if (view === 'teacher') return teacher(pack);
     if (view === 'sources') return sources(pack);
+    if (view === 'downloads') return downloads(pack);
     return packHome(pack);
   }
 
@@ -838,6 +1299,13 @@
   if (/[?&]nosplash/.test(location.search)) seen = true;   // для скриншотів і вбудовування
   if (seen) route(); else { route(); splash(() => {}); }
   refreshLicense();
+  cloud.sync(true);
+  news.load();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - cloud.lastSync > 30000) cloud.sync(true);
+    if (Date.now() - news.lastLoad > 10 * 6e4) news.load();
+  });
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});

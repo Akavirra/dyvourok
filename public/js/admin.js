@@ -44,6 +44,8 @@
     render();
     await loadPre();
     renderSales();
+    loadAccounts();
+    loadNews();
     loadDemo();
   }
 
@@ -70,7 +72,7 @@
   const amountOf = c => (c.amount == null ? priceAt(c.created_at) : c.amount);
   const paidOf = c => c.paid_at || c.created_at;
   const isSale = c => kindOf(c) === 'sale' && !c.revoked;
-  const notActivated = c => isSale(c) && !c.devices && Date.now() - c.created_at > 864e5;
+  const notActivated = c => isSale(c) && !c.devices && !c.user_id && Date.now() - c.created_at > 864e5;   // прив'язаний до акаунта — теж активовано
   const dayKey = ms => { const d = new Date(ms); return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); };
   const fmtDate = ms => new Date(ms).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
   const toDateInput = ms => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -95,9 +97,10 @@
   const SUBJECT = 'Ваш код доступу до «Машини часу рідної мови»';
   const hiOf = c => c.hi || 'Вітаємо';
   const howto = c => `1. Відкрийте ${APP}
-2. Вставте код у поле «Код доступу» й натисніть «Увійти» — відкриється весь набір «Машина часу рідної мови». (Якщо раніше відкривали демо, спершу натисніть «Ввести код» угорі.)
+2. ${emailOf(c) ? `Увійдіть через Google або пошту ${emailOf(c)} — набір відкриється сам і буде доступний на будь-якому пристрої. Або` : 'Увійдіть через Google чи пошту й натисніть «Додати код», або'} вставте код у поле «Маєте код доступу?» і натисніть «Увійти з кодом». (Якщо раніше відкривали демо, спершу натисніть «Увійти» угорі.)
 3. На сторінці набору вгорі оберіть свій клас: 1–4, 5–7 або 8–11.
-4. Щоб працювало без інтернету, натисніть там же «Робота без інтернету → Зберегти» (≈100 МБ).`;
+4. Щоб провести весь урок без інтернету, натисніть там же «Увесь набір без інтернету → Зберегти весь набір» (≈100 МБ). Квест, мультфільми, поради, відповіді та роздатка збережуться в цьому браузері.
+5. Якщо потрібні окремі файли в папці «Завантаження», відкрийте в наборі розділ «Завантажити матеріали».`;
   const WISH = `Якщо виникнуть питання чи щось не відкриється — пишіть сюди або на info@dyvourok.com.ua, ми завжди на зв'язку й швидко допоможемо 🙂
 
 Бажаємо натхненного уроку, і щоб ваші учні з радістю мандрували в Машині часу! 📜✨`;
@@ -118,7 +121,7 @@ ${FOLLOW}`;
 Як почати:
 ${howto(c)}
 
-Код працює на ${c.max_devices || 3} пристроях (наприклад, дошка, ноутбук і телефон). Щоб перенести доступ на інший пристрій, на старому натисніть іконку людини вгорі → «Вийти з цього пристрою».
+Через акаунт (Google або пошта) набір відкривається на будь-якій кількості ваших пристроїв, а прогрес класів синхронізується. Сам код без акаунта працює на ${c.max_devices || 3} пристроях.
 
 Роздатку для друку (PDF) і сценарій уроку знайдете в наборі: розділи «Роздатка» та «Для вчителя».
 
@@ -181,6 +184,7 @@ ${howto(c)}
       : c.expires_at && c.expires_at < Date.now() ? ['bad', 'минув термін']
       : c.devices >= c.max_devices ? ['full', 'усі пристрої зайняті']
       : notActivated(c) ? ['warn-p', 'ще не входили']
+      : c.user_id ? ['ok', 'в акаунті']
       : c.devices ? ['ok', 'користуються'] : ['gray', 'код видано'];
     return el('span', 'pill ' + cls, text);
   }
@@ -204,12 +208,14 @@ ${howto(c)}
     const info = el('div', 'p-info');
     const parts = [emailOf(c), SOURCE_LABEL[sourceOf(c)], gradeOf(c) ? GRADE_LABEL[gradeOf(c)] + ' клас' : '', kind === 'sale' ? amountOf(c) + ' ₴' : '', 'оплата ' + fmtDate(paidOf(c))].filter(x => x && x !== '—');
     info.append(el('div', null, parts.join(' · ')));
+    if (c.account_email) info.append(el('div', 'sub', 'Акаунт: ' + c.account_email));
     if (c.contact) info.append(el('div', 'sub', c.contact));
     if (c.packs !== 'mova') info.append(el('div', 'sub', 'Набори: ' + (c.packs === '*' ? 'усі' : c.packs)));
     const acts = copySet(c);
     if (lazy) acts.append(button('Нагадування', 'btn sun sm', () => copy(reminderFor(c), 'Нагадування')));
     acts.append(button(editing === c.code ? 'Закрити' : 'Редагувати', 'btn ghost sm', () => { editing = editing === c.code ? '' : c.code; render(); }));
     const more = [[c.revoked ? 'Розблокувати код' : 'Заблокувати код', () => act(c.revoked ? 'restore' : 'revoke', c.code), !c.revoked]];
+    if (c.user_id) more.push(['Відв’язати від акаунта', async () => { if (confirm('Відв’язати код ' + c.code + ' від акаунта ' + (c.account_email || '') + '? Код лишиться дійсним.')) { await call('POST', { action: 'unlink', code: c.code }, 'accounts'); toast('Відв’язано ✓'); load(); } }]);
     if (c.devices) more.push(['Скинути пристрої', () => { if (confirm('Скинути всі пристрої коду ' + c.code + '? Покупцю треба буде ввести код заново.')) act('reset-devices', c.code); }]);
     acts.append(menu(more));
     card.append(avatar(c.note || c.code), head, info, acts);
@@ -243,6 +249,126 @@ ${howto(c)}
     return box;
   }
   async function act(action, code) { await call('POST', { action, code }); toast('Готово ✓'); load(); }
+
+  // ---- акаунти вчителів (вхід через Google або пошту)
+  let accounts = [];
+  async function loadAccounts() {
+    try { accounts = (await call('GET', null, 'accounts')).accounts || []; } catch (e) { $('acc-stats').textContent = 'Не вдалося завантажити акаунти: ' + e.message; return; }
+    const withCodes = accounts.filter(a => a.codes.length).length;
+    const news = accounts.filter(a => a.news === 1).length;
+    const week = accounts.filter(a => a.created_at > Date.now() - 7 * 864e5).length;
+    $('acc-count').textContent = accounts.length ? plural(accounts.length, 'акаунт', 'акаунти', 'акаунтів') + (week ? ` · +${week} за тиждень` : '') : '';
+    $('acc-stats').textContent = accounts.length ? `З кодом: ${withCodes}. Без покупки: ${accounts.length - withCodes}. Погодилися на листи: ${news}. Через Google: ${accounts.filter(a => a.google).length}.` : '';
+    renderAccounts();
+  }
+  function renderAccounts() {
+    const q = $('acc-filter').value.trim().toLowerCase();
+    const rows = accounts.filter(a => !q || [a.email, a.name, a.school, ...a.codes.map(c => c.code + ' ' + c.note)].some(v => (v || '').toLowerCase().includes(q)));
+    $('acc-rows').replaceChildren(...(rows.length ? rows.map(accountCard) : [el('div', 'empty', q ? 'Нікого не знайдено.' : 'Акаунтів поки немає. Вони з’являться, щойно хтось увійде через Google або пошту.')]));
+  }
+  function accountCard(a) {
+    const card = el('article', 'person');
+    const head = el('div', 'p-head');
+    head.append(el('span', 'name', a.name || a.email));
+    head.append(el('span', 'pill ' + (a.codes.length ? 'ok' : 'gray'), a.codes.length ? 'є набір' : 'без покупки'));
+    if (a.news === 1) head.append(el('span', 'pill gray', 'листи ✓'));
+    head.append(el('span', 'right', (a.google ? 'Google' : 'пошта') + ' · ' + plural(a.sessions, 'пристрій', 'пристрої', 'пристроїв') + (a.last_seen ? ' · був ' + ago(a.last_seen) : '')));
+    const info = el('div', 'p-info');
+    info.append(el('div', null, [a.name ? a.email : '', a.school, 'з ' + fmtDate(a.created_at)].filter(Boolean).join(' · ')));   // без імені пошта вже в заголовку
+    a.codes.forEach(c => {
+      const line = el('div', 'sub');
+      line.append(el('span', null, c.code + ' — ' + (c.note || 'без імені') + (c.packs !== 'mova' ? ' · ' + (c.packs === '*' ? 'усі набори' : c.packs) : '') + (c.revoked ? ' · заблоковано' : '') + ' '),
+        button('відв’язати', 'linkish', async () => { if (confirm('Відв’язати код ' + c.code + ' від ' + a.email + '? Код лишиться дійсним.')) { await call('POST', { action: 'unlink', code: c.code }, 'accounts'); toast('Відв’язано ✓'); load(); } }));
+      info.append(line);
+    });
+    const acts = el('div', 'p-acts');
+    acts.append(
+      button('Прив’язати код', 'btn sm', async () => {
+        const code = prompt('Код, який прив’язати до ' + a.email + ' (якщо він в іншому акаунті — перейде сюди):');
+        if (!code) return;
+        try { await call('POST', { action: 'link', code, email: a.email }, 'accounts'); toast('Прив’язано ✓'); load(); }
+        catch (e) { alert(e.message === 'invalid' ? 'Такого коду немає.' : 'Не вдалося: ' + e.message); }
+      }),
+      button('Копіювати пошту', 'btn soft sm', () => copy(a.email, 'Пошту')),
+      menu([['Вийти на всіх пристроях', async () => { if (confirm('Завершити всі сесії ' + a.email + '?')) { await call('POST', { action: 'logout', id: a.id }, 'accounts'); toast('Готово ✓'); loadAccounts(); } }, true]]));
+    card.append(avatar(a.name || a.email), head, info, acts);
+    return card;
+  }
+  $('acc-filter').addEventListener('input', renderAccounts);
+  $('acc-news').onclick = () => {
+    const emails = accounts.filter(a => a.news === 1).map(a => a.email);
+    if (!emails.length) { toast('Поки ніхто не погодився на листи'); return; }
+    copy(emails.join(', '), `E-mail для розсилки (${emails.length})`);
+  };
+
+  // ---- оголошення в застосунку (дзвіночок і банер)
+  let newsItems = [];
+  let newsEditing = null;
+  const AUD_LABEL = { all: 'усім', buyers: 'тим, хто купив', demo: 'без покупки' };
+  async function loadNews() {
+    try { newsItems = (await call('GET', null, 'news')).items || []; } catch (e) { $('n-err').textContent = 'Не вдалося завантажити оголошення: ' + e.message; return; }
+    $('news-count').textContent = newsItems.length ? plural(newsItems.length, 'оголошення', 'оголошення', 'оголошень') : '';
+    $('news-rows').replaceChildren(...(newsItems.length ? newsItems.map(newsCard) : [el('div', 'empty', 'Оголошень ще немає. Напишіть перше вище — його побачать усі, хто відкриє застосунок.')]));
+  }
+  function newsState(n) {
+    const now = Date.now();
+    return n.hidden ? ['gray', 'приховано'] : n.starts_at > now ? ['warn-p', 'заплановано'] : n.ends_at && n.ends_at <= now ? ['gray', 'завершено'] : ['ok', 'показується'];
+  }
+  function newsCard(n) {
+    const card = el('article', 'person' + (n.hidden ? ' off' : ''));
+    const head = el('div', 'p-head');
+    const [cls, label] = newsState(n);
+    head.append(el('span', 'name', n.title), el('span', 'pill ' + cls, label));
+    if (n.important) head.append(el('span', 'pill warn-p', 'важливе'));
+    head.append(el('span', 'right', `побачили ${n.seen} · прочитали ${n.reads}` + (n.button_url ? ` · натиснули ${n.clicks}` : '')));
+    const info = el('div', 'p-info');
+    info.append(el('div', null, ['з ' + fmtDate(n.starts_at) + (n.ends_at ? ' по ' + fmtDate(n.ends_at - 1) : ''), AUD_LABEL[n.audience] || n.audience, n.grades ? 'версії ' + n.grades.replace(/-/g, '–') : ''].filter(Boolean).join(' · ')));
+    if (n.body) info.append(el('div', 'sub news-body', n.body));
+    if (n.button_url) info.append(el('div', 'sub', 'Кнопка «' + (n.button_label || '—') + '» → ' + n.button_url));
+    const acts = el('div', 'p-acts');
+    acts.append(button('Редагувати', 'btn ghost sm', () => fillNews(n)),
+      button(n.hidden ? 'Показати' : 'Приховати', 'btn soft sm', async () => { await call('POST', { ...n, hidden: !n.hidden }, 'news'); toast(n.hidden ? 'Знову показується ✓' : 'Приховано ✓'); loadNews(); }),
+      menu([['Видалити', async () => { if (confirm('Видалити оголошення «' + n.title + '» разом зі статистикою?')) { await call('POST', { action: 'delete', id: n.id }, 'news'); toast('Видалено'); loadNews(); } }, true]]));
+    card.append(avatar(n.title), head, info, acts);
+    return card;
+  }
+  function resetNewsForm() {
+    newsEditing = null;
+    ['n-title', 'n-body', 'n-label', 'n-url', 'n-to'].forEach(id => { $(id).value = ''; });
+    $('n-from').value = toDateInput(Date.now());
+    setSel('n-aud', 'all');
+    document.querySelectorAll('#n-grades input').forEach(i => { i.checked = false; });
+    $('n-important').checked = false;
+    $('n-save').textContent = 'Опублікувати'; $('n-cancel').hidden = true; $('n-err').textContent = '';
+  }
+  function fillNews(n) {
+    newsEditing = n;
+    $('n-title').value = n.title; $('n-body').value = n.body; $('n-label').value = n.button_label; $('n-url').value = n.button_url;
+    $('n-from').value = toDateInput(n.starts_at); $('n-to').value = n.ends_at ? toDateInput(n.ends_at - 1) : '';
+    setSel('n-aud', n.audience);
+    document.querySelectorAll('#n-grades input').forEach(i => { i.checked = (n.grades || '').split(',').includes(i.value); });
+    $('n-important').checked = !!n.important;
+    $('n-save').textContent = 'Зберегти зміни'; $('n-cancel').hidden = false;
+    $('news').scrollIntoView({ behavior: 'smooth' });
+  }
+  $('n-cancel').onclick = resetNewsForm;
+  $('n-save').onclick = async () => {
+    $('n-err').textContent = '';
+    const from = $('n-from').value ? new Date($('n-from').value + 'T00:00').getTime() : Date.now();
+    const body = {
+      id: newsEditing ? newsEditing.id : undefined, hidden: newsEditing ? !!newsEditing.hidden : false,
+      title: $('n-title').value, body: $('n-body').value, button_label: $('n-label').value, button_url: $('n-url').value.trim(),
+      audience: $('n-aud').value, grades: [...document.querySelectorAll('#n-grades input:checked')].map(i => i.value).join(','),
+      important: $('n-important').checked,
+      starts_at: newsEditing || from > Date.now() ? from : Date.now(),   // «сьогодні» — одразу, а не з півночі
+      ends_at: $('n-to').value ? new Date($('n-to').value + 'T00:00').getTime() + 864e5 : null   // «по» — включно
+    };
+    if (!body.title.trim()) { $('n-err').textContent = 'Напишіть заголовок.'; return; }
+    if (body.button_url && !/^(#\/|https:\/\/)/.test(body.button_url)) { $('n-err').textContent = 'Посилання має починатися з #/ (сторінка застосунку) або https://'; return; }
+    try { await call('POST', body, 'news'); toast(newsEditing ? 'Збережено ✓' : 'Опубліковано ✓'); resetNewsForm(); loadNews(); }
+    catch (e) { $('n-err').textContent = 'Не вдалося зберегти: ' + e.message; }
+  };
+  resetNewsForm();
 
   // ---- заявки з сайту
   const STATUS = [['new', 'Нова'], ['written', 'Написали'], ['paid', 'Оплачено'], ['declined', 'Відмова']];

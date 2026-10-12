@@ -30,7 +30,7 @@ export async function onRequest({ request, env }) {
 
   if (request.method === 'GET') {
     const { results } = await env.DB.prepare(
-      `SELECT c.*, COUNT(d.device_id) AS devices, MAX(d.last_seen) AS last_seen
+      `SELECT c.*, COUNT(d.device_id) AS devices, MAX(d.last_seen) AS last_seen, (SELECT email FROM users u WHERE u.id = c.user_id) AS account_email
        FROM codes c LEFT JOIN devices d ON d.code = c.code
        GROUP BY c.code ORDER BY c.created_at DESC LIMIT 500`).all();
     return json({ codes: results });

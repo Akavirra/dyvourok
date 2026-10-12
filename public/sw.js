@@ -1,5 +1,5 @@
 /* Робота без інтернету: після першого відкриття все потрібне лежить у кеші. Нову версію — через зміну VERSION. */
-const VERSION = 'dyvourok-v17';
+const VERSION = 'dyvourok-v20';
 // Мультфільми, PDF і картинки набору, які вчитель зберіг кнопкою «Робота без інтернету» (див. saveOffline в app.js).
 // Окремий кеш: не стирається з новою VERSION, адреси мають ?v=, тож застарілих файлів не віддасть.
 const MEDIA = 'dyvourok-media';
@@ -44,6 +44,7 @@ async function fromMedia(req) {
 // Спершу мережа (щоб оновлення доходили одразу), без інтернету — кеш. Збережені файли набору — одразу з кешу.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  if (new URL(e.request.url).pathname.startsWith('/api/')) return;   // вхід і дані акаунта — завжди з мережі, не в кеш
   const ranged = e.request.headers.has('range');
   const heavy = HEAVY.test(new URL(e.request.url).pathname);
   e.respondWith((async () => {

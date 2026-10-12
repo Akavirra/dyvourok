@@ -44,6 +44,7 @@ img { max-width: 100%; display: block; }
 .topbar .spacer { flex: 1; }
 .icon-btn { width: 48px; height: 48px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; background: var(--paper-2); font-size: 22px; flex: none; }
 .icon-btn:hover { background: var(--line); }
+@media (max-width: 520px) { .topbar { gap: 8px; } .topbar .icon-btn { width: 40px; height: 40px; border-radius: 12px; font-size: 19px; } .topbar .crumb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .topbar .fs-btn { display: none; } .topbar .btn { padding: 9px 12px !important; } }
 .svg-ico { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
 .menu-item .ico { color: var(--red); }
 .menu-item.main .ico { color: var(--yellow); }
@@ -85,6 +86,67 @@ h3 { font-weight: 900; font-size: 1.15em; }
 .gate input { width: 100%; font: inherit; font-weight: 900; font-size: 1.5em; text-align: center; letter-spacing: .08em; text-transform: uppercase; padding: 16px; border-radius: 16px; border: 3px solid var(--line); background: #fff; color: var(--ink); }
 .gate input:focus { border-color: var(--red); outline: none; }
 .gate .err { color: var(--red); font-weight: 800; min-height: 1.4em; }
+/* вхід в акаунт і код доступу */
+.login-box, .code-box { width: 100%; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.login-box > .btn { width: 100%; }
+.google-btn { background: #fff; color: var(--ink); box-shadow: 0 5px 0 var(--line); border: 2px solid var(--line); text-decoration: none; }
+.google-btn:active { box-shadow: 0 1px 0 var(--line); }
+.g-mark { width: 1.5em; height: 1.5em; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #4285F4; color: #fff; font-size: .8em; }
+.or { display: flex; align-items: center; gap: 12px; width: 100%; color: var(--muted); font-weight: 800; }
+.or::before, .or::after { content: ''; flex: 1; height: 2px; background: var(--line); }
+.email-row, .code-row { display: flex; gap: 10px; width: 100%; align-items: stretch; }
+.gate .email-row input, .gate .name-input { text-transform: none; letter-spacing: 0; font-size: 1.1em; text-align: left; font-weight: 700; flex: 1; min-width: 0; }
+.gate .code-row input { font-size: 1.15em; flex: 1; min-width: 0; }
+.gate input.digits { font-size: 2em; letter-spacing: .4em; max-width: 320px; }
+.code-row .btn, .email-row .btn { white-space: nowrap; padding: 12px 20px; }
+.code-card, .account-card { width: 100%; text-align: left; }
+.code-card h3, .account-card h3 { margin: 0; }
+.code-card .err, .login-box .err { min-height: 0; }
+.err:empty { display: none; }
+.name-label { display: flex; flex-direction: column; gap: 6px; }
+.account-details { display: flex; flex-direction: column; gap: 8px; }
+button.linkish { background: none; border: none; padding: 0; font: inherit; color: var(--red); font-weight: 800; cursor: pointer; text-decoration: underline; }
+@media (max-width: 520px) { .email-row, .code-row { flex-direction: column; } }
+/* кабінет: класи, профіль, згода на листи */
+.class-pick { margin-top: 2px; }
+.class-pick .cnt { margin-left: 8px; font-size: .75em; font-weight: 800; opacity: .7; }
+.class-pick .add { background: transparent; border: 3px dashed var(--line); border-radius: 999px; padding: 8px 16px; font-weight: 900; color: var(--muted); cursor: pointer; font: inherit; font-weight: 900; }
+.class-pick .add:hover { border-color: var(--red); color: var(--red); }
+.class-pick .hint { font-size: .9em; }
+.class-dialog { display: flex; flex-direction: column; gap: 14px; align-items: stretch; max-width: 460px; width: 100%; text-align: left; }
+.class-dialog h2 { margin: 0; }
+.class-dialog .name-input { font: inherit; font-weight: 800; font-size: 1.2em; padding: 14px; border-radius: 14px; border: 3px solid var(--line); background: #fff; color: var(--ink); }
+.class-dialog .name-input:focus { border-color: var(--red); outline: none; }
+.linkish.danger { color: var(--muted); font-weight: 700; }
+.linkish.danger:hover { color: var(--red); }
+label.check { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; line-height: 1.4; }
+label.check input { width: 22px; height: 22px; flex: none; margin-top: 2px; accent-color: var(--red); }
+.muted.small { font-size: .88em; margin: 0; }
+.card-soft.news-card { flex-direction: row; align-items: center; gap: 20px; margin-top: 18px; }
+.news-card h3 { margin: 0 0 4px; }
+.news-card p { margin: 0; }
+.news-acts { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; flex: none; }
+@media (max-width: 640px) { .card-soft.news-card { flex-direction: column; align-items: stretch; } .news-acts .btn { flex: 1; } }
+.diploma-teacher { font-weight: 800; color: var(--ink); }
+.legal { font-size: .85em; margin: 0; }
+.legal a { color: inherit; }
+/* оголошення: дзвіночок, список, банер */
+.icon-btn.bell { position: relative; }
+.news-badge { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--red); color: #fff; font-size: 11px; font-weight: 900; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--paper); }
+.news-badge[hidden] { display: none; }
+.reward .card.news-dialog { max-width: 600px; width: 100%; align-items: stretch; text-align: left; }
+.news-dialog h2 { margin: 0; text-align: center; }
+.news-list { display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow: auto; padding: 2px; }
+.news-item { background: #fff; border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; border-left: 5px solid transparent; }
+.news-item.unread { border-left-color: var(--red); }
+.news-item h3 { margin: 0; }
+.news-date { font-size: .8em; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.news-body { margin: 0; white-space: pre-line; line-height: 1.45; }
+.card-soft.news-banner { flex-direction: row; align-items: center; gap: 18px; margin: 0 0 18px; border-left: 6px solid var(--red); }
+.news-banner .ico { font-size: 1.8em; color: var(--red); flex: none; }
+.news-banner h3 { margin: 0 0 4px; }
+.news-banner .icon-btn { font-size: 26px; line-height: 1; }
+@media (max-width: 640px) { .card-soft.news-banner { flex-direction: column; align-items: stretch; } .news-banner .ico { display: none; } }
 
 /* ---------- бібліотека ---------- */
 .shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 24px; margin-top: 26px; }
@@ -117,6 +179,7 @@ h3 { font-weight: 900; font-size: 1.15em; }
 .offline-card .ico { font-size: 2.2em; line-height: 1; color: var(--red); }
 .offline-card.ok .ico { color: var(--green); }
 .offline-card .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.offline-note { font-size: .78em; }
 .offline-bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
 .offline-bar span { display: block; height: 100%; width: 0; background: var(--yellow); transition: width .3s; }
 @media (max-width: 640px) { .offline-card { flex-wrap: wrap; } .offline-card .btn { width: 100%; } }
@@ -264,6 +327,20 @@ h3 { font-weight: 900; font-size: 1.15em; }
 .teacher { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 28px; margin-top: 22px; }
 @media (max-width: 900px) { .teacher { grid-template-columns: 1fr; } }
 .card-soft { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 26px; display: flex; flex-direction: column; gap: 12px; }
+.download-head { max-width: 780px; display: flex; flex-direction: column; gap: 10px; }
+.download-section { margin-top: 30px; }
+.download-section > h3 { font-size: 1.3em; }
+.download-section .list { margin-top: 12px; }
+.download-note { max-width: 70ch; margin-top: 5px; }
+.download-row { width: 100%; color: var(--ink); text-decoration: none; user-select: text; }
+.download-row:hover { transform: translateY(-2px); }
+.download-ico { color: var(--red); font-size: 1.8em; line-height: 1; flex: none; }
+.btn.compact { padding: 10px 16px; border-radius: 12px; font-size: .85em; box-shadow: 0 3px 0 var(--line); }
+.download-foot { max-width: 70ch; margin: 26px 0; font-size: .82em; display: flex; flex-direction: column; gap: 7px; }
+@media (max-width: 640px) {
+  .download-row { align-items: flex-start; flex-wrap: wrap; }
+  .download-row .btn { width: 100%; }
+}
 table.plan { border-collapse: collapse; width: 100%; }
 table.plan td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 table.plan td:first-child { font-weight: 900; color: var(--red); white-space: nowrap; width: 1%; }

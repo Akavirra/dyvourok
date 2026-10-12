@@ -1,12 +1,19 @@
-// POST /api/session — оновити сесію (перевірка, що код не заблоковано і пристрій ще зареєстрований).
+// POST /api/session — оновити сесію (перевірка, що код не заблоковано і пристрій ще зареєстрований; для акаунта — що сесія жива).
 // DELETE /api/session — вийти з цього пристрою і звільнити місце в ліміті.
 import { json, readSession, signSession, sessionCookie, SESSION_DAYS } from '../../lib/auth.js';
+import { sessionUser, issueUserSession } from '../../lib/account.js';
 
 const clear = { 'set-cookie': sessionCookie('', 0) };
 
 export async function onRequestPost({ request, env }) {
   const s = await readSession(request, env);
   if (!s) return json({ error: 'no-session' }, 401, clear);
+  if (s.u) {
+    const user = await sessionUser(env, s);
+    if (!user) return json({ error: 'revoked' }, 401, clear);
+    const { data, cookie } = await issueUserSession(env, user, s.s);
+    return json(data, 200, { 'set-cookie': cookie });
+  }
   const row = await env.DB.prepare('SELECT * FROM codes WHERE code = ?').bind(s.c).first();
   const dev = await env.DB.prepare('SELECT 1 FROM devices WHERE code = ? AND device_id = ?').bind(s.c, s.d).first();
   const now = Date.now();
@@ -19,6 +26,7 @@ export async function onRequestPost({ request, env }) {
 
 export async function onRequestDelete({ request, env }) {
   const s = await readSession(request, env);
-  if (s) await env.DB.prepare('DELETE FROM devices WHERE code = ? AND device_id = ?').bind(s.c, s.d).run();
+  if (s && s.u) await env.DB.prepare('DELETE FROM user_sessions WHERE id = ?').bind(s.s).run();
+  else if (s) await env.DB.prepare('DELETE FROM devices WHERE code = ? AND device_id = ?').bind(s.c, s.d).run();
   return json({ ok: true }, 200, clear);
 }
