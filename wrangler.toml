@@ -7,3 +7,8 @@ binding = "DB"
 database_name = "dyvourok-db"
 database_id = "ccf40c92-2453-4eb8-821e-b9281bc2a86a"
 migrations_dir = "migrations"
+
+# Великі файли (>25 МБ, ліміт Pages): презентації PowerPoint. Ключ = шлях після /packs/, напр. mova/pptx/mova-1-4.pptx
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "dyvourok-files"

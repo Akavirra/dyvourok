@@ -682,7 +682,7 @@
         item('print', 'Роздатка', license.allows(pack.id) ? 'Робочі аркуші, плакати, грамоти для друку' : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
         item('board', 'Для вчителя', 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`),
         item('verified', 'Джерела й фактчек', 'Чим підтверджено факти заняття', `#/pack/${pack.id}/sources`),
-        license.allows(pack.id) ? item('download', 'Завантажити матеріали', 'Мультфільми, роздатка та сценарій окремими файлами', `#/pack/${pack.id}/downloads`) : null),
+        license.allows(pack.id) ? item('download', 'Завантажити матеріали', 'Презентація PowerPoint, мультфільми, роздатка та сценарій', `#/pack/${pack.id}/downloads`) : null),
       offlineCard(pack)]);
   }
 
@@ -1099,14 +1099,16 @@
 
   function downloads(pack) {
     if (!license.allows(pack.id)) { lockedDialog(); return packHome(pack); }
-    const fileRow = (title, note, file, kind) => h('a', {
-      class: 'row download-row', href: asset(pack, file), download: file.split('/').pop(),
+    const fileRow = (title, note, file, kind, name) => h('a', {
+      class: 'row download-row', href: asset(pack, file) + (name ? '?name=' + encodeURIComponent(name) : ''), download: name || file.split('/').pop(),
       onclick: () => track('download_' + kind)
     }, h('span', { class: 'download-ico' }, icon('download')),
     h('div', { class: 'grow' }, h('h3', {}, title), h('div', { class: 'muted' }, note)),
     h('span', { class: 'btn ghost compact' }, 'Завантажити'));
     const cartoonsList = pack.cartoons.filter(c => c.ready).map(c => fileRow(c.title, 'MP4 з озвученням', c.file, 'video'));
     const handoutsList = levelHandouts(pack).map(d => fileRow(d.title, d.note, d.file, 'pdf'));
+    const lv = levelOf(pack);
+    const pptList = (pack.presentations || []).filter(d => !lv || !d.levels || d.levels.includes(lv.id)).map(d => fileRow(d.title, d.note, d.file, 'pptx', d.name));
     const teacherData = byLevel(pack, pack.teacher);
     const guide = fileRow('Сценарій, поради та відповіді', '1 сторінка A4 · PDF', teacherData.file, 'teacher');
     frame([pack.title, ' · ', h('b', {}, 'Завантаження')], [
@@ -1114,6 +1116,7 @@
         h('h2', {}, 'Завантажити окремі матеріали'),
         h('p', { class: 'lead' }, 'Файли з’являться у папці «Завантаження». Для інтерактивного квесту скористайтеся кнопкою «Зберегти весь набір» на головній сторінці набору.')),
       levelPicker(pack),
+      pptList.length ? h('section', { class: 'download-section' }, h('h3', {}, 'Презентація PowerPoint'), h('p', { class: 'muted download-note' }, 'Для уроку без застосунку: клікабельна карта, анімації «по кліку», вікторини й нотатки для вчителя. Можна редагувати під свій клас.'), h('div', { class: 'list' }, pptList)) : null,
       h('section', { class: 'download-section' }, h('h3', {}, 'Мультфільми'), h('p', { class: 'muted download-note' }, 'У файлах є озвучення. Субтитри вмикаються лише у плеєрі «Дивоуроку».'), h('div', { class: 'list' }, cartoonsList)),
       h('section', { class: 'download-section' }, h('h3', {}, 'Роздатка для обраного класу'), h('div', { class: 'list' }, handoutsList)),
       h('section', { class: 'download-section' }, h('h3', {}, 'Для вчителя'), h('div', { class: 'list' }, guide)),

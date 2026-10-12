@@ -17,8 +17,31 @@ export async function onRequest({ request, env, params }) {
   if (!packAllowed(session, path.split('/')[0])) {
     return new Response('Доступ до матеріалу відкривається після активації коду.', { status: 401, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
   }
+  if (/^[a-z0-9-]+\/pptx\//.test(path)) return fromBucket(request, env, path);
   const res = await env.ASSETS.fetch(request);
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-cache');   // браузер щоразу перевіряє ETag: оновлення видно одразу, без повторного завантаження
   return out;
+}
+
+// Великі файли з R2 (презентації ~100 МБ не влазять у ліміт Pages 25 МБ на файл)
+async function fromBucket(request, env, key) {
+  const range = request.headers.get('range');
+  const obj = await env.FILES.get(key, range ? { range: request.headers } : {});
+  if (!obj) return new Response('Файл не знайдено', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  headers.set('etag', obj.httpEtag);
+  headers.set('accept-ranges', 'bytes');
+  headers.set('cache-control', 'private, no-cache');
+  const name = new URL(request.url).searchParams.get('name');
+  if (name) headers.set('content-disposition', `attachment; filename="${key.split('/').pop()}"; filename*=UTF-8''${encodeURIComponent(name)}`);
+  if (range && obj.range) {
+    const { offset = 0, length = obj.size - offset } = obj.range;
+    headers.set('content-range', `bytes ${offset}-${offset + length - 1}/${obj.size}`);
+    headers.set('content-length', String(length));
+    return new Response(obj.body, { status: 206, headers });
+  }
+  headers.set('content-length', String(obj.size));
+  return new Response(obj.body, { headers });
 }
