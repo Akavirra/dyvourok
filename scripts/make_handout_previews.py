@@ -28,7 +28,7 @@ def font(size):
     return f
 
 
-def watermark(im):
+def watermark(im, note='Демо · версія для друку — з кодом доступу · dyvourok.com.ua'):
     w, h = im.size
     base = im.convert('RGBA')
     # 1) щільна діагональна сітка тексту на всю сторінку
@@ -58,7 +58,6 @@ def watermark(im):
     d = ImageDraw.Draw(base)
     bh = max(28, h // 16)
     d.rectangle((0, h - bh, w, h), fill=RED + (235,))
-    note = 'Демо · версія для друку — з кодом доступу · dyvourok.com.ua'
     size = max(11, bh // 3)
     while size > 9 and d.textlength(note, font=font(size)) > w * 0.94:
         size -= 1
@@ -66,20 +65,21 @@ def watermark(im):
     return base.convert('RGB')
 
 
-for pack, docs in PACKS.items():
-    base = os.path.join(ROOT, 'packs', pack)
-    for pdf, skip, prefix in docs:
-        doc = pymupdf.open(os.path.join(base, pdf))
-        for f in os.listdir(os.path.join(base, 'img')):
-            if f.startswith(prefix):
-                os.remove(os.path.join(base, 'img', f))
-        n = 0
-        for i, page in enumerate(doc):
-            if i in skip:
-                continue
-            zoom = LONG_SIDE / max(page.rect.width, page.rect.height)
-            pm = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
-            im = Image.frombytes('RGB', (pm.width, pm.height), pm.samples)
-            n += 1
-            watermark(im).save(os.path.join(base, 'img', f'{prefix}{n:02d}.jpg'), quality=62, optimize=True)
-        print(pack, pdf, n, 'previews')
+if __name__ == '__main__':   # make_pptx_previews.py бере звідси лише watermark()
+    for pack, docs in PACKS.items():
+        base = os.path.join(ROOT, 'packs', pack)
+        for pdf, skip, prefix in docs:
+            doc = pymupdf.open(os.path.join(base, pdf))
+            for f in os.listdir(os.path.join(base, 'img')):
+                if f.startswith(prefix):
+                    os.remove(os.path.join(base, 'img', f))
+            n = 0
+            for i, page in enumerate(doc):
+                if i in skip:
+                    continue
+                zoom = LONG_SIDE / max(page.rect.width, page.rect.height)
+                pm = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
+                im = Image.frombytes('RGB', (pm.width, pm.height), pm.samples)
+                n += 1
+                watermark(im).save(os.path.join(base, 'img', f'{prefix}{n:02d}.jpg'), quality=62, optimize=True)
+            print(pack, pdf, n, 'previews')

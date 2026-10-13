@@ -682,7 +682,8 @@
         item('print', 'Роздатка', license.allows(pack.id) ? 'Робочі аркуші, плакати, грамоти для друку' : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
         item('board', 'Для вчителя', 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`),
         item('verified', 'Джерела й фактчек', 'Чим підтверджено факти заняття', `#/pack/${pack.id}/sources`),
-        license.allows(pack.id) ? item('download', 'Завантажити матеріали', 'Презентація PowerPoint, мультфільми, роздатка та сценарій', `#/pack/${pack.id}/downloads`) : null),
+        license.allows(pack.id) ? item('download', 'Завантажити матеріали', 'Презентація PowerPoint, мультфільми, роздатка та сценарій', `#/pack/${pack.id}/downloads`)
+          : levelSlides(pack).length ? item('download', 'Презентація PowerPoint', 'Подивитися зразки слайдів', `#/pack/${pack.id}/downloads`) : null),
       offlineCard(pack)]);
   }
 
@@ -1041,25 +1042,30 @@
     frame([pack.title, ' · ', h('b', {}, 'Мультфільми')], [h('h2', {}, 'Мультфільми'), list, slot]);
   }
 
-  // демо: сторінки роздатки картинками з водяним знаком «ЗРАЗОК», PDF для друку — лише з кодом
-  function handoutSamples(pack) {
-    const pages = levelHandouts(pack).flatMap(d => Array.from({ length: d.previews || 0 }, (_, i) => asset(pack, `img/${d.preview || 'handout-'}${String(i + 1).padStart(2, '0')}.jpg`)));
-    if (!pages.length) { lockedDialog(); return packHome(pack); }
-    track('samples');
-    const open = i => {
-      const img = h('img', { src: pages[i], alt: `Зразок сторінки ${i + 1}` });
+  // демо: зразки картинками з водяним знаком «ЗРАЗОК» (сторінки роздатки, слайди презентації); справжні файли — лише з кодом
+  const previewPages = (pack, list, prefix) => list.flatMap(d => Array.from({ length: d.previews || 0 }, (_, i) => asset(pack, `img/${d.preview || prefix}${String(i + 1).padStart(2, '0')}.jpg`)));
+  const levelSlides = pack => { const l = levelOf(pack); return previewPages(pack, (pack.presentations || []).filter(d => !l || !d.levels || d.levels.includes(l.id)), 'pptx14-'); };
+  function sampleViewer(pages, what) {
+    return i => {
+      const img = h('img', { src: pages[i], alt: `${what} ${i + 1}` });
       const count = h('div', { class: 'muted' }, `${i + 1} з ${pages.length}`);
-      const show = n => { i = (n + pages.length) % pages.length; img.src = pages[i]; img.alt = `Зразок сторінки ${i + 1}`; count.textContent = `${i + 1} з ${pages.length}`; };
+      const show = n => { i = (n + pages.length) % pages.length; img.src = pages[i]; img.alt = `${what} ${i + 1}`; count.textContent = `${i + 1} з ${pages.length}`; };
       const close = () => { box.remove(); removeEventListener('keydown', keys); };
       const keys = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') show(i + 1); else if (e.key === 'ArrowLeft') show(i - 1); };
-      const box = h('div', { class: 'lightbox', role: 'dialog', 'aria-label': 'Зразок сторінки роздатки', onclick: e => { if (e.target === box) close(); } },
-        h('button', { class: 'icon-btn nav prev', 'aria-label': 'Попередня сторінка', onclick: () => show(i - 1) }, '‹'),
+      const box = h('div', { class: 'lightbox', role: 'dialog', 'aria-label': what, onclick: e => { if (e.target === box) close(); } },
+        h('button', { class: 'icon-btn nav prev', 'aria-label': 'Попередній', onclick: () => show(i - 1) }, '‹'),
         h('figure', {}, img, count),
-        h('button', { class: 'icon-btn nav next', 'aria-label': 'Наступна сторінка', onclick: () => show(i + 1) }, '›'),
+        h('button', { class: 'icon-btn nav next', 'aria-label': 'Наступний', onclick: () => show(i + 1) }, '›'),
         h('button', { class: 'icon-btn close', 'aria-label': 'Закрити', onclick: close }, '×'));
       addEventListener('keydown', keys);
       document.body.append(box);
     };
+  }
+  function handoutSamples(pack) {
+    const pages = previewPages(pack, levelHandouts(pack), 'handout-');
+    if (!pages.length) { lockedDialog(); return packHome(pack); }
+    track('samples');
+    const open = sampleViewer(pages, 'Зразок сторінки роздатки');
     frame([pack.title, ' · ', h('b', {}, 'Роздатка')], [
       h('h2', {}, 'Роздатка для друку'),
       levelPicker(pack),
@@ -1097,8 +1103,26 @@
           h('div', { class: 'card-soft' }, h('h3', {}, 'Відповіді'), h('ul', { class: 'clean' }, t.answers.map(x => h('li', {}, x))))))]);
   }
 
+  function slideSamples(pack) {
+    const pages = levelSlides(pack);
+    if (!pages.length) { lockedDialog(); return packHome(pack); }
+    track('slides');
+    const open = sampleViewer(pages, 'Зразок слайда');
+    frame([pack.title, ' · ', h('b', {}, 'Презентація')], [
+      h('h2', {}, 'Презентація PowerPoint'),
+      levelPicker(pack),
+      h('div', { class: 'card-soft sample-note' },
+        h('div', { class: 'kicker' }, 'Демо-версія'),
+        h('p', {}, 'Так виглядає зупинка «Тарас Шевченко» у презентації. У повному наборі — файл PowerPoint для вашого класу без водяних знаків: усі 5 зупинок, мультфільми вже всередині, анімації й відповіді відкриваються по кліку, працює без інтернету, можна редагувати під свій клас.'),
+        h('div', { class: 'chips' },
+          h('button', { class: 'btn', onclick: enterCode }, 'Ввести код'),
+          h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo-pptx#peredzamovlennia', target: '_blank', rel: 'noopener', onclick: () => track('want') }, 'Хочу повну версію'))),
+      h('div', { class: 'samples slides' }, pages.map((src, i) => h('button', { class: 'sample slide', 'aria-label': `Зразок слайда ${i + 1}`, onclick: () => { Sfx.tap(); open(i); } },
+        h('img', { src, alt: '', loading: 'lazy' }))))]);
+  }
+
   function downloads(pack) {
-    if (!license.allows(pack.id)) { lockedDialog(); return packHome(pack); }
+    if (!license.allows(pack.id)) return slideSamples(pack);
     const fileRow = (title, note, file, kind, name) => h('a', {
       class: 'row download-row', href: asset(pack, file) + (name ? '?name=' + encodeURIComponent(name) : ''), download: name || file.split('/').pop(),
       onclick: () => track('download_' + kind)

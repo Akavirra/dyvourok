@@ -1,7 +1,7 @@
 // POST /api/track {v, e, src} — крок демо (анонімно): v — випадковий id пристрою, e — подія зі списку, src — звідки прийшли.
 import { json } from '../../lib/auth.js';
 
-const EVENTS = ['start', 'stop', 'play', 'half', 'end', 'task', 'done', 'locked', 'samples', 'want', 'code', 'preorder'];
+const EVENTS = ['start', 'stop', 'play', 'half', 'end', 'task', 'done', 'locked', 'samples', 'slides', 'want', 'code', 'preorder'];
 const VISITOR = /^[a-z0-9-]{8,40}$/i;
 const BOT = /bot|crawl|spider|preview|headless|lighthouse/i;
 
