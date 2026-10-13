@@ -6,7 +6,7 @@
 import { json, isAdmin, adminSession, adminCookie } from '../../../lib/auth.js';
 
 export async function onRequest({ request, env }) {
-  if (!(await isAdmin(request, env))) return json({ error: 'forbidden' }, 403);
+  if (!(await isAdmin(request, env))) return json({ error: 'forbidden', reason: isAdmin.lastReason }, 403);
   const s = await adminSession(request, env);   // null — увійшли запасним токеном
   const db = env.DB;
   if (request.method === 'GET') {

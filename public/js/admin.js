@@ -6,13 +6,14 @@
   let editing = '';          // код, картка якого зараз редагується
   let fromPre = '';          // контакт заявки, з якої заповнили форму нового коду
 
+  let lastDenied = '';      // причина відмови від сервера (діагностика входу)
   async function call(method, body, path = 'codes') {
     // вхід через Google — кукі dyvo_adm (сервер вимагає x-dyvo-admin); запасний токен — заголовок Authorization
     const headers = { 'content-type': 'application/json', 'x-dyvo-admin': '1' };
     if (token) headers.authorization = 'Bearer ' + token;
     const r = await fetch('/api/admin/' + path, { method, headers, credentials: 'same-origin', body: body ? JSON.stringify(body) : undefined });
     const data = await r.json().catch(() => ({}));
-    if (r.status === 403) throw new Error('forbidden');
+    if (r.status === 403) { lastDenied = data.reason || ''; throw new Error('forbidden'); }
     if (!r.ok) throw new Error(data.error || 'http ' + r.status);
     return data;
   }
@@ -769,6 +770,7 @@ ${howto(c)}
     'login-failed': 'Не вдалося увійти через Google. Спробуйте ще раз.',
     'login-cancelled': 'Вхід скасовано.'
   };
+  let signedIn = false;     // щойно повернулися з Google
   async function start(viaToken) {
     try {
       await load();
@@ -780,6 +782,7 @@ ${howto(c)}
     } catch (e) {
       if (viaToken) $('login-err').textContent = e.message === 'forbidden' ? 'Токен не підходить.' : 'Помилка: ' + e.message;
       else if (e.message !== 'forbidden') $('login-err').textContent = 'Помилка: ' + e.message;
+      else if (signedIn) $('login-err').textContent = 'Google вхід підтвердив, але адмінка не прийняла сесію (' + (lastDenied || 'невідомо') + '). Надішліть цей текст розробнику.';
       if (token && !viaToken) { token = ''; sessionStorage.removeItem('dyvo_admin'); }
     }
   }
@@ -807,6 +810,7 @@ ${howto(c)}
   $('enter').onclick = () => { token = $('token').value.trim(); if (token) start(true); };
   $('token').addEventListener('keydown', e => { if (e.key === 'Enter') $('enter').click(); });
   {
+    if (location.hash === '#signed-in') { signedIn = true; history.replaceState(null, '', '/admin'); }
     const msg = LOGIN_MSG[location.hash.slice(1)];
     if (msg) { $('login-msg').textContent = msg; $('login-msg').hidden = false; history.replaceState(null, '', '/admin'); }
   }

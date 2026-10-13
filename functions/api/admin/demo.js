@@ -4,7 +4,7 @@
 import { json, isAdmin } from '../../../lib/auth.js';
 
 export async function onRequestGet({ request, env }) {
-  if (!(await isAdmin(request, env))) return json({ error: 'forbidden' }, 403);
+  if (!(await isAdmin(request, env))) return json({ error: 'forbidden', reason: isAdmin.lastReason }, 403);
   const q = new URL(request.url).searchParams;
   const days = Math.min(Math.max(parseInt(q.get('days')) || 0, 0), 3650);   // 0 — за весь час
   const tzMin = -(parseInt(q.get('tz')) || 0);                                 // getTimezoneOffset браузера: Київ = -180

@@ -54,7 +54,7 @@ export async function onRequestGet({ request, env }) {
     const now = Date.now();
     await env.DB.prepare('INSERT INTO admin_sessions (id, email, label, created_at, last_seen) VALUES (?, ?, ?, ?, ?)').bind(sid, email, deviceLabel(request), now, now).run();
     const token = await signSession({ t: 'adm', e: email, s: sid, exp: now + ADMIN_DAYS * 864e5 }, env.SESSION_SECRET);
-    return toAdmin('', adminCookie(token, ADMIN_DAYS * 86400));
+    return toAdmin('signed-in', adminCookie(token, ADMIN_DAYS * 86400));
   }
   const user = await upsertUser(env, { email, name: String(claims.name || '').slice(0, 120), googleSub: String(claims.sub) });
   const { cookie } = await login(env, request, user, deviceLabel(request));
