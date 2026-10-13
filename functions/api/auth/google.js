@@ -14,9 +14,9 @@ export async function onRequestGet({ request, env }) {
     state,
     prompt: 'select_account'
   });
-  return new Response(null, { status: 302, headers: {
-    location: 'https://accounts.google.com/o/oauth2/v2/auth?' + q,
-    'set-cookie': `dyvo_oauth=${state}; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
-    'cache-control': 'no-store'
-  } });
+  // ?for=admin — вхід в адмінку: той самий Google і та сама адреса повернення, але callback видасть сесію адмінки, а не вчителя
+  const forAdmin = new URL(request.url).searchParams.get('for') === 'admin';
+  const headers = new Headers({ location: 'https://accounts.google.com/o/oauth2/v2/auth?' + q, 'cache-control': 'no-store' });
+  headers.append('set-cookie', `dyvo_oauth=${state}${forAdmin ? '.adm' : ''}; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
+  return new Response(null, { status: 302, headers });
 }

@@ -7,7 +7,10 @@
   let fromPre = '';          // контакт заявки, з якої заповнили форму нового коду
 
   async function call(method, body, path = 'codes') {
-    const r = await fetch('/api/admin/' + path, { method, headers: { 'authorization': 'Bearer ' + token, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    // вхід через Google — кукі dyvo_adm (сервер вимагає x-dyvo-admin); запасний токен — заголовок Authorization
+    const headers = { 'content-type': 'application/json', 'x-dyvo-admin': '1' };
+    if (token) headers.authorization = 'Bearer ' + token;
+    const r = await fetch('/api/admin/' + path, { method, headers, credentials: 'same-origin', body: body ? JSON.stringify(body) : undefined });
     const data = await r.json().catch(() => ({}));
     if (r.status === 403) throw new Error('forbidden');
     if (!r.ok) throw new Error(data.error || 'http ' + r.status);
@@ -760,18 +763,53 @@ ${howto(c)}
   function syncFromNew() { setClient({ name: $('note').value.trim(), hi: $('hi').value.trim(), email: $('email').value.trim() }, 'з форми «Новий код»'); }
   ['note', 'hi', 'email'].forEach(id => $(id).addEventListener('input', () => { if (msgsOpen()) syncFromNew(); }));
 
-  // ---- вхід
-  $('enter').onclick = async () => {
-    token = $('token').value.trim();
+  // ---- вхід: спершу пробуємо сесію Google (кукі), інакше — екран входу; токен — запасний спосіб
+  const LOGIN_MSG = {
+    'login-denied': 'Ця пошта Google не має доступу до адмінки. Увійдіть з пошти власника.',
+    'login-failed': 'Не вдалося увійти через Google. Спробуйте ще раз.',
+    'login-cancelled': 'Вхід скасовано.'
+  };
+  async function start(viaToken) {
     try {
       await load();
-      sessionStorage.setItem('dyvo_admin', token);
+      if (viaToken) sessionStorage.setItem('dyvo_admin', token);
       localStorage.setItem('dyvo_notrack', 'true');   // власні проходи демо не псують статистику
       $('login-wrap').hidden = true; $('panel').hidden = false; $('topbar').hidden = false;
       show(location.hash.slice(1));
-    } catch (e) { $('login-err').textContent = e.message === 'forbidden' ? 'Токен не підходить.' : 'Помилка: ' + e.message; }
+      loadMe();
+    } catch (e) {
+      if (viaToken) $('login-err').textContent = e.message === 'forbidden' ? 'Токен не підходить.' : 'Помилка: ' + e.message;
+      else if (e.message !== 'forbidden') $('login-err').textContent = 'Помилка: ' + e.message;
+      if (token && !viaToken) { token = ''; sessionStorage.removeItem('dyvo_admin'); }
+    }
+  }
+  async function loadMe() {
+    let d;
+    try { d = await call('GET', null, 'me'); } catch (e) { return; }
+    $('who').textContent = d.email ? d.email : 'Вхід токеном';
+    $('logout').hidden = false;
+    const mine = d.sessions || [];
+    $('logout-all').hidden = !mine.length;
+    $('who-list').replaceChildren(...(mine.length ? [el('div', 'muted', 'Пристрої з входом через Google:'), ...mine.map(x => {
+      const row = el('div');
+      row.append(el('span', null, (x.label || 'Пристрій') + (x.id === d.session ? ' (цей)' : '') + ' · ' + ago(x.last_seen)));
+      if (x.id !== d.session) row.append(button('завершити', 'linkish', async () => { await call('POST', { action: 'revoke', id: x.id }, 'me'); toast('Сесію завершено'); loadMe(); }));
+      return row;
+    })] : []));
+  }
+  const signOut = async action => {
+    try { await call('POST', { action }, 'me'); } catch (e) {}
+    token = ''; sessionStorage.removeItem('dyvo_admin');
+    location.replace('/admin');
   };
+  $('logout').onclick = () => signOut('logout');
+  $('logout-all').onclick = () => { if (confirm('Завершити вхід в адмінку на всіх пристроях, зокрема на цьому?')) signOut('logout-all'); };
+  $('enter').onclick = () => { token = $('token').value.trim(); if (token) start(true); };
   $('token').addEventListener('keydown', e => { if (e.key === 'Enter') $('enter').click(); });
+  {
+    const msg = LOGIN_MSG[location.hash.slice(1)];
+    if (msg) { $('login-msg').textContent = msg; $('login-msg').hidden = false; history.replaceState(null, '', '/admin'); }
+  }
 
   // ---- новий код
   $('paid').value = toDateInput(Date.now());
@@ -801,4 +839,4 @@ ${howto(c)}
   };
 
   $('filter').addEventListener('input', render);
-  if (token) { $('token').value = token; $('enter').click(); }
+  start(false);   // сесія Google або збережений у цій вкладці токен

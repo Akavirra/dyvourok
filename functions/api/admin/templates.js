@@ -11,7 +11,7 @@ const CHANNELS = ['msg', 'mail', 'com'];
 const SETTINGS = ['card', 'owner', 'paylink', 'sign'];
 
 export async function onRequest({ request, env }) {
-  if (!isAdmin(request, env)) return json({ error: 'forbidden' }, 403);
+  if (!(await isAdmin(request, env))) return json({ error: 'forbidden' }, 403);
   const db = env.DB;
   if (request.method === 'GET') {
     const [t, s] = await db.batch([

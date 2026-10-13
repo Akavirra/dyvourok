@@ -7,7 +7,7 @@ import { json, isAdmin, normalizeCode } from '../../../lib/auth.js';
 import { normalizeEmail } from '../../../lib/account.js';
 
 export async function onRequest({ request, env }) {
-  if (!isAdmin(request, env)) return json({ error: 'forbidden' }, 403);
+  if (!(await isAdmin(request, env))) return json({ error: 'forbidden' }, 403);
 
   if (request.method === 'GET') {
     const { results: users } = await env.DB.prepare(

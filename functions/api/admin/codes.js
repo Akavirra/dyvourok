@@ -26,7 +26,7 @@ const FIELDS = {
 };
 
 export async function onRequest({ request, env }) {
-  if (!isAdmin(request, env)) return json({ error: 'forbidden' }, 403);
+  if (!(await isAdmin(request, env))) return json({ error: 'forbidden' }, 403);
 
   if (request.method === 'GET') {
     const { results } = await env.DB.prepare(
