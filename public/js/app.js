@@ -153,12 +153,13 @@
   function classPicker(pack) {
     const cur = currentClass();
     const list = classes();
-    const done = c => Object.keys((cloud.get().prog[progKey(pack, c)] || {}).s || {}).length;
+    const hasStops = pack && pack.stops && pack.stops.length > 0;
+    const done = c => hasStops ? Object.keys((cloud.get().prog[progKey(pack, c)] || {}).s || {}).length : 0;
     const isCur = c => (c ? c.id : null) === (cur ? cur.id : null);
     const chip = (c, label) => h('button', { role: 'radio', 'aria-checked': String(isCur(c)), class: isCur(c) ? 'on' : '', onclick: () => {
       if (isCur(c)) return;
       Sfx.tap(); store.set('dyvo_class', c ? c.id : null); route();
-    } }, label, h('span', { class: 'cnt' }, `${done(c)}/${pack.stops.length}`));
+    } }, label, hasStops ? h('span', { class: 'cnt' }, `${done(c)}/${pack.stops.length}`) : null);
     return h('div', { class: 'level-pick class-pick', role: 'radiogroup', 'aria-label': 'Мій клас' },
       h('span', { class: 'lbl' }, 'Мій клас:'),
       list.length ? [chip(null, 'Без класу'), ...list.map(c => chip(c, c.name))] : null,
@@ -752,7 +753,7 @@
         h('div', { class: 'kicker' }, packSubtitle(pack)),
         h('h1', {}, pack.title),
         lp.description ? h('p', { class: 'lead' }, lp.description) : null,
-        pack.stops.length ? classPicker(pack) : null,
+        classPicker(pack),
         levelPicker(pack)),
       h('div', { class: 'menu' },
         pack.board ? boardItem(pack)
