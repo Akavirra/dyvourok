@@ -337,23 +337,25 @@ ${howto(c)}
   async function loadAccounts() {
     try { accounts = (await call('GET', null, 'accounts')).accounts || []; } catch (e) { $('acc-stats').textContent = 'Не вдалося завантажити акаунти: ' + e.message; return; }
     const withCodes = accounts.filter(a => a.codes.length).length;
+    const withFree = accounts.filter(a => (a.freePacks || []).length).length;
     const news = accounts.filter(a => a.news === 1).length;
     const week = accounts.filter(a => a.created_at > Date.now() - 7 * 864e5).length;
     $('nav-acc').textContent = accounts.length || '';
     $('acc-count').textContent = accounts.length ? plural(accounts.length, 'акаунт', 'акаунти', 'акаунтів') + (week ? ` · +${week} за тиждень` : '') : '';
-    $('acc-stats').textContent = accounts.length ? `З кодом: ${withCodes}. Без покупки: ${accounts.length - withCodes}. Погодилися на листи: ${news}. Через Google: ${accounts.filter(a => a.google).length}.` : '';
+    $('acc-stats').textContent = accounts.length ? `З кодом: ${withCodes}. Взяли безкоштовний набір: ${withFree}. Без жодного набору: ${accounts.filter(a => !a.codes.length && !(a.freePacks || []).length).length}. Погодилися на листи: ${news}. Через Google: ${accounts.filter(a => a.google).length}.` : '';
     renderAccounts();
   }
   function renderAccounts() {
     const q = $('acc-filter').value.trim().toLowerCase();
-    const rows = accounts.filter(a => !q || [a.email, a.name, a.school, ...a.codes.map(c => c.code + ' ' + c.note)].some(v => (v || '').toLowerCase().includes(q)));
+    const rows = accounts.filter(a => !q || [a.email, a.name, a.school, ...a.codes.map(c => c.code + ' ' + c.note), ...(a.freePacks || []).map(p => p.pack_id)].some(v => (v || '').toLowerCase().includes(q)));
     $('acc-rows').replaceChildren(...(rows.length ? rows.map(accountCard) : [el('div', 'empty', q ? 'Нікого не знайдено.' : 'Акаунтів поки немає. Вони з’являться, щойно хтось увійде через Google або пошту.')]));
   }
   function accountCard(a) {
     const card = el('article', 'person');
     const head = el('div', 'p-head');
     head.append(el('span', 'name', a.name || a.email));
-    head.append(el('span', 'pill ' + (a.codes.length ? 'ok' : 'gray'), a.codes.length ? 'є набір' : 'без покупки'));
+    const hasPack = a.codes.length || (a.freePacks || []).length;
+    head.append(el('span', 'pill ' + (hasPack ? 'ok' : 'gray'), hasPack ? 'є набір' : 'без набору'));
     if (a.news === 1) head.append(el('span', 'pill gray', 'листи ✓'));
     head.append(el('span', 'right', (a.google ? 'Google' : 'пошта') + ' · ' + plural(a.sessions, 'пристрій', 'пристрої', 'пристроїв') + (a.last_seen ? ' · був ' + ago(a.last_seen) : '')));
     const info = el('div', 'p-info');
@@ -362,6 +364,14 @@ ${howto(c)}
       const line = el('div', 'sub');
       line.append(el('span', null, c.code + ' — ' + (c.note || 'без імені') + (c.packs !== 'mova' ? ' · ' + (c.packs === '*' ? 'усі набори' : c.packs) : '') + (c.revoked ? ' · заблоковано' : '') + ' '),
         button('відв’язати', 'linkish', async () => { if (confirm('Відв’язати код ' + c.code + ' від ' + a.email + '? Код лишиться дійсним.')) { await call('POST', { action: 'unlink', code: c.code }, 'accounts'); toast('Відв’язано ✓'); load(); } }));
+      info.append(line);
+    });
+    (a.freePacks || []).forEach(p => {
+      const line = el('div', 'sub');
+      const grade = p.grade ? ' · ' + p.grade.replace('-', '–') + ' клас' : '';
+      const source = p.source ? ' · ' + p.source : '';
+      const activity = ` · урок ${p.open_count || 0} · PDF ${p.download_count || 0}`;
+      line.textContent = `Безкоштовно: ${p.pack_id}${grade} · отримано ${fmtDate(p.claimed_at)}${source}${activity}`;
       info.append(line);
     });
     const acts = el('div', 'p-acts');

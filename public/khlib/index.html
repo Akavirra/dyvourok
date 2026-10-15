@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Шлях зернини · День хліба · Дивоурок</title>
+<meta name="description" content="Безкоштовний інтерактивний урок до Дня хліба: від зернини до паляниці з Воркотом і Вісткою. 1–4, 5–7, 8–11 класи.">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="style.css?v=49">
+</head>
+<body>
+<canvas id="scene" aria-label="Інтерактивна сцена"></canvas>
+<div id="stage">
+  <div id="veil" class="veil"><img class="v-logo" src="../brand/dyvourok-logo.svg" alt="Дивоурок"><img class="v-cat" src="img/k06.webp?v=42" alt=""><b id="veilText">Готуємо урок…</b><div class="v-bar"><i id="veilBar"></i></div></div>
+  <div class="top">
+    <button id="homeBtn" class="back" aria-label="Назад"><span class="arr">←</span><span id="homeLabel">До набору</span></button>
+    <div id="prog" class="prog" hidden></div>
+    <div id="lsn" class="lsn" hidden></div>
+    <div class="right">
+      <span id="gradeBtn" class="pill static">1–4 клас</span>
+      <button id="micBtn" class="round mic" aria-label="Мікрофон (необов'язково)" title="Мікрофон необов'язковий: без нього все працює кнопкою 👏 і пробілом">🎤</button>
+      <button id="soundBtn" class="round" aria-label="Звук">🔊</button>
+    </div>
+  </div>
+
+  <div id="sub" class="sub" hidden>
+    <span id="subWho" class="who">Воркіт</span>
+    <p id="subText"></p>
+    <button id="subAgain" class="round small" aria-label="Повторити">↻</button>
+  </div>
+
+  <div id="cls" class="cls" hidden><span id="clsIcon" class="ic"></span><b id="clsText"></b><div id="clsMeter" class="meter" hidden><i id="clsFill"></i></div></div>
+  <div id="big" class="bigtxt" hidden></div>
+  <div id="beat" class="beat" hidden></div>
+  <button id="clsBtn" class="clsbtn" hidden></button>
+  <div id="votes" class="votes" hidden><button id="voteYes" class="vote yes">👍 Так</button><button id="voteNo" class="vote no">👎 Ні</button></div>
+  <div id="toast" class="toast" hidden></div>
+  <button id="factBtn" class="factbtn" hidden aria-label="Цікавинка">💡<span>Цікавинка</span></button>
+  <button id="next" class="next" hidden><span id="nextLabel">Далі</span> →</button>
+
+  <div id="fact" class="fact" hidden role="dialog" aria-modal="true">
+    <div class="fact-card"><b>Цікавинка</b><p id="factText"></p><button id="factClose" class="next inline">Зрозуміло</button></div>
+  </div>
+
+  <div id="panel" class="panel" hidden></div>
+</div>
+<div id="wipe" aria-hidden="true"><canvas></canvas></div>
+
+<script src="js/kv.js?v=49"></script>
+<script src="js/content.js?v=49"></script>
+<script src="js/core.js?v=49"></script>
+<script src="js/klas.js?v=49"></script>
+<script src="js/path.js?v=49"></script>
+<script src="js/bakery.js?v=49"></script>
+<script src="js/games.js?v=49"></script>
+<script src="js/senior.js?v=49"></script>
+<script src="js/boot.js?v=49"></script>
+</body>
+</html>

@@ -23,6 +23,7 @@ export async function onRequestGet({ request, env }) {
   return json({
     email: cur.user.email, name: cur.user.name, school: cur.user.school, news: cur.user.news, google: !!cur.user.google_sub,
     created_at: cur.user.created_at, packs: acc.packs,
+    free_packs: acc.freePacks,
     codes: acc.codes.map(c => ({ code: c.code.slice(0, 10) + '••••', packs: c.packs, note: c.note, expires_at: c.expires_at, since: when[c.code] })),
     sessions: sessions.map(x => ({ label: x.label, last_seen: x.last_seen, current: x.id === cur.s.s }))
   });
@@ -58,6 +59,7 @@ export async function onRequestDelete({ request, env }) {
   const id = cur.user.id;
   await env.DB.batch([
     env.DB.prepare('UPDATE codes SET user_id = NULL WHERE user_id = ?').bind(id),
+    env.DB.prepare('DELETE FROM user_packs WHERE user_id = ?').bind(id),
     env.DB.prepare('DELETE FROM user_sessions WHERE user_id = ?').bind(id),
     env.DB.prepare('DELETE FROM login_codes WHERE email = ?').bind(cur.user.email),
     env.DB.prepare('DELETE FROM users WHERE id = ?').bind(id)

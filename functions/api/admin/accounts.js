@@ -17,9 +17,14 @@ export async function onRequest({ request, env }) {
          length(u.state) AS state_size
        FROM users u ORDER BY u.created_at DESC LIMIT 1000`).all();
     const { results: codes } = await env.DB.prepare('SELECT code, note, packs, user_id, revoked, kind FROM codes WHERE user_id IS NOT NULL').all();
+    const { results: freePacks } = await env.DB.prepare(
+      'SELECT user_id, pack_id, claimed_at, source, grade, last_opened_at, open_count, last_download_at, download_count FROM user_packs ORDER BY claimed_at DESC'
+    ).all();
     const byUser = {};
     for (const c of codes) (byUser[c.user_id] = byUser[c.user_id] || []).push(c);
-    return json({ accounts: users.map(u => ({ ...u, google: !!u.google, codes: byUser[u.id] || [] })) });
+    const freeByUser = {};
+    for (const p of freePacks) (freeByUser[p.user_id] = freeByUser[p.user_id] || []).push(p);
+    return json({ accounts: users.map(u => ({ ...u, google: !!u.google, codes: byUser[u.id] || [], freePacks: freeByUser[u.id] || [] })) });
   }
 
   if (request.method !== 'POST') return json({ error: 'method' }, 405);

@@ -1,5 +1,5 @@
 /* Робота без інтернету: після першого відкриття все потрібне лежить у кеші. Нову версію — через зміну VERSION. */
-const VERSION = 'dyvourok-v21';
+const VERSION = 'dyvourok-v24';
 // Мультфільми, PDF і картинки набору, які вчитель зберіг кнопкою «Робота без інтернету» (див. saveOffline в app.js).
 // Окремий кеш: не стирається з новою VERSION, адреси мають ?v=, тож застарілих файлів не віддасть.
 const MEDIA = 'dyvourok-media';
@@ -10,6 +10,7 @@ const CORE = [
   'fonts/Nunito.ttf', 'fonts/NotoSansGlagolitic.ttf',
   'brand/dyvourok-logo.svg', 'brand/dyvourok-mark.svg',
   'icons/favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
+  'packs/khlib/pack.js', 'packs/khlib/img/cover-card.jpg',
   'packs/mova/pack.js', 'packs/mova/img/cover-card.jpg', 'packs/mova/img/shevchenko-head.png', 'packs/mova/img/shevchenko-poster.jpg'
 ];
 // Захищені файли (PDF, відео з доступом) не входять у CORE: вони потрапляють у MEDIA, коли вчитель з кодом зберігає набір.
@@ -47,19 +48,22 @@ self.addEventListener('fetch', e => {
   if (new URL(e.request.url).pathname.startsWith('/api/')) return;   // вхід і дані акаунта — завжди з мережі, не в кеш
   if (/\/packs\/[a-z0-9-]+\/pptx\//.test(new URL(e.request.url).pathname)) return;   // презентації ~100 МБ — просто завантаження, без кешу
   const ranged = e.request.headers.has('range');
-  const heavy = HEAVY.test(new URL(e.request.url).pathname);
+  const pathname = new URL(e.request.url).pathname;
+  const heavy = HEAVY.test(pathname);
+  const protectedInteractive = pathname.startsWith('/khlib/');
   e.respondWith((async () => {
     const saved = await fromMedia(e.request).catch(() => null);
     if (saved) return saved;
     try {
       const res = await fetch(e.request);
       // важкі файли не дублюємо в загальний кеш — для них є MEDIA
-      if (res.status === 200 && !ranged && !heavy) {
+      if (res.status === 200 && !ranged && !heavy && !protectedInteractive) {
         const copy = res.clone();
         caches.open(VERSION).then(c => c.put(e.request, copy));
       }
       return res;
     } catch (err) {
+      if (protectedInteractive) return new Response('Для інтерактивного уроку потрібен вхід та інтернет.', { status: 503 });
       return (await caches.match(e.request, { ignoreSearch: true })) || caches.match('app/');
     }
   })());

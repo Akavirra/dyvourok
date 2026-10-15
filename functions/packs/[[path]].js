@@ -3,21 +3,29 @@
 // Ці ж шляхи виключені з функцій у public/_routes.json — Cloudflare віддає їх напряму, без виклику функції
 // (ліміт безкоштовного тарифу — 100 тис. викликів на добу). Новий набір: додати його img/ і pack.js і туди.
 import { readSession, packAllowed } from '../../lib/auth.js';
+import { recordPackDownload } from '../../lib/packs.js';
 
 const PUBLIC = [
   /^[a-z0-9-]+\/pack\.js$/,
   /^[a-z0-9-]+\/img\//,
-  /^mova\/media\/shevchenko-full\.mp4$/     // демо-зупинка
+  /^mova\/media\/shevchenko-full\.mp4$/,    // демо-зупинка
 ];
-
 export async function onRequest({ request, env, params }) {
   const path = (params.path || []).join('/');
   if (PUBLIC.some(re => re.test(path))) return env.ASSETS.fetch(request);
+  const packId = path.split('/')[0];
   const session = await readSession(request, env);
-  if (!packAllowed(session, path.split('/')[0])) {
-    return new Response('Доступ до матеріалу відкривається після активації коду.', { status: 401, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+  if (!packAllowed(session, packId)) {
+    const message = packId === 'khlib'
+      ? 'Увійдіть у акаунт і додайте безкоштовний набір «Шлях зернини».'
+      : 'Доступ до матеріалу відкривається після активації коду.';
+    return new Response(message, { status: 401, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
   }
-  if (/^[a-z0-9-]+\/pptx\//.test(path)) return fromBucket(request, env, path);
+  if (session.u && request.method === 'GET' && !request.headers.has('range') && /^[a-z0-9-]+\/docs\//.test(path)) {
+    await recordPackDownload(env, session.u, packId);
+  }
+  // Великі файли з R2: презентації (pptx/) і мультфільми у високій якості (hq/)
+  if (/^[a-z0-9-]+\/(pptx|hq)\//.test(path)) return fromBucket(request, env, path);
   const res = await env.ASSETS.fetch(request);
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-cache');   // браузер щоразу перевіряє ETag: оновлення видно одразу, без повторного завантаження

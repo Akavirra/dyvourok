@@ -30,8 +30,8 @@ def parse_vtt(path):
 
 for pack in sorted(os.listdir(SUBS)):
     pj = os.path.join(PACKS, pack, 'pack.js')
-    subs = {f'media/{f[:-4]}.mp4': parse_vtt(os.path.join(SUBS, pack, f))
-            for f in sorted(os.listdir(os.path.join(SUBS, pack))) if f.endswith('.vtt')}
+    subs = {f'{d}/{f[:-4]}.mp4': parse_vtt(os.path.join(SUBS, pack, f))
+            for f in sorted(os.listdir(os.path.join(SUBS, pack))) if f.endswith('.vtt') for d in (('media', 'hq') if pack == 'khlib' else ('media',))}
     s = open(pj, encoding='utf-8').read()
     line = '  subs: ' + json.dumps(subs, ensure_ascii=False, separators=(',', ':')) + ',\n'
     if re.search(r'^  subs: .*,\n', s, flags=re.M):

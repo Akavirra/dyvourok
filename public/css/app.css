@@ -130,6 +130,10 @@ label.check input { width: 22px; height: 22px; flex: none; margin-top: 2px; acce
 .diploma-teacher { font-weight: 800; color: var(--ink); }
 .legal { font-size: .85em; margin: 0; }
 .legal a { color: inherit; }
+.claim-gate { max-width: 650px; }
+.claim-benefits { width: 100%; text-align: left; align-items: flex-start; }
+.claim-benefits ul { margin: 8px 0 0; }
+.claim-benefits li + li { margin-top: 5px; }
 /* оголошення: дзвіночок, список, банер */
 .icon-btn.bell { position: relative; }
 .news-badge { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--red); color: #fff; font-size: 11px; font-weight: 900; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--paper); }
@@ -403,3 +407,8 @@ ul.clean li::before { content: ''; position: absolute; left: 0; top: .5em; width
   .screen { padding: 0; animation: none; }
   .diploma { border-width: 12px; }
 }
+.pack-card .cover .free { position: absolute; top: 14px; right: 14px; z-index: 1; background: var(--green, #2E7D4F); color: #fff; font-weight: 900; padding: 4px 12px; border-radius: 99px; font-size: .8em; }
+.pack-card .cover .badge-code { position: absolute; top: 14px; right: 14px; z-index: 1; background: rgba(40, 24, 15, .82); color: #fff; font-weight: 800; padding: 4px 12px; border-radius: 99px; font-size: .8em; display: inline-flex; align-items: center; gap: 5px; }
+.pack-card.soon .cover .date { background: var(--line); color: var(--muted); }
+.card-soft.pack-gate-banner { margin-bottom: 24px; border: 2px solid rgba(200, 52, 31, .2); }
+

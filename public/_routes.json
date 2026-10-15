@@ -1,5 +1,15 @@
 {
   "version": 1,
-  "include": ["/api/*", "/packs/*"],
-  "exclude": ["/packs/mova/img/*", "/packs/mova/pack.js", "/packs/mova/media/shevchenko-full.mp4"]
+  "include": [
+    "/api/*",
+    "/packs/*",
+    "/khlib/*"
+  ],
+  "exclude": [
+    "/packs/mova/img/*",
+    "/packs/mova/pack.js",
+    "/packs/mova/media/shevchenko-full.mp4",
+    "/packs/khlib/img/*",
+    "/packs/khlib/pack.js"
+  ]
 }

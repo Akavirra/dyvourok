@@ -21,7 +21,8 @@
   }
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
   };
   const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const chipLabel = w => { const t = w.replace(/^[«„"(]+|[.,:;!?…»"")\-–—]+$/g, ''); return t.charAt(0).toUpperCase() + t.slice(1); };
@@ -205,7 +206,7 @@
   const canSave = () => !OFFLINE_FILE && 'caches' in window && 'serviceWorker' in navigator;
   function offlineFiles(pack) {
     const files = new Set();
-    pack.stops.forEach(s => s.video && files.add(s.video));
+    (pack.stops || []).forEach(s => s.video && files.add(s.video));
     (pack.cartoons || []).forEach(c => c.ready && c.file && files.add(c.file));
     (pack.handouts || []).forEach(d => d.file && files.add(d.file));
     if (pack.teacher) {
@@ -249,15 +250,17 @@
   }
   function offlineCard(pack) {
     if (!canSave() || !license.allows(pack.id)) return null;
+    const isBoard = !!pack.board;
+    const titleText = isBoard ? 'Мультфільми та роздатка без інтернету' : 'Увесь набір без інтернету';
     const status = h('div', { class: 'muted' }, 'Перевіряємо…');
     const note = h('div', { class: 'offline-note muted' }, 'Матеріали зберігаються в цьому браузері, а не в папці «Завантаження». Очищення даних браузера видалить цю копію.');
     const bar = h('div', { class: 'offline-bar', hidden: true }, h('span'));
-    const btn = h('button', { class: 'btn', hidden: true }, 'Зберегти весь набір');
+    const btn = h('button', { class: 'btn', hidden: true }, isBoard ? 'Зберегти файли' : 'Зберегти весь набір');
     const card = h('div', { class: 'offline-card card-soft' },
       h('div', { class: 'ico' }, icon('wifi')),
-      h('div', { class: 'grow' }, h('h3', {}, 'Увесь набір без інтернету'), status, note, bar), btn);
-    const ready = () => { card.classList.add('ok'); status.textContent = 'Готово. Квест, мультфільми, поради, відповіді та роздатка відкриються без інтернету на цьому пристрої.'; btn.hidden = true; bar.hidden = true; };
-    const idle = (msg) => { status.textContent = msg || 'Збережіть один раз, щоб провести весь урок без мережі (≈100 МБ).'; btn.hidden = false; btn.disabled = false; btn.textContent = 'Зберегти весь набір'; };
+      h('div', { class: 'grow' }, h('h3', {}, titleText), status, note, bar), btn);
+    const ready = () => { card.classList.add('ok'); status.textContent = isBoard ? 'Готово. Мультфільми, роздатка та пам\'ятки відкриються без інтернету на цьому пристрої.' : 'Готово. Квест, мультфільми, поради, відповіді та роздатка відкриються без інтернету на цьому пристрої.'; btn.hidden = true; bar.hidden = true; };
+    const idle = (msg) => { status.textContent = msg || (isBoard ? 'Збережіть один раз, щоб показувати мультфільми та роздатку без мережі.' : 'Збережіть один раз, щоб провести весь урок без мережі (≈100 МБ).'); btn.hidden = false; btn.disabled = false; btn.textContent = isBoard ? 'Зберегти файли' : 'Зберегти весь набір'; };
     btn.onclick = async () => {
       Sfx.tap();
       btn.disabled = true; btn.textContent = 'Зберігаємо…'; bar.hidden = false;
@@ -453,7 +456,7 @@
       h('div', { class: 'crumb' }, crumbs),
       h('div', { class: 'spacer' }),
       isDemo() ? h('button', { class: 'btn', style: 'padding:10px 18px;font-size:.85em', onclick: enterCode }, 'Увійти') : null,
-      isAccount() && !ownsAny() ? h('button', { class: 'btn', style: 'padding:10px 18px;font-size:.85em', onclick: enterCode }, 'Додати код') : null,
+      isAccount() && PACKS.some(p => !license.allows(p.id)) ? h('button', { class: 'btn', style: 'padding:10px 18px;font-size:.85em', onclick: enterCode }, 'Додати код') : null,
       OFFLINE_FILE ? null : h('button', { class: 'icon-btn bell', title: 'Новини', 'aria-label': 'Новини «Дивоуроку»', onclick: newsDialog },
         icon('bell'), h('span', { class: 'news-badge', id: 'news-badge', hidden: true })),
       userBtn, soundBtn, fsBtn);
@@ -626,12 +629,58 @@
       if (!r.ok) return fail(kind === 'login' ? 'Посилання застаріло або вже використане. Надішліть новий лист.' : 'Сесію не знайдено. Спробуйте ще раз.');
       license.set(r.data); Sfx.right();
       toast(r.data.email ? 'Ви увійшли як ' + r.data.email : 'Ви увійшли');
+      const pending = store.get('dyvo_pending_claim', '');
+      const claimPack = PACKS.find(p => p.id === pending && p.claimable);
+      if (claimPack) {
+        history.replaceState(null, '', location.pathname + location.search + '#/claim/' + claimPack.id);
+        return claimFreePack(claimPack);
+      }
       history.replaceState(null, '', location.pathname + location.search + '#/library');
       route();
     } catch (e) { fail(offlineMsg); }
   }
 
   // ---------------------------------------------------------------- бібліотека
+  async function claimFreePack(pack) {
+    if (!pack || !pack.claimable) return;
+    if (!isAccount()) { store.set('dyvo_pending_claim', pack.id); return freePackGate(pack); }
+    frame([pack.title], h('div', { class: 'gate' }, h('h1', {}, 'Додаємо набір…'), h('p', { class: 'lead' }, 'Зачекайте кілька секунд.')));
+    try {
+      const r = await api('/api/packs/claim', 'POST', {
+        pack: pack.id,
+        grade: levelIdFor(pack, currentClass()),
+        source: store.get('dyvo_from', '')
+      });
+      if (!r.ok) throw new Error(r.data.error || String(r.status));
+      license.set(r.data); store.del('dyvo_pending_claim'); Sfx.right();
+      toast('Набір додано до вашого акаунта');
+      go('#/pack/' + pack.id); route();
+    } catch (e) {
+      frame([pack.title], h('div', { class: 'gate' },
+        h('h1', {}, 'Не вдалося додати набір'),
+        h('p', { class: 'lead' }, navigator.onLine ? 'Спробуйте ще раз. Якщо помилка повториться, напишіть нам.' : offlineMsg),
+        h('button', { class: 'btn big', onclick: () => claimFreePack(pack) }, 'Спробувати ще раз'), contactLine()));
+    }
+  }
+
+  function freePackGate(pack) {
+    store.set('dyvo_pending_claim', pack.id);
+    const done = () => claimFreePack(pack);
+    frame([pack.title], h('div', { class: 'gate claim-gate' },
+      h('div', { class: 'kicker' }, 'Безкоштовний набір · код не потрібен'),
+      h('h1', {}, 'Додайте «' + pack.title + '» до свого акаунта'),
+      h('p', { class: 'lead' }, 'Увійдіть через Google або пошту — і весь набір одразу відкриється на дошці, ноутбуці та телефоні.'),
+      h('div', { class: 'card-soft claim-benefits' },
+        h('b', {}, 'У наборі:'),
+        h('ul', { class: 'clean' },
+          h('li', {}, 'інтерактивний урок для 1–11 класу;'),
+          h('li', {}, 'мультфільми та перевірені джерела;'),
+          h('li', {}, 'роздатки, наліпки, закладки й диплом.'))),
+      loginBox(done),
+      h('p', { class: 'muted legal' }, 'Без оплати й без коду доступу. Учням реєструватися не потрібно.'),
+      h('button', { class: 'btn ghost', onclick: () => { store.del('dyvo_pending_claim'); go('#/library'); route(); } }, 'Повернутися до бібліотеки')));
+  }
+
   // Згода на листи: питаємо один раз (news === null), відповідь зберігається в акаунті
   function newsAsk() {
     const l = license.get();
@@ -649,14 +698,42 @@
     return card;
   }
 
+  const packSubtitle = p => (p.claimable && license.allows(p.id) ? p.subtitle.replace(/\s*·\s*безкоштовно після входу/i, '') : p.subtitle);
+
+  function packGateBanner(p) {
+    if (license.allows(p.id) || p.claimable) return null;
+    return h('div', { class: 'card-soft news-banner pack-gate-banner', role: 'status' },
+      h('div', { class: 'ico' }, icon('lock')),
+      h('div', { class: 'grow' },
+        h('h3', {}, 'Демо-доступ до набору «' + p.title + '»'),
+        h('p', { class: 'news-body' }, 'У демо відкрита перша зупинка. Повний урок, роздатка для друку та презентація відкриваються за кодом.')),
+      h('div', { class: 'news-acts' },
+        h('button', { class: 'btn compact', onclick: enterCode }, isAccount() ? 'Ввести код' : 'Увійти з кодом'),
+        h('a', { class: 'btn ghost compact', href: 'https://dyvourok.com.ua/?from=demo#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Замовити набір')));
+  }
+
   function library() {
-    const cards = PACKS.map(p => h('button', { class: 'pack-card', onclick: () => { Sfx.tap(); go('#/pack/' + p.id); } },
-      h('div', { class: 'cover' }, h('span', { class: 'date' }, p.date), h('img', { src: asset(p, p.cover), alt: '' })),
-      h('div', { class: 'body' }, h('h3', {}, p.title), h('div', { class: 'muted' }, p.subtitle))));
-    const soon = ['Новий рік і Різдво', 'Шевченківські дні', 'Весна і Великдень'].map(t => h('div', { class: 'pack-card soon' },
-      h('div', { class: 'cover' }, 'Незабаром'), h('div', { class: 'body' }, h('h3', {}, t))));
+    const cards = PACKS.map(p => {
+      const allowed = license.allows(p.id);
+      let badge = null;
+      if (p.claimable) {
+        badge = h('span', { class: 'free' }, allowed ? 'Додано' : 'Безкоштовно');
+      } else {
+        badge = allowed ? h('span', { class: 'free' }, 'Доступно') : h('span', { class: 'badge-code' }, icon('lock', '0.85em'), 'За кодом');
+      }
+      return h('button', { class: 'pack-card' + (allowed ? ' owned' : ''), onclick: () => { Sfx.tap(); go((p.claimable && !allowed ? '#/claim/' : '#/pack/') + p.id); } },
+        h('div', { class: 'cover' }, h('span', { class: 'date' }, p.date), badge, h('img', { src: asset(p, p.cover), alt: '' })),
+        h('div', { class: 'body' }, h('h3', {}, p.title), h('div', { class: 'muted' }, packSubtitle(p))));
+    });
+    const soon = [
+      { title: 'Новий рік і Різдво', date: 'Грудень' },
+      { title: 'Шевченківські дні', date: 'Березень' },
+      { title: 'Весна і Великдень', date: 'Квітень' }
+    ].map(s => h('div', { class: 'pack-card soon' },
+      h('div', { class: 'cover' }, h('span', { class: 'date' }, s.date), 'Незабаром'),
+      h('div', { class: 'body' }, h('h3', {}, s.title), h('div', { class: 'muted' }, 'Готуємо до свята'))));
     frame(h('b', {}, 'Бібліотека'), [
-      h('div', { class: 'kicker' }, 'Ваші набори'),
+      h('div', { class: 'kicker' }, 'Каталог уроків'),
       h('h1', {}, 'Що будемо дивувати сьогодні?'),
       newsBanner() || newsAsk(),   // не дві великі картки поспіль: спершу оголошення, потім питання про листи
       h('div', { class: 'shelf' }, cards, soon)]);
@@ -670,21 +747,30 @@
     const lp = byLevel(pack, pack);
     frame([pack.title], [
       newsBanner(),
+      packGateBanner(pack),
       h('div', { class: 'pack-head' },
-        h('div', { class: 'kicker' }, pack.subtitle),
+        h('div', { class: 'kicker' }, packSubtitle(pack)),
         h('h1', {}, pack.title),
         lp.description ? h('p', { class: 'lead' }, lp.description) : null,
-        classPicker(pack),
+        pack.stops.length ? classPicker(pack) : null,
         levelPicker(pack)),
       h('div', { class: 'menu' },
-        item('clock', 'Машина часу', done ? `Пройдено ${done} з ${pack.stops.length} зупинок — продовжити` : 'Інтерактивна подорож для дошки: 5 епох, 5 завдань, одне слово', `#/pack/${pack.id}/map`, true),
-        item('film', 'Мультфільми', 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
-        item('print', 'Роздатка', license.allows(pack.id) ? 'Робочі аркуші, плакати, грамоти для друку' : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
+        pack.board ? boardItem(pack)
+          : item('clock', 'Машина часу', done ? `Пройдено ${done} з ${pack.stops.length} зупинок — продовжити` : 'Інтерактивна подорож для дошки: 5 епох, 5 завдань, одне слово', `#/pack/${pack.id}/map`, true),
+        item('film', 'Мультфільми', (pack.notes && pack.notes.cartoons) || 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
+        item('print', 'Роздатка', license.allows(pack.id) ? ((pack.notes && pack.notes.handouts) || 'Робочі аркуші, плакати, грамоти для друку') : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
         item('board', 'Для вчителя', 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`),
         item('verified', 'Джерела й фактчек', 'Чим підтверджено факти заняття', `#/pack/${pack.id}/sources`),
-        license.allows(pack.id) ? item('download', 'Завантажити матеріали', 'Презентація PowerPoint, мультфільми, роздатка та сценарій', `#/pack/${pack.id}/downloads`)
+        license.allows(pack.id) ? item('download', 'Завантажити матеріали', (pack.notes && pack.notes.downloads) || 'Презентація PowerPoint, мультфільми, роздатка та сценарій', `#/pack/${pack.id}/downloads`)
           : levelSlides(pack).length ? item('download', 'Презентація PowerPoint', 'Подивитися зразки слайдів', `#/pack/${pack.id}/downloads`) : null),
       offlineCard(pack)]);
+  }
+
+  // Інтерактив для дошки, що живе окремою сторінкою (набір «Шлях зернини»): відкриваємо з поточною версією класу.
+  function boardItem(pack) {
+    const b = pack.board, lv = levelOf(pack), g = { '1-4': 1, '5-7': 2, '8-11': 3 }[lv ? lv.id : '1-4'] || 1;
+    return h('button', { class: 'menu-item main', onclick: () => { Sfx.tap(); track('board_' + pack.id); location.href = b.url + '?g=' + g + '&from=app'; } },
+      h('div', { class: 'ico' }, icon(b.icon || 'clock')), h('h3', {}, b.title), h('div', { class: 'muted' }, (b.notes && b.notes[lv ? lv.id : '1-4']) || b.note));
   }
 
   function letterBar(pack) {
@@ -726,11 +812,13 @@
   // у меню немає «Завантажити». Повністю заборонити збереження відео браузер не дозволяє — лише ускладнити.
   const SUB_SIZES = [['s', 'Малі'], ['m', 'Середні'], ['l', 'Великі']];
   const fmtTime = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-  function player(pack, file, { poster, autoplay } = {}) {
+  function player(pack, file, { poster, autoplay, fallback } = {}) {
     const pref = store.get('dyvo_subs', { on: true, size: 'm' });
     const cues = (pack.subs && pack.subs[file]) || [];
     const video = h('video', { src: asset(pack, file), poster: poster || null, playsinline: true, preload: 'metadata',
       controlslist: 'nodownload noplaybackrate noremoteplayback', disablepictureinpicture: true, disableremoteplayback: true });
+    // висока якість (R2) недоступна — беремо стиснену копію з сайту (локальний перегляд, збій сховища)
+    if (fallback) video.addEventListener('error', () => { if (video.dataset.fb) return; video.dataset.fb = 1; video.src = asset(pack, fallback); if (autoplay) video.play().catch(() => {}); }, { once: true });
     const sub = h('div', { class: 'vp-sub', 'aria-live': 'off' });
     const bigPlay = h('button', { class: 'vp-big', 'aria-label': 'Відтворити' }, icon('playbar'));
     const playBtn = h('button', { class: 'vp-btn', 'aria-label': 'Відтворити або пауза' }, icon('playbar'));
@@ -1036,7 +1124,7 @@
       if (!c.ready) { toast('Цей мультфільм ще в роботі'); return; }
       if (!license.allows(pack.id) && !c.demo) return lockedDialog();
       Sfx.tap();
-      slot.replaceChildren(h('h3', {}, c.title), player(pack, c.file, { autoplay: true }));
+      slot.replaceChildren(h('h3', {}, c.title), player(pack, c.file, { autoplay: true, poster: c.poster ? asset(pack, c.poster) : null, fallback: c.download }));
       slot.scrollIntoView({ behavior: 'smooth' });
     } }, h('span', { style: 'font-size:1.8em;color:var(--red)' }, icon(c.ready ? 'play' : 'wait')), h('div', { class: 'grow' }, h('h3', {}, c.title), h('div', { class: 'muted' }, c.ready ? 'Дивитися' : 'Незабаром')))));
     frame([pack.title, ' · ', h('b', {}, 'Мультфільми')], [h('h2', {}, 'Мультфільми'), list, slot]);
@@ -1129,7 +1217,7 @@
     }, h('span', { class: 'download-ico' }, icon('download')),
     h('div', { class: 'grow' }, h('h3', {}, title), h('div', { class: 'muted' }, note)),
     h('span', { class: 'btn ghost compact' }, 'Завантажити'));
-    const cartoonsList = pack.cartoons.filter(c => c.ready).map(c => fileRow(c.title, 'MP4 з озвученням', c.file, 'video'));
+    const cartoonsList = pack.cartoons.filter(c => c.ready).map(c => fileRow(c.title, 'MP4 з озвученням', c.download || c.file, 'video'));
     const handoutsList = levelHandouts(pack).map(d => fileRow(d.title, d.note, d.file, 'pdf'));
     const lv = levelOf(pack);
     const pptList = (pack.presentations || []).filter(d => !lv || !d.levels || d.levels.includes(lv.id)).map(d => fileRow(d.title, d.note, d.file, 'pptx', d.name));
@@ -1218,10 +1306,14 @@
       api('/api/me', 'GET').then(r => {
         if (!r.ok) { purchases.replaceChildren(h('p', { class: 'muted' }, 'Не вдалося завантажити дані акаунта.')); return; }
         const d = r.data;
-        purchases.replaceChildren(d.codes.length
-          ? h('ul', { class: 'clean' }, d.codes.map(c => h('li', {}, h('b', {}, packNames(c.packs)), c.since ? ' · з ' + day(c.since) : '', ' · код ', c.code,
-            c.expires_at ? ' · діє до ' + day(c.expires_at) : '')))
-          : h('p', { class: 'muted' }, 'Покупок ще немає. Додайте код з листа нижче, і набір відкриється на всіх пристроях, де ви увійшли.'));
+        const owned = [
+          ...(d.free_packs || []).map(p => h('li', {}, h('b', {}, packNames(p.pack_id)), ' · безкоштовно · додано ' + day(p.claimed_at))),
+          ...d.codes.map(c => h('li', {}, h('b', {}, packNames(c.packs)), c.since ? ' · з ' + day(c.since) : '', ' · код ', c.code,
+            c.expires_at ? ' · діє до ' + day(c.expires_at) : ''))
+        ];
+        purchases.replaceChildren(owned.length
+          ? h('ul', { class: 'clean' }, owned)
+          : h('p', { class: 'muted' }, 'Наборів ще немає. Безкоштовний набір можна додати в бібліотеці, а придбаний — відкрити кодом з листа.'));
         const others = d.sessions.filter(x => !x.current).length;
         devices.replaceChildren(...[
           h('ul', { class: 'clean' }, d.sessions.map(x => h('li', {}, x.label || 'Пристрій', x.current ? ' (цей пристрій)' : ' · востаннє ' + new Date(x.last_seen).toLocaleDateString('uk-UA')))),
@@ -1298,12 +1390,21 @@
       return route();
     }
     if (parts[0] === 'login' || parts[0] === 'login-ok' || parts[0] === 'login-error') return finishLogin(parts[0], parts[1]);
-    if (!hasAccess()) return gate();
+    const requestedPack = PACKS.find(p => p.id === (parts[0] === 'claim' ? parts[1] : parts[1]));
+    if (parts[0] === 'claim' && requestedPack && requestedPack.claimable) {
+      if (license.allows(requestedPack.id)) { go('#/pack/' + requestedPack.id); return; }
+      return isAccount() ? claimFreePack(requestedPack) : freePackGate(requestedPack);
+    }
+    if (!hasAccess()) {
+      if (parts[0] === 'pack' && requestedPack && requestedPack.claimable) return freePackGate(requestedPack);
+      return gate();
+    }
     if (isDemo()) track('start');
     if (parts[0] === 'account') return account();
-    const pack = PACKS.find(p => p.id === parts[1]);
+    const pack = requestedPack;
     const byId = id => pack && pack.stops.find(s => s.id === id);
     if (parts[0] !== 'pack' || !pack) return library();
+    if (pack.claimable && !license.allows(pack.id)) return freePackGate(pack);
     const view = parts[2];
     if (!view) return packHome(pack);
     if (view === 'map') return map(pack);
