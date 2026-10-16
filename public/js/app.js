@@ -825,10 +825,15 @@
     const playBtn = h('button', { class: 'vp-btn', 'aria-label': 'Відтворити або пауза' }, icon('playbar'));
     const seek = h('input', { class: 'vp-seek', type: 'range', min: 0, max: 1000, value: 0, step: 1, 'aria-label': 'Перемотування' });
     const time = h('span', { class: 'vp-time' }, '0:00 / 0:00');
+    // гучність: окремо від «звуків інтерфейсу» (Sfx) — щоб було видно, чи звук мультфільму ввімкнено
+    // зберігаємо лише рівень; «без звуку» не запам'ятовуємо, щоб наступного разу мультфільм не стартував німим
+    const vol = { v: Math.max(0.2, +store.get('dyvo_vol', 1) || 1), m: false };
+    const volBtn = h('button', { class: 'vp-btn vp-vol-btn', 'aria-label': 'Вимкнути або ввімкнути звук мультфільму' });
+    const volRange = h('input', { class: 'vp-vol', type: 'range', min: 0, max: 100, step: 1, 'aria-label': 'Гучність мультфільму' });
     const ccBtn = h('button', { class: 'vp-btn vp-cc', 'aria-label': 'Субтитри', 'aria-haspopup': 'true' }, icon('cc'), h('span', { class: 'vp-cc-label' }, 'Субтитри'));
     const menu = h('div', { class: 'vp-menu', role: 'menu', hidden: true });
     const fsBtn = h('button', { class: 'vp-btn', 'aria-label': 'На весь екран' }, icon('full'));
-    const bar = h('div', { class: 'vp-bar' }, playBtn, seek, time, h('div', { class: 'vp-cc-wrap' }, ccBtn, menu), fsBtn);
+    const bar = h('div', { class: 'vp-bar' }, playBtn, h('div', { class: 'vp-vol-wrap' }, volBtn, volRange), seek, time, h('div', { class: 'vp-cc-wrap' }, ccBtn, menu), fsBtn);
     const box = h('div', { class: 'vp', tabindex: 0 }, video, sub, bigPlay, bar);
     box.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -841,6 +846,19 @@
         ...SUB_SIZES.map(([k, label]) => h('button', { role: 'menuitemradio', 'aria-checked': String(pref.on && pref.size === k), class: pref.on && pref.size === k ? 'sel' : '', onclick: () => setPref({ on: true, size: k }) }, label)));
       store.set('dyvo_subs', pref);
     };
+    const applyVol = () => {
+      video.volume = vol.v;
+      video.muted = vol.m;
+      const silent = vol.m || vol.v === 0;
+      volBtn.replaceChildren(icon(silent ? 'mute' : 'sound'));
+      volBtn.classList.toggle('off', silent);
+      volBtn.title = silent ? 'Звук вимкнено — натисніть, щоб увімкнути' : 'Вимкнути звук';
+      volRange.value = silent ? 0 : Math.round(vol.v * 100);
+      if (!vol.m && vol.v > 0) store.set('dyvo_vol', vol.v);
+    };
+    const setVol = p => { Object.assign(vol, p); applyVol(); };
+    volBtn.onclick = () => setVol(vol.m || vol.v === 0 ? { m: false, v: vol.v || 1 } : { m: true });
+    volRange.addEventListener('input', () => setVol({ v: volRange.value / 100, m: volRange.value == 0 }));
     const setPref = p => { Object.assign(pref, p); applyPref(); menu.hidden = true; showSub(); };
     ccBtn.onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
     document.addEventListener('click', e => { if (!menu.contains(e.target)) menu.hidden = true; });
@@ -897,11 +915,14 @@
       else if (k === 'arrowright') video.currentTime += 5;
       else if (k === 'arrowleft') video.currentTime -= 5;
       else if (k === 'c' || k === 'с') setPref({ on: !pref.on });
+      else if (k === 'm' || k === 'ь') volBtn.onclick();
+      else if (k === 'arrowup' || k === 'arrowdown') { e.preventDefault(); setVol({ v: Math.min(1, Math.max(0, Math.round((vol.v + (k === 'arrowup' ? 0.1 : -0.1)) * 10) / 10)), m: false }); }
       else if (k === 'f' || k === 'а') fsBtn.onclick();
       else return;
       poke();
     });
     applyPref();
+    applyVol();
     if (autoplay) video.play().catch(() => {});
     return box;
   }
