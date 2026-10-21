@@ -362,7 +362,7 @@ def update_home():
     """Головна: три найновіші безкоштовні матеріали між <!-- catalog:latest --> і <!-- /catalog:latest -->."""
     p = os.path.join(PUB, 'index.html')
     s = open(p, encoding='utf-8').read()
-    free = [i for i in sorted(DATA, key=lambda i: i['date'], reverse=True) if i['kind'] in ('free', 'account', 'idea')][:3]
+    free = [i for i in sorted(DATA, key=lambda i: i['date'], reverse=True) if i['kind'] in ('free', 'account')][:3]
     latest = fridays()[0] if fridays() else None
     block = ('<!-- catalog:latest -->\n      <div class="grid-cards">\n'
              + '\n'.join(card(it, newest=it is latest) for it in free)
