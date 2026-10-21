@@ -1,0 +1,24 @@
+/* Перший екран: 3D-вишивка в п'яльцях (js/hoop.js, джерело scene3d/hoop.js). Поки WebGL не готовий — постер. */
+.hoop-wrap { position: relative; }
+.hoop { position: relative; aspect-ratio: 1 / 1; max-height: min(78vh, 680px); margin-inline: auto; touch-action: pan-y; }
+.hoop canvas, .hoop-poster { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hoop canvas { opacity: 0; transition: opacity .6s; }
+.hoop.live canvas { opacity: 1; }
+.hoop.live .hoop-poster { visibility: hidden; transition: visibility 0s .6s; }
+@media (max-width: 920px) { .hero .hoop-wrap { order: -1; } .hoop { max-height: none; width: min(100%, 520px); } }
+.hoop:focus-visible { outline: 4px solid var(--yellow); outline-offset: 4px; border-radius: 24px; }
+.hoop-bubble { position: absolute; z-index: 3; transform: translate(-50%, calc(-100% - 14px)) scale(.94); width: min(56%, 300px); background: #FFFDF8; border: 2px solid var(--ink); border-radius: 16px; padding: 10px 14px; font-weight: 700; font-size: clamp(12px, 1.15vw, 15px); line-height: 1.35; opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; box-shadow: 0 4px 0 rgba(42, 23, 20, .16); }
+.hoop-bubble b { display: block; color: var(--red); font-weight: 900; font-size: .82em; letter-spacing: .04em; text-transform: uppercase; }
+.hoop-bubble::after { content: ''; position: absolute; left: calc(50% + var(--tail, 0px) - 8px); bottom: -9px; width: 14px; height: 14px; background: #FFFDF8; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg); border-radius: 0 0 3px 0; }
+.hoop-bubble.show { opacity: 1; transform: translate(-50%, calc(-100% - 14px)) scale(1); }
+
+/* фон: рваний папір шарами (scripts/make_hoop_bg.py); під час прокрутки шари розходяться по глибині */
+.hoop-wrap { isolation: isolate; }
+.hoop-bg { position: absolute; z-index: -1; left: -14%; right: -14%; top: -10%; height: 112%; width: 128%; overflow: visible; pointer-events: none; }
+.hoop-bg .bg-piece { transform-box: fill-box; transform-origin: center; transform: translate3d(0, calc(var(--sp, 0) * var(--d) * -140px), 0) rotate(calc(var(--sp, 0) * var(--d) * 6deg)); will-change: transform; }
+.js .hoop-bg .bg-piece { opacity: 0; animation: bg-in 1s cubic-bezier(.2, .8, .3, 1.15) forwards; }
+.hoop-bg .p1 { animation-delay: .05s !important; } .hoop-bg .p4 { animation-delay: .2s !important; }
+.hoop-bg .p2 { animation-delay: .35s !important; } .hoop-bg .p3 { animation-delay: .5s !important; }
+@keyframes bg-in { from { opacity: 0; translate: 0 26px; scale: .96; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@media (max-width: 920px) { .hoop-bg { left: -8%; right: -8%; width: 116%; top: -4%; height: 106%; } }
+@media (prefers-reduced-motion: reduce) { .js .hoop-bg .bg-piece { opacity: 1; animation: none; } }
