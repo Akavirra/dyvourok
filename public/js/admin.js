@@ -584,6 +584,13 @@ ${howto(c)}
     };
     table(d.sources || [], 'source', 'demo-src', 'Поки ніхто не відкривав демо за цей період.');
     table(d.daily || [], 'day', 'demo-daily', '—');
+    const dl = d.downloads || [];
+    $('demo-dl').replaceChildren(...(dl.length ? dl : [null]).map(r => {
+      const tr = document.createElement('tr');
+      if (!r) { tr.innerHTML = '<td colspan="3" class="muted">За цей період ще ніхто не завантажував.</td>'; return tr; }
+      [r.slug, sourceName(r.source), r.n].forEach(v => tr.append(el('td', null, v)));
+      return tr;
+    }));
   }
   $('demo-days').onchange = loadDemo;
 
