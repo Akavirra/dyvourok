@@ -66,7 +66,7 @@ def head(title, desc, url, image, extra_ld, kind='website'):
 <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/icons/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<link rel="preload" href="/fonts/Nunito-VF.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/Nunito-VF.woff2?v=361d3613" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{css}">
 <link rel="stylesheet" href="{css2}">
 <script type="application/ld+json">{json.dumps(extra_ld, ensure_ascii=False)}</script>

@@ -7,7 +7,7 @@ const MEDIA = 'dyvourok-media';
 const CORE = [
   'app/', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/star.js', 'js/sfx.js',
-  'fonts/Nunito-VF.woff2', 'fonts/NotoSansGlagolitic.ttf',
+  'fonts/Nunito-VF.woff2?v=361d3613', 'fonts/NotoSansGlagolitic.ttf',
   'brand/dyvourok-logo.svg', 'brand/dyvourok-mark.svg',
   'icons/favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
   'packs/khlib/pack.js', 'packs/khlib/img/cover-card.jpg',

@@ -1,5 +1,5 @@
 /* Дивоурок — сайт-вітрина. Той самий світ, що й у застосунку: папір, калина, вишиті зірки. */
-@font-face { font-family: 'Nunito'; src: url('../fonts/Nunito-VF.woff2') format('woff2'), url('../fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; font-display: swap; }
+@font-face { font-family: 'Nunito'; src: url('../fonts/Nunito-VF.woff2?v=361d3613') format('woff2'), url('../fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; font-display: swap; }
 
 :root {
   --paper: #FBF6EC;
