@@ -746,9 +746,9 @@
     const item = (ico, title, note, path, main) => h('button', { class: 'menu-item' + (main ? ' main' : ''), onclick: () => { Sfx.tap(); go(path); } },
       h('div', { class: 'ico' }, icon(ico)), h('h3', {}, title), h('div', { class: 'muted' }, note));
     const lp = byLevel(pack, pack);
+    const gateBanner = packGateBanner(pack);
     frame([pack.title], [
-      newsBanner(),
-      packGateBanner(pack),
+      gateBanner || newsBanner(),   // одна картка зверху, не дві: у демо — про доступ, інакше — оголошення
       h('div', { class: 'pack-head' },
         h('div', { class: 'kicker' }, packSubtitle(pack)),
         h('h1', {}, pack.title),
@@ -1407,6 +1407,8 @@
     // посилання «Спробувати безкоштовно» з сайту: одразу в демо набору (#/demo/mova/sources — одразу на потрібну сторінку)
     if (parts[0] === 'demo') {
       if (!license.get()) store.set('dyvo_demo', true);
+      // без набору — у бібліотеку: там і безкоштовні набори, і демо платних
+      if (!parts[1]) { history.replaceState(null, '', location.pathname + location.search + '#/library'); return route(); }
       // replaceState з повним шляхом: відносна адреса розв'язалася б від <base> і вела б на головну сайту
       history.replaceState(null, '', location.pathname + location.search + '#/pack/' + (parts[1] || 'mova') + (parts[2] ? '/' + parts.slice(2).join('/') : ''));
       return route();

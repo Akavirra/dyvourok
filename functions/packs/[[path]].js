@@ -2,7 +2,8 @@
 // Відкрито без коду: опис набору (pack.js), картинки й демо-файли (див. PUBLIC).
 // Ці ж шляхи виключені з функцій у public/_routes.json — Cloudflare віддає їх напряму, без виклику функції
 // (ліміт безкоштовного тарифу — 100 тис. викликів на добу). Новий набір: додати його img/ і pack.js і туди.
-import { readSession, packAllowed } from '../../lib/auth.js';
+import { readSession } from '../../lib/auth.js';
+import { liveAccess } from '../../lib/access.js';
 import { recordPackDownload } from '../../lib/packs.js';
 
 const PUBLIC = [
@@ -15,7 +16,7 @@ export async function onRequest({ request, env, params }) {
   if (PUBLIC.some(re => re.test(path))) return env.ASSETS.fetch(request);
   const packId = path.split('/')[0];
   const session = await readSession(request, env);
-  if (!packAllowed(session, packId)) {
+  if (!session || !(await liveAccess(env, session, packId))) {
     const message = packId === 'khlib'
       ? 'Увійдіть у акаунт і додайте безкоштовний набір «Шлях зернини».'
       : 'Доступ до матеріалу відкривається після активації коду.';

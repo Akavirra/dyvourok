@@ -1,11 +1,12 @@
 // Інтерактив «Шлях зернини» доступний лише акаунту, який додав набір,
 // або власнику платного коду з правом на khlib / усі набори.
-import { readSession, packAllowed } from '../../lib/auth.js';
+import { readSession } from '../../lib/auth.js';
+import { liveAccess } from '../../lib/access.js';
 import { recordPackOpen } from '../../lib/packs.js';
 
 export async function onRequest({ request, env, params }) {
   const session = await readSession(request, env);
-  if (!packAllowed(session, 'khlib')) {
+  if (!session || !(await liveAccess(env, session, 'khlib'))) {
     const acceptsHtml = (request.headers.get('accept') || '').includes('text/html');
     if (acceptsHtml) return Response.redirect(new URL('/app/#/claim/khlib', request.url), 302);
     return new Response('Спочатку додайте безкоштовний набір до свого акаунта.', {

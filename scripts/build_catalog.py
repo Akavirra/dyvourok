@@ -66,12 +66,14 @@ def head(title, desc, url, image, extra_ld, kind='website'):
 <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/icons/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<link rel="preload" href="/fonts/Nunito.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="/fonts/Nunito-VF.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{css}">
 <link rel="stylesheet" href="{css2}">
 <script type="application/ld+json">{json.dumps(extra_ld, ensure_ascii=False)}</script>
 </head>
 <body class="cat-page" data-latest-friday="{fridays()[0]["date"] if fridays() else ""}">
+<!-- Cloudflare не ховає адреси пошти (email-decode блокує CSP і без JS вони зникають) -->
+<!--email_off-->
 <header class="header" id="top">
   <div class="wrap">
     <a class="logo" href="/" aria-label="Дивоурок — на головну"><img src="/brand/dyvourok-logo.svg" alt="Дивоурок" width="180" height="38"></a>
@@ -125,6 +127,7 @@ def foot():
 </footer>
 <script src="/js/site.js?v={ver("js/site.js")}"></script>
 <script src="/js/catalog.js?v={ver("js/catalog.js")}"></script>
+<!--/email_off-->
 </body>
 </html>
 '''

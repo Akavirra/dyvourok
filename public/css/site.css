@@ -1,5 +1,5 @@
 /* Дивоурок — сайт-вітрина. Той самий світ, що й у застосунку: папір, калина, вишиті зірки. */
-@font-face { font-family: 'Nunito'; src: url('../fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; font-display: swap; }
+@font-face { font-family: 'Nunito'; src: url('../fonts/Nunito-VF.woff2') format('woff2'), url('../fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; font-display: swap; }
 
 :root {
   --paper: #FBF6EC;
@@ -66,7 +66,8 @@ p { margin: 0; }
 .header .wrap { display: flex; align-items: center; gap: 28px; height: 76px; }
 .header .logo img { height: 38px; width: auto; }
 .nav { display: flex; gap: 26px; flex: 1; }
-.nav a { text-decoration: none; font-weight: 800; color: var(--ink-2); font-size: .95em; }
+.nav a { text-decoration: none; font-weight: 800; color: var(--ink-2); font-size: .95em; white-space: nowrap; }
+@media (min-width: 921px) and (max-width: 1120px) { .header .wrap { gap: 18px; } .nav { gap: 16px; } .nav a { font-size: .88em; } .header .actions .btn.small { padding: 9px 14px; } }
 .nav a:hover { color: var(--red); }
 .header .actions { display: flex; gap: 10px; }
 .burger { display: none; margin-left: auto; width: 46px; height: 46px; border-radius: 12px; border: none; background: var(--paper-2); cursor: pointer; }
@@ -93,39 +94,8 @@ p { margin: 0; }
 .trust { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 28px; font-weight: 800; font-size: .88em; color: var(--muted); }
 .trust span { display: inline-flex; align-items: center; gap: 8px; }
 .trust span::before { content: ''; width: 8px; height: 8px; background: var(--green); transform: rotate(45deg); }
-@media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; } .hero .vertep { order: -1; margin-inline: -8px; } .stage-bubble { width: 62%; } }
+@media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; } }
 
-/* інтерактивна дошка з мультфільмом */
-/* жива сцена вертепу (js/stage.js) */
-.vertep { position: relative; }
-.vertep-stage { position: relative; aspect-ratio: 1672 / 941; filter: drop-shadow(0 26px 30px rgba(42, 23, 20, .28)); }
-.vertep-poster, .vertep-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.vertep-stage canvas { opacity: 0; transition: opacity .4s; }
-.vertep-stage.live canvas { opacity: 1; }
-.vertep-stage.live .vertep-poster { visibility: hidden; transition: visibility 0s .4s; }
-.stage-hit { position: absolute; border: none; background: none; padding: 0; cursor: pointer; border-radius: 40px 40px 12px 12px; -webkit-tap-highlight-color: transparent; }
-.stage-hit:focus-visible { outline: 3px solid var(--yellow); outline-offset: 4px; }
-.stage-name { position: absolute; left: 50%; bottom: -30px; transform: translate(-50%, 6px); white-space: nowrap; background: var(--red); color: #fff; font-weight: 900; font-size: clamp(10px, 1.1vw, 13px); padding: 4px 10px; border-radius: 99px; opacity: 0; transition: opacity .15s, transform .15s; pointer-events: none; box-shadow: 0 3px 0 var(--red-dark); }
-.stage-hit:hover .stage-name, .stage-hit:focus-visible .stage-name { opacity: 1; transform: translate(-50%, 0); }
-.stage-bubble { position: absolute; transform: translate(-50%, 8px) scale(.92); width: min(60%, 360px); background: #FFFDF8; border: 3px solid var(--ink); border-radius: 18px; padding: 10px 14px; font-weight: 700; font-size: clamp(12px, 1.25vw, 15px); line-height: 1.35; opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; box-shadow: 0 5px 0 rgba(42, 23, 20, .18); }
-.stage-bubble b { display: block; color: var(--red); font-weight: 900; font-size: .85em; }
-.stage-bubble::after { content: ''; position: absolute; left: calc(50% + var(--tail, 0px) - 9px); bottom: -12px; width: 16px; height: 16px; background: #FFFDF8; border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); transform: rotate(45deg); border-radius: 0 0 4px 0; }
-.stage-bubble.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
-.vertep .caption { margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity .4s; }
-.vertep .caption.done { opacity: .55; }
-.vertep .caption .tap { width: 12px; height: 12px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 0 rgba(200, 52, 31, .5); animation: tap 1.6s infinite; }
-@keyframes tap { 70% { box-shadow: 0 0 0 12px rgba(200, 52, 31, 0); } 100% { box-shadow: 0 0 0 0 rgba(200, 52, 31, 0); } }
-.board { position: relative; }
-.board .screen { position: relative; background: #111; border-radius: 18px; padding: 12px; box-shadow: 0 30px 60px -25px rgba(42, 23, 20, .55), 0 0 0 1px rgba(0, 0, 0, .05); }
-.board .screen::after { content: ''; position: absolute; left: 50%; bottom: -34px; width: 16%; height: 34px; transform: translateX(-50%); background: linear-gradient(#3a302b, #2a211d); border-radius: 0 0 8px 8px; z-index: -1; }
-.board .frame { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 9; background: #000; }
-.board .frame img, .board .frame video { width: 100%; height: 100%; object-fit: cover; }
-.play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: none; background: linear-gradient(to top, rgba(0, 0, 0, .35), transparent 50%); cursor: pointer; color: #fff; font: inherit; }
-.play .circle { width: 92px; height: 92px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 10px rgba(200, 52, 31, .25); transition: transform .2s; }
-.play:hover .circle { transform: scale(1.08); }
-.play .circle svg { width: 36px; height: 36px; margin-left: 6px; }
-.play .label { position: absolute; left: 18px; bottom: 14px; font-weight: 900; font-size: .9em; background: rgba(0, 0, 0, .45); padding: 6px 12px; border-radius: 99px; }
-.board .caption { margin-top: 48px; text-align: center; font-weight: 800; color: var(--muted); font-size: .9em; }
 
 /* паперові прикраси */
 .deco { position: absolute; pointer-events: none; z-index: 0; filter: drop-shadow(0 6px 8px rgba(42, 23, 20, .15)); animation: float 7s ease-in-out infinite; }
@@ -289,5 +259,5 @@ p { margin: 0; }
   html { scroll-behavior: auto; }
   .deco { animation: none; }
   .js .reveal { opacity: 1; transform: none; transition: none; }
-  .btn, .feature .pic img, .play .circle { transition: none; }
+  .btn, .feature .pic img { transition: none; }
 }

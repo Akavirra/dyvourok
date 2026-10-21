@@ -1,11 +1,24 @@
 {
   "version": 1,
   "include": [
-    "/api/*",
-    "/packs/*",
-    "/khlib/*"
+    "/*"
   ],
   "exclude": [
+    "/",
+    "/css/*",
+    "/js/*",
+    "/fonts/*",
+    "/img/*",
+    "/brand/*",
+    "/icons/*",
+    "/files/*",
+    "/materialy/*",
+    "/app/*",
+    "/sw.js",
+    "/manifest.webmanifest",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/favicon.ico",
     "/packs/mova/img/*",
     "/packs/mova/pack.js",
     "/packs/mova/media/shevchenko-full.mp4",

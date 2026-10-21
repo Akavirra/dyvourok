@@ -21,9 +21,9 @@
 <link rel="icon" href="icons/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="preload" href="fonts/Nunito.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="css/site.css?v=b50b28e1f7">
-<link rel="stylesheet" href="css/hoop.css">
+<link rel="preload" href="fonts/Nunito-VF.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/site.css?v=ee6f0522be">
+<link rel="stylesheet" href="css/hoop.css?v=c3c87c75c6">
 <link rel="stylesheet" href="css/catalog.css?v=463f6c0d18">
 <!-- seo:jsonld -->
 <script type="application/ld+json">
@@ -159,6 +159,7 @@
 <!-- /seo:jsonld -->
 </head>
 <body>
+<!--email_off-->
 
 <header class="header" id="top">
   <div class="wrap">
@@ -253,7 +254,7 @@
   </div>
 </article>
 <article class="m-card tape-0" data-kind="account" data-grades="1-4 5-7 8-11" data-subject="world">
-  <div class="pic"><img src="/packs/khlib/img/cover-card.jpg" alt="" width="1320" height="570" loading="lazy"></div>
+  <div class="pic"><img src="/packs/khlib/img/cover-card.webp" alt="" width="1320" height="570" loading="lazy"></div>
   <div class="body">
     <div class="row"><span class="badge account">Безкоштовно після входу</span></div>
     <h3><a class="stretch" href="/app/#/claim/khlib">Шлях зернини</a></h3>
@@ -280,7 +281,7 @@
       </div>
       <div class="sets">
         <article class="set-card reveal">
-          <div class="pic"><img src="packs/khlib/img/cover-card.jpg" alt="Кіт Воркіт і сорока Вістка серед пшеничного поля" width="1320" height="570" loading="lazy"></div>
+          <div class="pic"><img src="packs/khlib/img/cover-card.webp" alt="Кіт Воркіт і сорока Вістка серед пшеничного поля" width="1320" height="570" loading="lazy"></div>
           <div class="body">
             <div class="set-top"><span class="badge free">Безкоштовно</span><span class="when">Всесвітній день хліба</span></div>
             <h3>Шлях зернини</h3>
@@ -289,12 +290,12 @@
           </div>
         </article>
         <article class="set-card reveal">
-          <div class="pic"><img src="packs/mova/img/cover-card.jpg" alt="Медальйони героїв: Кирило, Нестор Літописець, Тарас Шевченко, Леся Українка, Іван Франко" width="1320" height="570" loading="lazy"></div>
+          <div class="pic"><img src="packs/mova/img/cover-card.webp" alt="Медальйони героїв: Кирило, Нестор Літописець, Тарас Шевченко, Леся Українка, Іван Франко" width="1320" height="570" loading="lazy"></div>
           <div class="body">
             <div class="set-top"><span class="badge paid">300 ₴</span><span class="when">День писемності та мови</span></div>
             <h3>Машина часу рідної мови</h3>
             <p>Подорож через 5 епох — від глаголиці до Франка. Класики самі розповідають дітям свою історію, а клас збирає слово-скарб.</p>
-            <div class="set-cta"><a class="btn small" href="#cina">Купити набір</a><a class="btn ghost small" href="app/#/demo">Демо</a></div>
+            <div class="set-cta"><a class="btn small" href="#cina">Купити набір</a><a class="btn ghost small" href="app/#/demo/mova">Демо</a></div>
           </div>
         </article>
         <article class="set-card soon reveal">
@@ -428,7 +429,7 @@
             <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <div class="cta">
               <button class="btn" type="submit">Замовити набір</button>
-              <a class="btn ghost" href="app/#/demo">Спершу спробувати</a>
+              <a class="btn ghost" href="app/#/demo/mova">Спершу спробувати</a>
             </div>
             <p class="price-note" id="preorder-msg" role="status" aria-live="polite">Контакт використаємо лише для зв'язку щодо замовлення. <a href="pryvatnist">Політика конфіденційності</a>.</p>
           </form>
@@ -436,7 +437,7 @@
             <img src="img/site/star-gold.webp" alt="" width="64" height="64">
             <h4>Дякуємо за замовлення!</h4>
             <p>Протягом дня напишемо вам реквізити для оплати. А поки можна пройти безкоштовну зупинку з Тарасом Шевченком разом із класом.</p>
-            <a class="btn gold" href="app/#/demo">Пройти демо-зупинку</a>
+            <a class="btn gold" href="app/#/demo/mova">Пройти демо-зупинку</a>
           </div>
         </div>
         <div class="soon-card reveal" id="nezabarom">
@@ -481,7 +482,7 @@
         <canvas id="bloom" width="300" height="300" aria-hidden="true"></canvas>
         <div>
           <h2>Спробуйте урок-диво з вашим класом</h2>
-          <p>Демо-зупинка з Тарасом Шевченком — безкоштовно й без реєстрації.</p>
+          <p>Відкрийте бібліотеку: безкоштовний урок «Шлях зернини» і демо-зупинки інших наборів.</p>
         </div>
         <a class="btn gold" href="app/#/demo">Спробувати безкоштовно</a>
       </div>
@@ -523,7 +524,8 @@
 </footer>
 
 <script src="js/star.js?v=b7e06e2615"></script>
-<script type="module" src="js/hoop.js"></script>
-<script src="js/site.js?v=cc7b9cffa2"></script>
+<script type="module" src="js/hoop.js?v=17420309ea"></script>
+<script src="js/site.js?v=9d55185c0c"></script>
+<!--/email_off-->
 </body>
 </html>

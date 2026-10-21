@@ -68,6 +68,7 @@
     btn.disabled = true;
     try {
       const r = await fetch('/api/preorder', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
+      if (r.status === 429) return fail('Забагато заявок з цього пристрою. Спробуйте за годину або напишіть на info@dyvourok.com.ua.');
       if (r.status === 400) { form.contact.setAttribute('aria-invalid', 'true'); form.contact.focus(); return fail('Схоже, в контакті помилка. Перевірте e-mail, @нікнейм у Telegram або номер телефону.'); }
       if (!r.ok) throw new Error(r.status);
       // якщо цей пристрій проходив демо — позначити в статистиці, що після нього лишили заявку

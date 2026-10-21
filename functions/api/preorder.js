@@ -1,6 +1,7 @@
 // POST /api/preorder {contact, name, grade, comment, source, website} — заявка «Хочу повну версію».
 // website — пастка для ботів: людина це поле не бачить. Повторна заявка з тим самим контактом оновлює стару.
 import { json } from '../../lib/auth.js';
+import { underLimit } from '../../lib/limit.js';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TG = /^@?[a-z0-9_]{5,32}$/i;
@@ -11,6 +12,8 @@ export async function onRequestPost({ request, env }) {
   let b;
   try { b = await request.json(); } catch { return json({ error: 'bad-request' }, 400); }
   if (b.website) return json({ ok: true });
+  const ip = request.headers.get('cf-connecting-ip') || 'local';
+  if (!(await underLimit(env, 'preorder:' + ip, 8))) return json({ error: 'slow' }, 429);
 
   let contact = String(b.contact || '').trim().slice(0, 120);
   if (EMAIL.test(contact)) contact = contact.toLowerCase();

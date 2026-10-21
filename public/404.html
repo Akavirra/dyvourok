@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сторінку не знайдено | Дивоурок</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#C8341F">
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/css/site.css">
+<style>
+  .nf { min-height: 72vh; display: grid; place-items: center; text-align: center; padding: 48px 20px; }
+  .nf-card { max-width: 620px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .nf-code { font-weight: 1000; font-size: clamp(96px, 18vw, 180px); line-height: .9; color: var(--red); letter-spacing: -.04em; position: relative; }
+  .nf-code::after { content: ''; position: absolute; left: 6%; right: 6%; bottom: -.12em; height: .09em; background: repeating-linear-gradient(90deg, var(--yellow) 0 .22em, transparent .22em .32em); }
+  .nf h1 { font-weight: 900; font-size: clamp(28px, 4vw, 40px); }
+  .nf p { color: var(--ink-2); font-size: 1.08em; }
+  .nf .cta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+  .nf .star { width: 72px; height: 72px; }
+</style>
+</head>
+<body>
+<!--email_off-->
+<header class="header"><div class="wrap"><a class="logo" href="/"><img src="/brand/dyvourok-logo.svg" alt="Дивоурок" width="180" height="38"></a><div style="margin-left:auto"><a class="btn small ghost" href="/materialy/">Матеріали</a></div></div></header>
+<main class="nf">
+  <div class="nf-card">
+    <img class="star" src="/brand/dyvourok-mark.svg" alt="" width="72" height="72">
+    <div class="nf-code" aria-hidden="true">404</div>
+    <h1>Цей стібок загубився</h1>
+    <p>Сторінки за такою адресою немає — можливо, посилання застаріло або в ньому помилка. Почніть з головної чи з каталогу матеріалів.</p>
+    <div class="cta">
+      <a class="btn" href="/">На головну</a>
+      <a class="btn ghost" href="/materialy/">Каталог матеріалів</a>
+    </div>
+  </div>
+</main>
+<!--/email_off-->
+</body>
+</html>
