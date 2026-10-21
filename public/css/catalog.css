@@ -1,5 +1,6 @@
 /* Каталог /materialy: паперові картки з «скотчем», рваний край, відривний календар «Безкоштовної п’ятниці». */
 
+.header .logo { flex: none; }
 .nav a[aria-current=page] { color: var(--red); }
 .nav a[aria-current=page]::after { content: ''; display: block; height: 3px; border-radius: 3px; background: var(--yellow); margin-top: 2px; }
 
@@ -198,3 +199,28 @@
   .cat-hero .village img, .new-flag { animation: none; }
   .m-card, .m-card .pic img, .tearoff .sheet, .main-shot img { transition: none; }
 }
+
+/* ---------- головна: безкоштовні матеріали й набори ---------- */
+.home-free .grid-cards { margin-top: 8px; }
+.home-free-more { display: flex; justify-content: center; margin-top: clamp(28px, 4vw, 44px); }
+.sets-wrap { display: block !important; }
+.sets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; }
+.set-card { background: #FBF6EC; color: var(--ink); border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 50px -26px rgba(0, 0, 0, .7); transition: transform .25s; }
+.set-card:hover { transform: translateY(-5px) rotate(-.4deg); }
+.set-card .pic { aspect-ratio: 1320 / 570; overflow: hidden; background: var(--night-2); }
+.set-card .pic img { width: 100%; height: 100%; object-fit: cover; }
+.set-card .body { padding: 20px 22px 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.set-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.set-top .when { font-weight: 800; font-size: .82em; color: var(--muted); }
+.set-card h3 { font-weight: 900; font-size: 1.35em; }
+.set-card p { color: var(--ink-2); font-size: .95em; }
+.set-cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
+.badge.soon-b { background: var(--night); color: var(--yellow); }
+.set-card.soon { background: #F3EADA; }
+.soon-pic { display: flex; align-items: center; justify-content: center; gap: 14px; background: repeating-linear-gradient(45deg, #243B69 0 14px, #1F3463 14px 28px) !important; }
+.soon-pic img { width: auto !important; height: auto !important; max-height: 70%; animation: float 6s ease-in-out infinite; }
+.soon-pic img:nth-child(2) { animation-delay: -2s; } .soon-pic img:nth-child(3) { animation-delay: -4s; }
+.sets-more { margin-top: 26px; text-align: center; font-weight: 800; }
+.sets-more a { color: var(--yellow); }
+@media (max-width: 980px) { .sets { grid-template-columns: 1fr; max-width: 560px; margin: 0 auto; } }
+@media (prefers-reduced-motion: reduce) { .soon-pic img { animation: none; } .set-card { transition: none; } }

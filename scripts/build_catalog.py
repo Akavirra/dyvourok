@@ -77,7 +77,7 @@ def head(title, desc, url, image, extra_ld, kind='website'):
     <a class="logo" href="/" aria-label="Дивоурок — на головну"><img src="/brand/dyvourok-logo.svg" alt="Дивоурок" width="180" height="38"></a>
     <nav class="nav" aria-label="Головне меню">
       <a href="/materialy/" aria-current="page">Матеріали</a>
-      <a href="/#nabir">Набір до 27 жовтня</a>
+      <a href="/#nabory">Набори</a>
       <a href="/#yak">Як це працює</a>
       <a href="/#pytannia">Питання</a>
     </nav>
@@ -104,7 +104,7 @@ def foot():
         <h4>Сайт</h4>
         <ul>
           <li><a href="/materialy/">Каталог матеріалів</a></li>
-          <li><a href="/#nabir">Набір до 27 жовтня</a></li>
+          <li><a href="/#nabory">Набори</a></li>
           <li><a href="/den-pysemnosti-2026">Ідеї до 27 жовтня і Радіодиктант 2026</a></li>
           <li><a href="/app/">Увійти в застосунок</a></li>
         </ul>
@@ -358,6 +358,20 @@ def build_free(it):
     open(os.path.join(PUB, 'materialy', f'{it["slug"]}.html'), 'w', encoding='utf-8').write(page)
 
 
+def update_home():
+    """Головна: три найновіші безкоштовні матеріали між <!-- catalog:latest --> і <!-- /catalog:latest -->."""
+    p = os.path.join(PUB, 'index.html')
+    s = open(p, encoding='utf-8').read()
+    free = [i for i in sorted(DATA, key=lambda i: i['date'], reverse=True) if i['kind'] in ('free', 'account', 'idea')][:3]
+    latest = fridays()[0] if fridays() else None
+    block = ('<!-- catalog:latest -->\n      <div class="grid-cards">\n'
+             + '\n'.join(card(it, newest=it is latest) for it in free)
+             + '\n      </div>\n<!-- /catalog:latest -->')
+    s = re.sub(r'<!-- catalog:latest -->.*?<!-- /catalog:latest -->', lambda m: block, s, flags=re.S)
+    s = re.sub(r'css/catalog\.css(\?v=\w+)?"', f'css/catalog.css?v={ver("css/catalog.css")}"', s)
+    open(p, 'w', encoding='utf-8').write(s)
+
+
 def update_sitemap():
     p = os.path.join(PUB, 'sitemap.xml')
     s = open(p, encoding='utf-8').read()
@@ -376,4 +390,5 @@ if __name__ == '__main__':
         if it['kind'] == 'free':
             build_free(it)
     update_sitemap()
+    update_home()
     print('catalog:', len(DATA), 'items,', sum(i['kind'] == 'free' for i in DATA), 'free pages')

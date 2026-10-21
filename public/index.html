@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Урок до Дня писемності та мови 27 жовтня, 1–11 клас | Дивоурок</title>
-<meta name="description" content="Готовий урок до Дня української писемності та мови для 1–11 класу: квест для дошки, мультфільми з класиками, роздатка й сценарій на 45 хвилин. Демо — безкоштовно.">
+<title>Дивоурок — готові уроки-свята для дошки й безкоштовні матеріали для вчителя, 1–11 клас</title>
+<meta name="description" content="Готові уроки-свята для інтерактивної дошки: квест, мультфільми в стилі паперового вертепу, роздатка й сценарій. Щоп’ятниці — новий безкоштовний матеріал для друку. 1–11 клас, НУШ.">
 <meta name="theme-color" content="#C8341F">
 <link rel="canonical" href="https://dyvourok.com.ua/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Дивоурок">
-<meta property="og:title" content="Урок до Дня писемності та мови — готовий, для 1–11 класу">
-<meta property="og:description" content="Квест, мультфільми, роздатка і сценарій для 1–11 класу. Спробуйте безкоштовно.">
+<meta property="og:title" content="Дивоурок — уроки, які оживають на дошці">
+<meta property="og:description" content="Готові уроки-свята для дошки й безкоштовні матеріали щоп’ятниці. 1–11 клас, НУШ.">
 <meta property="og:url" content="https://dyvourok.com.ua/">
 <meta property="og:image" content="https://dyvourok.com.ua/img/site/og.jpg?v=2">
 <meta property="og:locale" content="uk_UA">
@@ -21,6 +21,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="fonts/Nunito.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="css/site.css?v=b50b28e1f7">
+<link rel="stylesheet" href="css/catalog.css?v=9b8d5f8d3d">
 <!-- seo:jsonld -->
 <script type="application/ld+json">
 {
@@ -63,9 +64,8 @@
    },
    "offers": {
     "@type": "Offer",
-    "price": "250",
+    "price": "300",
     "priceCurrency": "UAH",
-    "priceValidUntil": "2026-10-19",
     "availability": "https://schema.org/InStock",
     "url": "https://dyvourok.com.ua/#cina",
     "seller": {
@@ -76,6 +76,14 @@
   {
    "@type": "FAQPage",
    "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Що таке «Безкоштовна п’ятниця»?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Щоп’ятниці ми викладаємо в каталог новий безкоштовний матеріал для друку: робочі аркуші, плакати, вирізалки. Завантажити можна без реєстрації, друкувати — для свого класу й ділитися з колегами."
+     }
+    },
     {
      "@type": "Question",
      "name": "Чи потрібен інтернет у класі?",
@@ -154,8 +162,7 @@
     <a class="logo" href="./" aria-label="Дивоурок — на головну"><img src="brand/dyvourok-logo.svg" alt="Дивоурок" width="180" height="38"></a>
     <nav class="nav" aria-label="Головне меню">
       <a href="materialy/">Матеріали</a>
-      <a href="#nabir">Набір до 27 жовтня</a>
-      <a href="#vseredyni">Що всередині</a>
+      <a href="#nabory">Набори</a>
       <a href="#yak">Як це працює</a>
       <a href="#cina">Ціна</a>
       <a href="#pytannia">Питання</a>
@@ -179,10 +186,10 @@
       <div>
         <span class="kicker">Для 1–11 класу · НУШ</span>
         <h1>Уроки, які <span class="accent">оживають</span> на дошці</h1>
-        <p class="lead">Готові інтерактивні свята й уроки: квест для всього класу, мультфільми з паперовими героями українського вертепу, роздатка і сценарій на 45 хвилин. Ви просто відкриваєте — і проводите.</p>
+        <p class="lead">Готові уроки-свята для дошки: квест для всього класу, мультфільми з паперовими героями українського вертепу, роздатка і сценарій на 45 хвилин. А щоп’ятниці — новий безкоштовний матеріал для друку.</p>
         <div class="cta">
-          <a class="btn" href="app/#/demo">Спробувати безкоштовно</a>
-          <a class="btn ghost" href="#vseredyni">Що всередині</a>
+          <a class="btn" href="materialy/">Дивитися матеріали</a>
+          <a class="btn ghost" href="app/#/demo">Спробувати демо</a>
         </div>
         <div class="trust">
           <span>Без реєстрації учнів</span>
@@ -203,31 +210,93 @@
 
   <div class="stitch" aria-hidden="true"></div>
 
-  <!-- ================= Набір до 27 жовтня ================= -->
-  <section class="section night" id="nabir">
+  <!-- ================= Безкоштовні матеріали (картки вписує scripts/build_catalog.py) ================= -->
+  <section class="section home-free" id="bezkoshtovno">
+    <img class="deco d2" src="img/site/star-gold.webp" alt="" style="right:4%;top:70px;width:56px">
     <div class="wrap">
-      <div>
-        <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
-          <div class="date-badge" aria-label="27 жовтня"><b>27</b><span>жовтня</span></div>
-          <span class="kicker">День української писемності та мови</span>
-        </div>
-        <h2 class="h2" style="margin-top:22px">Машина часу рідної мови</h2>
-        <p class="lead" style="margin-top:14px">Заняття відповідає завданням мовно-літературної галузі НУШ, розширює знання учнів про українську писемність і знайомить із темами та постатями, які вони продовжать вивчати у 5–6 класах. <b>Є версії для 5–7 і 8–11 класу</b>: ті самі герої, але завдання на роботу з першоджерелами — Шевченко, Леся Українка, Франко в оригіналі — і окрема роздатка.</p>
-        <p style="margin-top:10px"><a href="den-pysemnosti-2026" style="font-weight:800">Безкоштовно: 5 ідей на 10 хвилин і все про Радіодиктант 2026 →</a></p>
-        <ol class="epochs">
-          <li><span class="dot">С</span><span class="yr">863</span><span class="who">Кирило і Мефодій: читаємо глаголицю</span></li>
-          <li><span class="dot">Л</span><span class="yr">≈1113</span><span class="who">Нестор Літописець: складаємо літопис</span></li>
-          <li><span class="dot">О</span><span class="yr">1840</span><span class="who">Тарас Шевченко: збираємо рядок вірша</span></li>
-          <li><span class="dot">В</span><span class="yr">1884</span><span class="who">Леся Українка: добираємо рими</span></li>
-          <li><span class="dot">О</span><span class="yr">1899</span><span class="who">Іван Франко: вікторина за казками</span></li>
-          <li class="final"><span class="dot">!</span><span class="yr">Сьогодні</span><span class="who">Скриня зі словом і дипломи для класу</span></li>
-        </ol>
-        <a class="btn gold" href="app/#/demo">Пройти зупинку безкоштовно</a>
+      <div class="section-head">
+        <span class="kicker">Безкоштовна п’ятниця</span>
+        <h2 class="h2">Щоп’ятниці — новий матеріал у подарунок</h2>
+        <p class="lead">Робочі аркуші, плакати й вирізалки в паперовому стилі Дивоуроку. Без реєстрації: відкрили, надрукували, провели.</p>
       </div>
-      <div class="laptop reveal">
-        <div class="lid"><img src="img/site/app-map.webp?v=2" alt="Мапа часу в застосунку: п'ять епох від 863 року до сьогодні" width="1440" height="860" loading="lazy"></div>
-        <div class="base" aria-hidden="true"></div>
+<!-- catalog:latest -->
+      <div class="grid-cards">
+<article class="m-card tape-1" data-kind="free" data-grades="1-4" data-subject="math">
+  <div class="pic"><img src="/img/materialy/sklad-chysla/cover.webp" alt="" width="1320" height="570" loading="lazy"><span class="new-flag">Нове</span></div>
+  <div class="body">
+    <div class="row"><span class="badge free">Безкоштовно</span><span class="fri-flag">Безкоштовна п’ятниця #1</span></div>
+    <h3><a class="stretch" href="/materialy/sklad-chysla">Склад числа. Числові будиночки</a></h3>
+    <p>Діти «заселяють» будиночки: дописують пари чисел, які разом дають число на даху.</p>
+    <div class="meta"><span>1 клас</span><span>Математика</span><span>PDF · 3 сторінки A4</span></div>
+    <span class="go" aria-hidden="true">Завантажити <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  </div>
+</article>
+<article class="m-card tape-0" data-kind="account" data-grades="1-4 5-7 8-11" data-subject="world">
+  <div class="pic"><img src="/packs/khlib/img/cover-card.jpg" alt="" width="1320" height="570" loading="lazy"></div>
+  <div class="body">
+    <div class="row"><span class="badge account">Безкоштовно після входу</span></div>
+    <h3><a class="stretch" href="/app/#/claim/khlib">Шлях зернини</a></h3>
+    <p>Інтерактивне заняття до Дня хліба: клас разом сіє, жне, меле й пече хліб. Мультфільми, роздатка, презентація.</p>
+    <div class="meta"><span>1–11 клас</span><span>Я досліджую світ</span><span>Застосунок · мультфільми · PDF</span></div>
+    <span class="go" aria-hidden="true">Отримати безкоштовно <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  </div>
+</article>
+<article class="m-card tape-2" data-kind="idea" data-grades="1-4 5-7 8-11" data-subject="lang">
+  <div class="pic"><img src="/img/site/den-pysemnosti-2026.webp" alt="" width="1320" height="570" loading="lazy" style="object-position:50% 30%"></div>
+  <div class="body">
+    <div class="row"><span class="badge idea">Ідеї для уроку</span></div>
+    <h3><a class="stretch" href="/den-pysemnosti-2026">5 ідей на 10 хвилин до 27 жовтня</a></h3>
+    <p>Чому День писемності тепер 27 жовтня, де слухати Радіодиктант і що зробити з класом без підготовки.</p>
+    <div class="meta"><span>1–11 клас</span><span>Мова і читання</span><span>Стаття · 4 хв читання</span></div>
+    <span class="go" aria-hidden="true">Читати <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  </div>
+</article>
       </div>
+<!-- /catalog:latest -->
+      <div class="home-free-more"><a class="btn ghost" href="materialy/">Увесь каталог матеріалів</a></div>
+    </div>
+  </section>
+
+  <div class="stitch" aria-hidden="true"></div>
+
+  <!-- ================= Набори ================= -->
+  <section class="section night" id="nabory">
+    <div class="wrap sets-wrap">
+      <div class="section-head">
+        <span class="kicker">Готові уроки-свята</span>
+        <h2 class="h2">Набори для дошки: відкрили — і провели</h2>
+        <p class="lead">Кожен набір — це цілий захід: квест для всього класу, мультфільми з героями паперового вертепу, роздатка й сценарій. Окремі версії для 1–4, 5–7 і 8–11 класу.</p>
+      </div>
+      <div class="sets">
+        <article class="set-card reveal">
+          <div class="pic"><img src="packs/khlib/img/cover-card.jpg" alt="Кіт Воркіт і сорока Вістка серед пшеничного поля" width="1320" height="570" loading="lazy"></div>
+          <div class="body">
+            <div class="set-top"><span class="badge free">Безкоштовно</span><span class="when">Всесвітній день хліба</span></div>
+            <h3>Шлях зернини</h3>
+            <p>Клас разом сіє, жне, молотить, меле й пече хліб у печі, а кіт Воркіт і сорока Вістка перевіряють «новини» про хліб.</p>
+            <div class="set-cta"><a class="btn gold small" href="app/#/claim/khlib">Отримати безкоштовно</a></div>
+          </div>
+        </article>
+        <article class="set-card reveal">
+          <div class="pic"><img src="packs/mova/img/cover-card.jpg" alt="Медальйони героїв: Кирило, Нестор Літописець, Тарас Шевченко, Леся Українка, Іван Франко" width="1320" height="570" loading="lazy"></div>
+          <div class="body">
+            <div class="set-top"><span class="badge paid">300 ₴</span><span class="when">День писемності та мови</span></div>
+            <h3>Машина часу рідної мови</h3>
+            <p>Подорож через 5 епох — від глаголиці до Франка. Класики самі розповідають дітям свою історію, а клас збирає слово-скарб.</p>
+            <div class="set-cta"><a class="btn small" href="#cina">Купити набір</a><a class="btn ghost small" href="app/#/demo">Демо</a></div>
+          </div>
+        </article>
+        <article class="set-card soon reveal">
+          <div class="pic soon-pic" aria-hidden="true"><img src="img/site/star-gold.webp" alt="" width="90" height="90"><img src="img/site/star-red.webp" alt="" width="60" height="60"><img src="img/site/star-blue.webp" alt="" width="70" height="70"></div>
+          <div class="body">
+            <div class="set-top"><span class="badge soon-b">Незабаром</span><span class="when">грудень</span></div>
+            <h3>Миколай, Новий рік і Різдво</h3>
+            <p>Наступний набір уже в роботі — у тому ж стилі, з героями вертепу. Підпишіться, щоб дізнатися першими.</p>
+            <div class="set-cta"><a class="btn ghost small" href="https://www.facebook.com/dyvourok/" target="_blank" rel="noopener">Стежити у Facebook</a></div>
+          </div>
+        </article>
+      </div>
+      <p class="sets-more"><a href="den-pysemnosti-2026">Безкоштовно: 5 ідей на 10 хвилин до 27 жовтня →</a></p>
     </div>
   </section>
 
@@ -237,7 +306,7 @@
     <div class="wrap">
       <div class="section-head">
         <span class="kicker">Що всередині</span>
-        <h2 class="h2">Усе для уроку — в одному місці</h2>
+        <h2 class="h2">Що в кожному наборі</h2>
         <p class="lead">Нічого не треба шукати, друкувати навмання чи складати самотужки. Кожен набір — це готовий захід від першої хвилини до останньої.</p>
       </div>
       <div class="inside">
@@ -253,7 +322,7 @@
           <div class="pic"><img src="img/site/flashback.webp?v=3" alt="Кадр мультфільму: малий Тарас малює вуглинкою, і малюнок оживає" width="1440" height="810" loading="lazy"></div>
           <div class="body">
             <h3><span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z" fill="currentColor"/></svg></span>Мультфільми</h3>
-            <p>Класики оживають у стилі паперового вертепу й самі розповідають дітям свою історію.</p>
+            <p>Герої оживають у стилі паперового вертепу й самі розповідають дітям свою історію.</p>
             <ul><li>Перевірені факти, без вигаданих «цитат»</li><li>Субтитри — діти читають разом з героєм</li></ul>
           </div>
         </article>
@@ -319,10 +388,9 @@
       </div>
       <div class="pricing">
         <div class="price-card reveal" id="peredzamovlennia">
-          <span class="ribbon">Уже доступно</span>
+          <span class="ribbon">Повний набір</span>
           <h3>Машина часу рідної мови</h3>
-          <div class="price"><b data-price>250&nbsp;₴</b><span>один раз — доступ назавжди</span></div>
-          <div class="early" data-early><b>Ціна для перших покупців</b> — до 19 жовтня включно. З 20 жовтня набір коштуватиме 300&nbsp;₴.</div>
+          <div class="price"><b>300&nbsp;₴</b><span>один раз — доступ назавжди</span></div>
           <ul class="checks">
             <li>Квест на 5 епох для інтерактивної дошки</li>
             <li>Три рівні: 1–4, 5–7 і 8–11 клас</li>
@@ -382,6 +450,7 @@
         <h2 class="h2">Часті питання вчителів</h2>
       </div>
       <div class="faq">
+        <details><summary>Що таке «Безкоштовна п’ятниця»?</summary><p>Щоп’ятниці ми викладаємо в <a href="materialy/">каталог</a> новий безкоштовний матеріал для друку: робочі аркуші, плакати, вирізалки. Завантажити можна без реєстрації, друкувати — для свого класу й ділитися з колегами.</p></details>
         <details><summary>Чи потрібен інтернет у класі?</summary><p>Для першого входу й збереження набору потрібен інтернет. Потім натисніть «Увесь набір без інтернету → Зберегти весь набір» — і квест, мультфільми, поради, відповіді та роздатка працюватимуть без мережі на цьому пристрої. Окремі відео, PDF і сценарій також можна завантажити файлами.</p></details>
         <details><summary>На чому це працює?</summary><p>У будь-якому сучасному браузері: інтерактивна дошка чи панель (Windows або Android), ноутбук із проєктором, планшет, телефон. Нічого встановлювати не обов'язково — але можна натиснути «Встановити», і з'явиться окрема програма.</p></details>
         <details><summary>Як отримати код доступу?</summary><p>Залиште <a href="#peredzamovlennia">заявку</a> або напишіть нам у Messenger на сторінку «Дивоурок» — надішлемо реквізити для оплати. Після оплати код приходить у повідомленні та на пошту — вводите його один раз на кожному пристрої, і матеріали набору відкриваються.</p></details>
@@ -420,7 +489,7 @@
         <h4>Сайт</h4>
         <ul>
           <li><a href="materialy/">Каталог матеріалів</a></li>
-          <li><a href="#nabir">Набір до 27 жовтня</a></li>
+          <li><a href="#nabory">Готові набори</a></li>
           <li><a href="den-pysemnosti-2026">Ідеї до 27 жовтня і Радіодиктант 2026</a></li>
           <li><a href="#cina">Ціна</a></li>
           <li><a href="#pytannia">Питання</a></li>
