@@ -44,6 +44,13 @@ img { max-width: 100%; display: block; }
 .topbar .spacer { flex: 1; }
 .icon-btn { width: 48px; height: 48px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; background: var(--paper-2); font-size: 22px; flex: none; }
 .icon-btn:hover { background: var(--line); }
+.site-link { height: 48px; padding: 0 16px; border-radius: 14px; display: inline-flex; align-items: center; gap: 8px; background: var(--paper-2); color: var(--ink); font-weight: 800; font-size: .9em; text-decoration: none; flex: none; white-space: nowrap; }
+.site-link:hover { background: var(--line); }
+.site-link .svg-ico { font-size: 20px; }
+@media (max-width: 860px) { .site-link { width: 48px; padding: 0; justify-content: center; } .site-link .site-txt { display: none; } .site-link .svg-ico { font-size: 22px; } }
+/* вузькі телефони: панель з кнопкою «На сайт» не має виходити за екран (звук і далі працює, кнопка лишається на дошці й ноутбуці) */
+@media (max-width: 420px) { .topbar { gap: 6px; padding-inline: 12px; } .topbar .logo { height: 22px; } .topbar .snd-btn { display: none; } }
+@media (max-width: 520px) { .site-link { width: 40px; height: 40px; border-radius: 12px; } .site-link .svg-ico { font-size: 19px; } }
 @media (max-width: 520px) { .topbar { gap: 8px; } .topbar .icon-btn { width: 40px; height: 40px; border-radius: 12px; font-size: 19px; } .topbar .crumb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .topbar .fs-btn { display: none; } .topbar .btn { padding: 9px 12px !important; } }
 .svg-ico { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
 .menu-item .ico { color: var(--red); }

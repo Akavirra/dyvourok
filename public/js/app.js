@@ -29,6 +29,7 @@
   function shuffledNot(arr) { if (arr.length < 2) return arr.slice(); let s; do { s = shuffle(arr); } while (s.every((v, i) => v === arr[i])); return s; }
   // векторні іконки замість емодзі: на частині шкільних дошок кольорових емодзі немає
   const ICONS = {
+    site: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
     clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>',
     film: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z" fill="currentColor"/>',
     print: '<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',
@@ -447,7 +448,7 @@
 
   // ---------------------------------------------------------------- каркас
   function frame(crumbs, body) {
-    const soundBtn = h('button', { class: 'icon-btn', title: 'Звук', 'aria-label': 'Увімкнути або вимкнути звук', onclick: () => { soundBtn.replaceChildren(icon(Sfx.toggle() ? 'sound' : 'mute')); } }, icon(Sfx.on ? 'sound' : 'mute'));
+    const soundBtn = h('button', { class: 'icon-btn snd-btn', title: 'Звук', 'aria-label': 'Увімкнути або вимкнути звук', onclick: () => { soundBtn.replaceChildren(icon(Sfx.toggle() ? 'sound' : 'mute')); } }, icon(Sfx.on ? 'sound' : 'mute'));
     const fsBtn = h('button', { class: 'icon-btn fs-btn', title: 'На весь екран', 'aria-label': 'На весь екран', onclick: () => {
       if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
     } }, icon('full'));
@@ -460,6 +461,8 @@
       isAccount() && PACKS.some(p => !license.allows(p.id)) ? h('button', { class: 'btn', style: 'padding:10px 18px;font-size:.85em', onclick: enterCode }, 'Додати код') : null,
       OFFLINE_FILE ? null : h('button', { class: 'icon-btn bell', title: 'Новини', 'aria-label': 'Новини «Дивоуроку»', onclick: newsDialog },
         icon('bell'), h('span', { class: 'news-badge', id: 'news-badge', hidden: true })),
+      // назад на сайт-вітрину: <base href="../"> веде './' на головну сайту (в офлайн-архіві з диска сайту немає)
+      OFFLINE_FILE ? null : h('a', { class: 'site-link', href: './', title: 'На сайт «Дивоурока»', 'aria-label': 'Перейти на сайт «Дивоурока»' }, icon('site'), h('span', { class: 'site-txt' }, 'На сайт')),
       userBtn, soundBtn, fsBtn);
     app.replaceChildren(top, h('main', { class: 'screen' }, body));
     news.paintBadge();
