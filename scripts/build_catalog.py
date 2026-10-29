@@ -281,6 +281,37 @@ def build_free(it):
                      for n, s in enumerate(shots))
     inside = ''.join(f'<li>{e(x)}</li>' for x in it['inside'])
     ideas = ''.join(f'<div class="idea"><span class="n">{n + 1}</span><h3>{e(x["t"])}</h3><p>{e(x["d"])}</p></div>' for n, x in enumerate(it['ideas']))
+    parts_html = ''
+    if it.get('files'):
+        rows = ''.join(
+            f'<li><div><b>{e(f["t"])}</b><span>{e(f["d"])}</span></div>'
+            f'<a class="btn part-dl" href="/api/dl/{f["slug"]}" data-dl="{f["slug"]}">{ICON["down"]} PDF <small>{human_size("/files/free/" + f["slug"] + ".pdf")}</small></a></li>'
+            for f in it['files'])
+        parts_html = f'<p class="parts-lead">Або оберіть лише потрібне:</p><ul class="parts-list">{rows}</ul>'
+    audio_sec = ''
+    if it.get('audio'):
+        au = it['audio']
+        groups = ''.join(
+            f'<div class="au-group"><h3>{e(g["t"])}</h3><ol class="au-list">' + ''.join(
+                f'<li><span class="au-code">{e(t["code"])}</span><span class="au-name">{e(t["t"])}<small>{e(t["len"])}</small></span>'
+                f'<audio controls preload="none" src="{e(t["src"])}"></audio></li>' for t in g['tracks']) + '</ol></div>'
+            for g in au['groups'])
+        audio_sec = f'''
+  <section class="item-sec" id="audio">
+    <div class="paper-card au-card">
+      <div class="au-head"><div><h2>{e(au["title"])}</h2><p>{e(au["note"])}</p></div>
+        <a class="btn gold" href="{e(au["zip"])}" download>{ICON["down"]} Усі доріжки (ZIP) <small>{human_size(au["zip"])}</small></a></div>
+      <div class="au-groups">{groups}</div>
+    </div>
+  </section>'''
+    src_sec = ''
+    if it.get('sources'):
+        lis = ''.join(f'<li><a href="{e(x["u"])}" target="_blank" rel="noopener">{e(x["t"])}</a><span>{e(x["d"])}</span></li>' for x in it['sources'])
+        src_sec = f'''
+  <section class="item-sec">
+    <div class="paper-card src-card"><h2>Джерела</h2><ol class="src-list">{lis}</ol>
+      <p class="src-note">{e(it.get("sources_note", ""))}</p></div>
+  </section>'''
     others = [o for o in sorted(DATA, key=lambda i: i['date'], reverse=True) if o is not it][:3]
     more = '\n'.join(card(o) for o in others)
     share_text = f'{it["title"]} — безкоштовно від Дивоурок'
@@ -309,7 +340,7 @@ def build_free(it):
       <div class="tags"><span>{e(it["grade_label"])}</span><span>{e(SUBJECTS[it["subject"]])}</span><span>{e(it["format"])}</span></div>
       <p class="lead">{e(it["about"])}</p>
       <div class="dl-box">
-        <a class="btn big-dl" href="/api/dl/{it["slug"]}" data-dl="{it["slug"]}">{ICON["down"]} Завантажити PDF <small>{size}</small></a>
+        <a class="btn big-dl" href="/api/dl/{it["slug"]}" data-dl="{it["slug"]}">{ICON["down"]} {e(it.get("full_label", "Завантажити PDF"))} <small>{size}</small></a>{parts_html}
         <p class="dl-note">{ICON["print"]} Без реєстрації. Друкуйте для свого класу й діліться з колегами.</p>
       </div>
       <div class="share" data-share data-url="{SITE}{url}" data-text="{e(share_text)}">
@@ -334,6 +365,7 @@ def build_free(it):
       <div class="ideas">{ideas}</div>
     </div>
   </section>
+{audio_sec}{src_sec}
 
   <section class="item-sec">
     <div class="next-fri">
