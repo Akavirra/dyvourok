@@ -204,7 +204,7 @@
 .home-free .grid-cards { margin-top: 8px; }
 .home-free-more { display: flex; justify-content: center; margin-top: clamp(28px, 4vw, 44px); }
 .sets-wrap { display: block !important; }
-.sets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; }
+.sets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; max-width: 980px; margin: 0 auto; }
 .set-card { background: #FBF6EC; color: var(--ink); border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 50px -26px rgba(0, 0, 0, .7); transition: transform .25s; }
 .set-card:hover { transform: translateY(-5px) rotate(-.4deg); }
 .set-card .pic { aspect-ratio: 1320 / 570; overflow: hidden; background: var(--night-2); }

@@ -773,7 +773,12 @@
   // Інтерактив для дошки, що живе окремою сторінкою (набір «Шлях зернини»): відкриваємо з поточною версією класу.
   function boardItem(pack) {
     const b = pack.board, lv = levelOf(pack), g = { '1-4': 1, '5-7': 2, '8-11': 3 }[lv ? lv.id : '1-4'] || 1;
-    return h('button', { class: 'menu-item main', onclick: () => { Sfx.tap(); track('board_' + pack.id); location.href = b.url + '?g=' + g + '&from=app'; } },
+    return h('button', { class: 'menu-item main', onclick: () => {
+      Sfx.tap();
+      // платний набір без коду: замість сторінки, що поверне назад, — зразки слайдів
+      if (!pack.claimable && !license.allows(pack.id)) { go(`#/pack/${pack.id}/downloads`); return; }
+      track('board_' + pack.id); location.href = b.url + '?g=' + g + '&from=app';
+    } },
       h('div', { class: 'ico' }, icon(b.icon || 'clock')), h('h3', {}, b.title), h('div', { class: 'muted' }, (b.notes && b.notes[lv ? lv.id : '1-4']) || b.note));
   }
 

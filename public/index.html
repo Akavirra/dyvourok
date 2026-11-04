@@ -24,7 +24,7 @@
 <link rel="preload" href="fonts/Nunito-VF.woff2?v=361d3613" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/site.css?v=ca458c80d7">
 <link rel="stylesheet" href="css/hoop.css?v=c3c87c75c6">
-<link rel="stylesheet" href="css/catalog.css?v=91d95081e3">
+<link rel="stylesheet" href="css/catalog.css?v=75414a8789">
 <!-- seo:jsonld -->
 <script type="application/ld+json">
 {
@@ -287,7 +287,7 @@
       <div class="section-head">
         <span class="kicker">Готові уроки-свята</span>
         <h2 class="h2">Набори для дошки: відкрили — і провели</h2>
-        <p class="lead">Кожен набір — це цілий захід: квест для всього класу, мультфільми з героями паперового вертепу, роздатка й сценарій. Окремі версії для 1–4, 5–7 і 8–11 класу.</p>
+        <p class="lead">Кожен набір — це цілий урок або захід: інтерактив для всього класу, мультфільми, роздатка й сценарій. Усі факти перевірено за джерелами.</p>
       </div>
       <div class="sets">
         <article class="set-card reveal">
@@ -305,7 +305,16 @@
             <div class="set-top"><span class="badge paid">300 ₴</span><span class="when">День писемності та мови</span></div>
             <h3>Машина часу рідної мови</h3>
             <p>Подорож через 5 епох — від глаголиці до Франка. Класики самі розповідають дітям свою історію, а клас збирає слово-скарб.</p>
-            <div class="set-cta"><a class="btn small" href="#cina">Купити набір</a><a class="btn ghost small" href="app/#/demo/mova">Демо</a></div>
+            <div class="set-cta"><a class="btn small" href="#cina" data-pack="mova">Купити набір</a><a class="btn ghost small" href="app/#/demo/mova">Демо</a></div>
+          </div>
+        </article>
+        <article class="set-card reveal">
+          <div class="pic"><img src="packs/tarilka/img/cover-card.webp?v=11539d53" alt="Тарілка здорового харчування: половина — овочі й фрукти, чверть — каші, чверть — білок, поруч склянка води" width="1320" height="570" loading="lazy"></div>
+          <div class="body">
+            <div class="set-top"><span class="badge paid">300 ₴</span><span class="when">ЗБД · 6 клас</span></div>
+            <h3>Що на моїй тарілці?</h3>
+            <p>Урок про збалансоване харчування: інтерактивна презентація з мультиками, станції, роздатки трьох рівнів, квіз і гра «Збери тарілку» для телефонів. Без дієт і розмов про вагу.</p>
+            <div class="set-cta"><a class="btn small" href="#cina" data-pack="tarilka">Купити набір</a><a class="btn ghost small" href="app/#/demo/tarilka">Демо</a><a class="btn ghost small" href="tarilka/gra">Гра</a></div>
           </div>
         </article>
         <article class="set-card soon reveal">
@@ -411,9 +420,17 @@
       <div class="pricing">
         <div class="price-card reveal" id="peredzamovlennia">
           <span class="ribbon">Повний набір</span>
-          <h3>Машина часу рідної мови</h3>
+          <h3 id="price-title">Машина часу рідної мови</h3>
           <div class="price"><b>300&nbsp;₴</b><span>один раз — доступ назавжди</span></div>
-          <ul class="checks">
+          <ul class="checks" data-for="tarilka" hidden>
+            <li>Інтерактивна презентація на 19 слайдів для дошки</li>
+            <li>Три мультфільми: сніданок, тарілка, етикетка</li>
+            <li>Роздатки А/Б/В з ключами, 40 карток, плакати</li>
+            <li>Квіз і гра «Збери тарілку» для телефонів</li>
+            <li>Конспект на 45 хвилин і джерела всіх фактів</li>
+            <li>До 3 пристроїв, працює без інтернету</li>
+          </ul>
+          <ul class="checks" data-for="mova">
             <li>Квест на 5 епох для інтерактивної дошки</li>
             <li>Три рівні: 1–4, 5–7 і 8–11 клас</li>
             <li>Мультфільми з героями-класиками</li>
@@ -424,6 +441,10 @@
           </ul>
           <form class="preorder" id="preorder" novalidate>
             <p class="preorder-lead">Залиште контакт — протягом дня напишемо реквізити для оплати. Після оплати надішлемо код доступу, і можна проводити урок.</p>
+            <fieldset class="pack-pick"><legend>Набір</legend>
+              <label class="chip"><input type="radio" name="pack" value="mova" checked><span>Машина часу рідної мови</span></label>
+              <label class="chip"><input type="radio" name="pack" value="tarilka"><span>Що на моїй тарілці?</span></label>
+            </fieldset>
             <label><span>E-mail, Telegram або телефон</span><input name="contact" required autocomplete="email" inputmode="email" placeholder="olena@gmail.com"></label>
             <div class="preorder-row">
               <label><span>Ваше ім'я <small>(необов'язково)</small></span><input name="name" autocomplete="given-name" placeholder="Олена"></label>
@@ -535,7 +556,7 @@
 
 <script src="js/star.js?v=b7e06e2615"></script>
 <script type="module" src="js/hoop.js?v=17420309ea"></script>
-<script src="js/site.js?v=9d55185c0c"></script>
+<script src="js/site.js?v=bb98fc5b5e"></script>
 <!--/email_off-->
 </body>
 </html>
