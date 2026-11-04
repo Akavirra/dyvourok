@@ -48,6 +48,114 @@
       <path class="seg s-prot" d="M89 50 A39 39 0 0 1 50 89 L50 50 Z" fill="#F8D7CD" stroke="#C8341F" stroke-width="1"/>${lab}</svg>`;
   }
 
+  // ------------------------------------------------------------ плеєр — той самий, що в застосунку (public/js/app.js → player()):
+  // власні кнопки, субтитри Вимкнути / Малі / Середні / Великі, гучність; налаштування спільні з застосунком (dyvo_subs, dyvo_vol)
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+  const VP_ICONS = {
+    sound: '<path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',
+    mute: '<path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/>',
+    full: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+    pause: '<rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/>',
+    playbar: '<path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/>',
+    cc: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M10.5 10.2a2.4 2.4 0 1 0 0 3.6M17 10.2a2.4 2.4 0 1 0 0 3.6"/>'
+  };
+  const vicon = name => h('span', { class: 'svg-ico', 'aria-hidden': 'true', html:
+    `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${VP_ICONS[name]}</svg>` });
+  const SUB_SIZES = [['s', 'Малі'], ['m', 'Середні'], ['l', 'Великі']];
+  const fmtTime = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  function vplayer(src, poster, cues) {
+    const pref = store.get('dyvo_subs', { on: true, size: 'm' });
+    const video = h('video', { src, poster, playsinline: '', preload: 'metadata',
+      controlslist: 'nodownload noplaybackrate noremoteplayback', disablepictureinpicture: '', disableremoteplayback: '' });
+    const sub = h('div', { class: 'vp-sub', 'aria-live': 'off' });
+    const bigPlay = h('button', { class: 'vp-big', 'aria-label': 'Відтворити' }, vicon('playbar'));
+    const playBtn = h('button', { class: 'vp-btn', 'aria-label': 'Відтворити або пауза' }, vicon('playbar'));
+    const seek = h('input', { class: 'vp-seek', type: 'range', min: 0, max: 1000, value: 0, step: 1, 'aria-label': 'Перемотування' });
+    const time = h('span', { class: 'vp-time' }, '0:00 / 0:00');
+    const vol = { v: Math.max(0.2, +store.get('dyvo_vol', 1) || 1), m: false };
+    const volBtn = h('button', { class: 'vp-btn vp-vol-btn', 'aria-label': 'Вимкнути або ввімкнути звук мультфільму' });
+    const volRange = h('input', { class: 'vp-vol', type: 'range', min: 0, max: 100, step: 1, 'aria-label': 'Гучність мультфільму' });
+    const ccBtn = h('button', { class: 'vp-btn vp-cc', 'aria-label': 'Субтитри', 'aria-haspopup': 'true' }, vicon('cc'), h('span', { class: 'vp-cc-label' }, 'Субтитри'));
+    const menu = h('div', { class: 'vp-menu', role: 'menu', hidden: '' });
+    const fsBtn = h('button', { class: 'vp-btn', 'aria-label': 'На весь екран' }, vicon('full'));
+    const bar = h('div', { class: 'vp-bar' }, playBtn, h('div', { class: 'vp-vol-wrap' }, volBtn, volRange), seek, time, h('div', { class: 'vp-cc-wrap' }, ccBtn, menu), fsBtn);
+    const box = h('div', { class: 'vp', tabindex: 0 }, video, sub, bigPlay, bar);
+    box.addEventListener('contextmenu', e => e.preventDefault());
+    const applyPref = () => {
+      box.dataset.subs = pref.on ? pref.size : 'off';
+      ccBtn.classList.toggle('on', pref.on);
+      ccBtn.setAttribute('aria-pressed', pref.on ? 'true' : 'false');
+      menu.replaceChildren(
+        h('button', { role: 'menuitemradio', 'aria-checked': String(!pref.on), class: !pref.on ? 'sel' : '', onclick: () => setPref({ on: false }) }, 'Вимкнути'),
+        ...SUB_SIZES.map(([k, label]) => h('button', { role: 'menuitemradio', 'aria-checked': String(pref.on && pref.size === k), class: pref.on && pref.size === k ? 'sel' : '', onclick: () => setPref({ on: true, size: k }) }, label)));
+      store.set('dyvo_subs', pref);
+    };
+    const applyVol = () => {
+      video.volume = vol.v; video.muted = vol.m;
+      const silent = vol.m || vol.v === 0;
+      volBtn.replaceChildren(vicon(silent ? 'mute' : 'sound'));
+      volBtn.classList.toggle('off', silent);
+      volBtn.title = silent ? 'Звук вимкнено — натисніть, щоб увімкнути' : 'Вимкнути звук';
+      volRange.value = silent ? 0 : Math.round(vol.v * 100);
+      if (!vol.m && vol.v > 0) store.set('dyvo_vol', vol.v);
+    };
+    const setVol = p => { Object.assign(vol, p); applyVol(); };
+    volBtn.onclick = () => setVol(vol.m || vol.v === 0 ? { m: false, v: vol.v || 1 } : { m: true });
+    volRange.addEventListener('input', () => setVol({ v: volRange.value / 100, m: volRange.value == 0 }));
+    const setPref = p => { Object.assign(pref, p); applyPref(); menu.hidden = true; showSub(); };
+    ccBtn.onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
+    document.addEventListener('click', e => { if (!menu.contains(e.target)) menu.hidden = true; });
+    let shown = -1, seeking = false, idle;
+    const showSub = () => {
+      const t = video.currentTime;
+      const i = pref.on ? cues.findIndex(c => t >= c[0] && t <= c[1]) : -1;
+      if (i === shown) return;
+      shown = i;
+      sub.replaceChildren(...(i >= 0 ? [h('span', {}, cues[i][2])] : []));
+    };
+    const toggle = () => { if (video.paused) video.play().catch(() => {}); else video.pause(); };
+    const syncBtn = () => { playBtn.replaceChildren(vicon(video.paused ? 'playbar' : 'pause')); box.classList.toggle('playing', !video.paused); };
+    const syncTime = () => {
+      const d = video.duration || 0;
+      if (!seeking) seek.value = d ? Math.round(video.currentTime / d * 1000) : 0;
+      time.textContent = fmtTime(video.currentTime) + ' / ' + fmtTime(d);
+    };
+    seek.addEventListener('input', () => { seeking = true; if (video.duration) video.currentTime = seek.value / 1000 * video.duration; });
+    seek.addEventListener('change', () => { seeking = false; });
+    const tick = () => { showSub(); syncTime(); if (!video.paused && box.isConnected) requestAnimationFrame(tick); };
+    const poke = () => { box.classList.remove('idle'); clearTimeout(idle); if (!video.paused) idle = setTimeout(() => menu.hidden && box.classList.add('idle'), 2500); };
+    video.addEventListener('play', () => { syncBtn(); requestAnimationFrame(tick); });
+    video.addEventListener('pause', () => { syncBtn(); poke(); });
+    video.addEventListener('ended', syncBtn);
+    ['loadedmetadata', 'seeked', 'timeupdate'].forEach(ev => video.addEventListener(ev, () => { syncTime(); showSub(); }));
+    video.onclick = toggle; bigPlay.onclick = toggle; playBtn.onclick = toggle;
+    fsBtn.onclick = () => {
+      if (document.fullscreenElement === box) document.exitFullscreen();
+      else if (box.requestFullscreen) box.requestFullscreen().catch(() => {});
+      else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    };
+    box.addEventListener('pointermove', poke);
+    box.addEventListener('pointerdown', poke);
+    // клавіші плеєра не мають гортати урок: зупиняємо їх тут
+    box.addEventListener('keydown', e => {
+      const k = e.key.toLowerCase();
+      if (k === ' ' || k === 'k') { e.preventDefault(); toggle(); }
+      else if (k === 'arrowright') video.currentTime += 5;
+      else if (k === 'arrowleft') video.currentTime -= 5;
+      else if (k === 'c' || k === 'с') setPref({ on: !pref.on });
+      else if (k === 'm' || k === 'ь') volBtn.onclick();
+      else if (k === 'arrowup' || k === 'arrowdown') { e.preventDefault(); setVol({ v: Math.min(1, Math.max(0, Math.round((vol.v + (k === 'arrowup' ? 0.1 : -0.1)) * 10) / 10)), m: false }); }
+      else if (k === 'f' || k === 'а') fsBtn.onclick();
+      else return;
+      e.stopPropagation(); poke();
+    });
+    applyPref(); applyVol();
+    return { box, video };
+  }
+
   // ------------------------------------------------------------ спільні шматки
   const header = (title, kick) => h('div', { class: 'hd' }, h('div', {}, kick ? h('div', { class: 'kick' }, kick) : null, h('h2', {}, title)));
   const say = (who, text, pos) => {
@@ -70,7 +178,7 @@
 
   // 1. Титул
   add({ stage: 'start', title: 'Титул', bg: 'img/bg/hero.webp', cls: 'hero',
-    tip: 'Відкрийте на весь екран (кнопка вгорі праворуч або F). Далі — велика червона кнопка або стрілка →.',
+    tip: 'Відкрийте на весь екран (кнопка вгорі праворуч або F). Далі — велика червона кнопка або стрілка →. Ця підказка видна класу — сховайте її лампочкою або клавішею T.',
     build(el, go) {
       el.append(h('div', { class: 'card pop' },
         h('span', { class: 'kick' }, 'ЗБД · 6 клас'),
@@ -82,15 +190,10 @@
   // відео
   const video = (n, title, tip) => add({ stage: n === 3 ? 'practice' : n === 2 ? 'new' : 'start', title: 'Мультик ' + n, bg: 'img/bg/' + (n === 1 ? 'kitchen' : n === 2 ? 'table' : 'shop') + '.webp', bgcls: 'dim', tip,
     build(el) {
-      const v = h('video', { src: `../media/m${n}.mp4`, poster: `../media/m${n}.jpg`, preload: 'metadata', playsinline: '' });
-      const tr = v.addTextTrack('captions', 'Українська', 'uk');
-      for (const [a, b, t] of (D.subs['m' + n] || [])) try { tr.addCue(new VTTCue(a, b, t)); } catch (e) {}
-      let subsOn = true; tr.mode = 'showing';
-      const play = h('button', { class: 'vplay', 'aria-label': 'Відтворити', onclick: () => { v.controls = true; v.play(); play.classList.add('gone'); }, html: '<span>' + ICON.play + '</span>' });
-      const cc = h('button', { class: 'on', onclick: () => { subsOn = !subsOn; tr.mode = subsOn ? 'showing' : 'hidden'; cc.classList.toggle('on', subsOn); } }, 'Субтитри');
-      v.addEventListener('ended', () => $('#next').classList.add('pulse'));
-      el.append(h('div', { class: 'body' }, header(title, 'Мультик ' + n), h('div', { class: 'vid' }, h('div', { class: 'vbox' }, v, play, h('div', { class: 'vopts' }, cc)))));
-      return { leave() { v.pause(); } };
+      const p = vplayer(`../media/m${n}.mp4`, `../media/m${n}.jpg`, D.subs['m' + n] || []);
+      p.video.addEventListener('ended', () => $('#next').classList.add('pulse'));
+      el.append(h('div', { class: 'body' }, header(title, 'Мультик ' + n), h('div', { class: 'vid' }, h('div', { class: 'vbox' }, p.box))));
+      return { leave() { p.video.pause(); } };
     } });
 
   video(1, 'Сніданок, що дає сили', 'Після мультика спитайте: «Чому Марко до третього уроку ледве тримав олівець?» Субтитри вмикаються кнопкою в куті.');
@@ -457,7 +560,10 @@
 
   // ------------------------------------------------------------ рушій
   const stage = $('#stage');
-  let cur = -1, step = 0, api = {}, tipOn = true;
+  let cur = -1, step = 0, api = {};
+  // підказка вчителю за замовчуванням схована: урок транслюють класу. Лампочка вмикає її, вибір пам'ятаємо на пристрої
+  let tipOn = false;
+  try { tipOn = localStorage.getItem('tarilka_tip') === '1'; } catch (e) {}
   const stageScale = () => Math.min(innerWidth / 1920, innerHeight / 1080);
   const fit = () => { stage.style.transform = `translate(-50%,-50%) scale(${stageScale()})`; };
 
@@ -465,11 +571,12 @@
   const stagesEl = h('div', { class: 'stages' }, STAGES.map(([id, t], i) => h('button', { class: 'stage', 'data-st': id, onclick: () => go(S.findIndex(s => s.stage === id)) }, h('span', { class: 'n' }, String(i + 1)), t)));
   const offline = location.protocol === 'file:';
   const homeBtn = offline ? null : h('a', { class: 'tb-btn', href: '../../../app/#/pack/tarilka', html: ICON.home + 'До набору' });
-  const tipBtn = h('button', { class: 'tb-btn on', title: 'Підказка вчителю', 'aria-label': 'Підказка вчителю', html: ICON.tip, onclick: () => { tipOn = !tipOn; tipBtn.classList.toggle('on', tipOn); tipEl.classList.toggle('hide', !tipOn); } });
+  const tipBtn = h('button', { class: 'tb-btn' + (tipOn ? ' on' : ''), title: 'Підказка вчителю (T)', 'aria-label': 'Підказка вчителю', html: ICON.tip, onclick: () => toggleTip() });
+  const toggleTip = () => { tipOn = !tipOn; tipBtn.classList.toggle('on', tipOn); tipEl.classList.toggle('hide', !tipOn); try { localStorage.setItem('tarilka_tip', tipOn ? '1' : '0'); } catch (e) {} };
   const ovBtn = h('button', { class: 'tb-btn', title: 'Усі екрани (O)', 'aria-label': 'Усі екрани', html: ICON.grid, onclick: () => toggleOv() });
   const fsBtn = h('button', { class: 'tb-btn', title: 'На весь екран (F)', 'aria-label': 'На весь екран', html: ICON.full, onclick: () => fullscreen() });
   stage.append(h('div', { class: 'topbar' }, homeBtn, stagesEl, h('div', { class: 'tb-right' }, tipBtn, ovBtn, fsBtn)));
-  const tipEl = h('div', { class: 'tip' });
+  const tipEl = h('div', { class: 'tip' + (tipOn ? '' : ' hide') });
   const dots = h('div', { class: 'dots' });
   const nextBtn = h('button', { id: 'next', class: 'next', onclick: () => next(), html: '<span>Далі</span>' + ICON.next });
   const backBtn = h('button', { class: 'back', 'aria-label': 'Назад', onclick: () => prev(), html: ICON.back });
@@ -539,6 +646,7 @@
     else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); prev(); }
     else if (e.key === 'f' || e.key === 'F' || e.key === 'а' || e.key === 'А') fullscreen();
     else if (e.key === 'o' || e.key === 'O' || e.key === 'щ' || e.key === 'Щ') toggleOv();
+    else if (e.key === 't' || e.key === 'T' || e.key === 'е' || e.key === 'Е') toggleTip();
     else if (e.key === 'Escape' && ov.classList.contains('on')) toggleOv(false);
   });
   addEventListener('resize', fit);
