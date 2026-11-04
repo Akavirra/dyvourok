@@ -12,7 +12,8 @@
       if (k === 'class') e.className = v;
       else if (k === 'html') e.innerHTML = v;
       else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-      else if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
+      // змінні CSS (--c) через Object.assign не ставляться — лише setProperty
+      else if (k === 'style' && typeof v === 'object') for (const [p, x] of Object.entries(v)) { if (p.startsWith('--')) e.style.setProperty(p, x); else e.style[p] = x; }
       else e.setAttribute(k, v);
     }
     for (const kid of kids.flat()) if (kid != null && kid !== false) e.append(kid.nodeType ? kid : document.createTextNode(kid));
@@ -395,30 +396,41 @@
       return { step(s) { cards.forEach((c, i) => c.classList.toggle('on', s > i)); } };
     } });
 
-  // 11. Станції з таймером
+  // 11. Станції: три групи по колу, на кожній — друковані матеріали з набору (kartky-stancii.pdf, plakaty.pdf)
   add({ stage: 'practice', title: 'Станції', bg: 'img/bg/class.webp', bgcls: 'dim',
-    tip: 'Три групи, по 4 хвилини на станції. Натисніть «Старт»; коли час вийде — «Наступне коло», і групи переходять далі.',
+    tip: 'Роздрукуйте заздалегідь: картки продуктів (с. 1–4) і картки станцій (с. 6–8) з PDF «Картки й станції», етикетки й картку детектива (с. 9–11), плакат-тарілку (PDF «Плакати», с. 1). Розкладіть на трьох партах.',
     build(el) {
-      const ST = [['Збери тарілку', 'station_plate', 'Обід з карток: ½ овочі й фрукти, ¼ каша, ¼ білок і напій. Поясніть вибір!', 'var(--veg)'],
-        ['Детектив етикеток', 'station_label', 'Знайдіть склад, цукри й сіль на 100 г, алергени й дату.', 'var(--water)'],
-        ['Меню на день', 'station_menu', 'Сніданок, обід, вечеря й 1–2 перекуси. Чи є 5 жмень овочів і фруктів? Чи є вода?', 'var(--grain)']];
+      const ST = [['Збери тарілку', 'station_plate', 'var(--veg)', 'Картки продуктів і плакат-тарілка',
+          'Складіть обід: ½ — овочі й фрукти, ¼ — каша, ¼ — білок і напій. Поясніть, чому так.'],
+        ['Детектив етикеток', 'station_label', 'var(--water)', '4 етикетки й картка детектива',
+          'Знайдіть на етикетці склад, цукри й сіль на 100 г, алергени й дату. Заповніть картку.'],
+        ['Меню на день', 'station_menu', 'var(--grain)', 'Картки продуктів',
+          'Сніданок, обід, вечеря й 1–2 перекуси. Чи є 5 жмень овочів і фруктів? Чи є вода?']];
       let round = 0;
-      const grp = ST.map(() => h('div', { class: 'grp' }));
-      const cards = ST.map(([t, img, d, c], i) => h('div', { class: 'stc paper', style: { '--c': c } }, h('span', { class: 'num' }, String(i + 1)),
-        h('img', { src: `img/art/${img}.webp`, alt: '' }), h('h3', {}, t), h('p', {}, d), grp[i]));
+      const grp = ST.map(() => h('b', {}));
+      const cards = ST.map(([t, img, c, need, task], i) => h('div', { class: 'stc paper', style: { '--c': c } },
+        h('div', { class: 'top' }, h('span', { class: 'num' }, String(i + 1)), h('img', { src: `img/art/${img}.webp`, alt: '' })),
+        h('h3', {}, t),
+        h('p', { class: 'need' }, h('i', {}, 'Що взяти: '), need),
+        h('p', { class: 'do' }, task),
+        h('div', { class: 'grp' }, 'Зараз тут: ', grp[i])));
       const paint = () => grp.forEach((g, i) => { g.textContent = 'Група ' + (((i - round) % 3 + 3) % 3 + 1); });
       const TOTAL = 240; let left = TOTAL, tid = null;
-      const R = 140, C = 2 * Math.PI * R;
-      const ring = h('div', { class: 'ring', html: `<svg viewBox="0 0 320 320"><circle cx="160" cy="160" r="${R}" stroke="#EADBC4"/><circle class="p" cx="160" cy="160" r="${R}" stroke="#C8341F" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>` }, h('div', { class: 't' }));
+      const R = 100, C = 2 * Math.PI * R;
+      const ring = h('div', { class: 'ring', html: `<svg viewBox="0 0 240 240"><circle cx="120" cy="120" r="${R}" stroke="#EADBC4"/><circle class="p" cx="120" cy="120" r="${R}" stroke="#C8341F" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>` }, h('div', { class: 't' }));
       const draw = () => { ring.querySelector('.t').textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`; ring.querySelector('.p').style.strokeDashoffset = C * (1 - left / TOTAL); ring.classList.toggle('end', left === 0); };
       const go = h('button', { class: 'main', onclick: () => { if (tid) { clearInterval(tid); tid = null; go.textContent = 'Старт'; } else { go.textContent = 'Пауза'; tid = setInterval(() => { if (left > 0) left--; draw(); if (!left) { clearInterval(tid); tid = null; go.textContent = 'Старт'; } }, 1000); } } }, 'Старт');
       const reset = () => { clearInterval(tid); tid = null; left = TOTAL; go.textContent = 'Старт'; draw(); };
       const rnd = h('div', { class: 'round' });
-      const nextRound = h('button', { onclick: () => { round = (round + 1) % 3; rnd.textContent = `Коло ${round + 1} з 3`; paint(); reset(); } }, 'Наступне коло');
-      const qr = h('div', { class: 'qrbox', html: (D.qr.gra || '') + '<p><b>Станція 1 на телефонах</b>веб-гра «Збери тарілку»<br>dyvourok.com.ua/tarilka/gra</p>' });
-      const timer = h('div', { class: 'timer paper' }, ring, rnd, h('div', { class: 'row' }, go, h('button', { onclick: reset }, 'Скинути')), nextRound, qr);
+      const nextRound = h('button', { class: 'nextround', onclick: () => { round = (round + 1) % 3; rnd.textContent = `Коло ${round + 1} з 3`; paint(); reset(); cards.forEach(c => { c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }); } }, 'Групи переходять →');
+      const timer = h('div', { class: 'timer paper' }, rnd, ring, h('div', { class: 'row' }, go, h('button', { onclick: reset }, 'Скинути')), nextRound);
       rnd.textContent = 'Коло 1 з 3'; paint(); draw();
-      el.append(h('div', { class: 'body' }, header('Робота в групах', 'Три станції'), h('div', { class: 'st' }, cards, timer)));
+      const how = h('div', { class: 'how' },
+        h('span', {}, h('b', {}, '1'), 'Клас ділиться на 3 групи'),
+        h('span', {}, h('b', {}, '2'), '4 хвилини на станції'),
+        h('span', {}, h('b', {}, '3'), 'Час вийшов — групи переходять до наступної станції'),
+        h('span', {}, h('b', {}, '✓'), 'За 3 кола кожна група проходить усі станції'));
+      el.append(h('div', { class: 'body' }, header('Робота в групах', 'Три станції по колу'), how, h('div', { class: 'st' }, cards, timer)));
       return { leave() { clearInterval(tid); tid = null; go.textContent = 'Старт'; } };
     } });
 
