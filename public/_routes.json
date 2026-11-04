@@ -13,6 +13,7 @@
     "/icons/*",
     "/files/*",
     "/materialy/*",
+    "/tarilka/*",
     "/app/*",
     "/sw.js",
     "/manifest.webmanifest",
@@ -23,6 +24,8 @@
     "/packs/mova/pack.js",
     "/packs/mova/media/shevchenko-full.mp4",
     "/packs/khlib/img/*",
-    "/packs/khlib/pack.js"
+    "/packs/khlib/pack.js",
+    "/packs/tarilka/img/*",
+    "/packs/tarilka/pack.js"
   ]
 }

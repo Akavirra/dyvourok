@@ -1,5 +1,5 @@
 /* Робота без інтернету: після першого відкриття все потрібне лежить у кеші. Нову версію — через зміну VERSION. */
-const VERSION = 'dyvourok-v29';
+const VERSION = 'dyvourok-v30';
 // Мультфільми, PDF і картинки набору, які вчитель зберіг кнопкою «Робота без інтернету» (див. saveOffline в app.js).
 // Окремий кеш: не стирається з новою VERSION, адреси мають ?v=, тож застарілих файлів не віддасть.
 const MEDIA = 'dyvourok-media';
@@ -11,6 +11,7 @@ const CORE = [
   'brand/dyvourok-logo.svg', 'brand/dyvourok-mark.svg',
   'icons/favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
   'packs/khlib/pack.js', 'packs/khlib/img/cover-card.jpg',
+  'packs/tarilka/pack.js', 'packs/tarilka/img/cover-card.jpg',
   'packs/mova/pack.js', 'packs/mova/img/cover-card.jpg', 'packs/mova/img/shevchenko-head.png', 'packs/mova/img/shevchenko-poster.jpg'
 ];
 // Захищені файли (PDF, відео з доступом) не входять у CORE: вони потрапляють у MEDIA, коли вчитель з кодом зберігає набір.

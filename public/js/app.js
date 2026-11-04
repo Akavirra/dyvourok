@@ -1222,11 +1222,11 @@
     track('slides');
     const open = sampleViewer(pages, 'Зразок слайда');
     frame([pack.title, ' · ', h('b', {}, 'Презентація')], [
-      h('h2', {}, 'Презентація PowerPoint'),
+      h('h2', {}, (pack.notes && pack.notes.slidesTitle) || 'Презентація PowerPoint'),
       levelPicker(pack),
       h('div', { class: 'card-soft sample-note' },
         h('div', { class: 'kicker' }, 'Демо-версія'),
-        h('p', {}, 'Так виглядає зупинка «Тарас Шевченко» у презентації. У повному наборі — файл PowerPoint для вашого класу без водяних знаків: усі 5 зупинок, мультфільми вже всередині, анімації й відповіді відкриваються по кліку, працює без інтернету, можна редагувати під свій клас.'),
+        h('p', {}, (pack.notes && pack.notes.slidesDemo) || 'Так виглядає зупинка «Тарас Шевченко» у презентації. У повному наборі — файл PowerPoint для вашого класу без водяних знаків: усі 5 зупинок, мультфільми вже всередині, анімації й відповіді відкриваються по кліку, працює без інтернету, можна редагувати під свій клас.'),
         h('div', { class: 'chips' },
           h('button', { class: 'btn', onclick: enterCode }, 'Ввести код'),
           h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo-pptx#peredzamovlennia', target: '_blank', rel: 'noopener', onclick: () => track('want') }, 'Хочу повну версію'))),
@@ -1247,13 +1247,14 @@
     const lv = levelOf(pack);
     const pptList = (pack.presentations || []).filter(d => !lv || !d.levels || d.levels.includes(lv.id)).map(d => fileRow(d.title, d.note, d.file, 'pptx', d.name));
     const teacherData = byLevel(pack, pack.teacher);
-    const guide = fileRow('Сценарій, поради та відповіді', '1 сторінка A4 · PDF', teacherData.file, 'teacher');
+    const guide = fileRow('Сценарій, поради та відповіді', teacherData.fileNote || '1 сторінка A4 · PDF', teacherData.file, 'teacher');
+    const notes = pack.notes || {};
     frame([pack.title, ' · ', h('b', {}, 'Завантаження')], [
       h('div', { class: 'download-head' },
         h('h2', {}, 'Завантажити окремі матеріали'),
         h('p', { class: 'lead' }, 'Файли з’являться у папці «Завантаження». Для інтерактивного квесту скористайтеся кнопкою «Зберегти весь набір» на головній сторінці набору.')),
       levelPicker(pack),
-      pptList.length ? h('section', { class: 'download-section' }, h('h3', {}, 'Презентація PowerPoint'), h('p', { class: 'muted download-note' }, 'Для уроку без застосунку: клікабельна карта, анімації «по кліку», вікторини й нотатки для вчителя. Можна редагувати під свій клас.'), h('div', { class: 'list' }, pptList)) : null,
+      pptList.length ? h('section', { class: 'download-section' }, h('h3', {}, notes.slidesTitle || 'Презентація PowerPoint'), h('p', { class: 'muted download-note' }, notes.slidesNote || 'Для уроку без застосунку: клікабельна карта, анімації «по кліку», вікторини й нотатки для вчителя. Можна редагувати під свій клас.'), h('div', { class: 'list' }, pptList)) : null,
       h('section', { class: 'download-section' }, h('h3', {}, 'Мультфільми'), h('p', { class: 'muted download-note' }, 'У файлах є озвучення. Субтитри вмикаються лише у плеєрі «Дивоуроку».'), h('div', { class: 'list' }, cartoonsList)),
       h('section', { class: 'download-section' }, h('h3', {}, 'Роздатка для обраного класу'), h('div', { class: 'list' }, handoutsList)),
       h('section', { class: 'download-section' }, h('h3', {}, 'Для вчителя'), h('div', { class: 'list' }, guide)),

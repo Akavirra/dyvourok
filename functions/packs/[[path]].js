@@ -17,6 +17,10 @@ export async function onRequest({ request, env, params }) {
   const packId = path.split('/')[0];
   const session = await readSession(request, env);
   if (!session || !(await liveAccess(env, session, packId))) {
+    // сторінка-презентація набору (prez/) без доступу — не голий текст, а сторінка набору в застосунку
+    if (/^[a-z0-9-]+\/prez(\/(index\.html)?)?$/.test(path) && (request.headers.get('accept') || '').includes('text/html')) {
+      return Response.redirect(new URL('/app/#/pack/' + packId, request.url), 302);
+    }
     const message = packId === 'khlib'
       ? 'Увійдіть у акаунт і додайте безкоштовний набір «Шлях зернини».'
       : 'Доступ до матеріалу відкривається після активації коду.';
@@ -25,8 +29,8 @@ export async function onRequest({ request, env, params }) {
   if (session.u && request.method === 'GET' && !request.headers.has('range') && /^[a-z0-9-]+\/docs\//.test(path)) {
     await recordPackDownload(env, session.u, packId);
   }
-  // Великі файли з R2: презентації (pptx/) і мультфільми у високій якості (hq/)
-  if (/^[a-z0-9-]+\/(pptx|hq)\//.test(path)) return fromBucket(request, env, path);
+  // Великі файли з R2: презентації (pptx/), архіви (zip/) і мультфільми у високій якості (hq/)
+  if (/^[a-z0-9-]+\/(pptx|hq|zip)\//.test(path)) return fromBucket(request, env, path);
   const res = await env.ASSETS.fetch(request);
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-cache');   // браузер щоразу перевіряє ETag: оновлення видно одразу, без повторного завантаження

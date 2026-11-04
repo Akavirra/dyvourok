@@ -14,6 +14,12 @@ PACKS = {
     'mova': [('docs/robochi-arkushi.pdf', {24, 25}, 'handout-'),
              ('docs/arkushi-5-7.pdf', {13, 14}, 'handout57-'),
              ('docs/arkushi-8-11.pdf', {13, 14}, 'handout811-')],
+    # індекси сторінок — з нуля
+    'tarilka': [('docs/rozdatky-abv.pdf', {6}, 'handout-'),            # с. 7 — ключі
+                ('docs/kartky-stancii.pdf', set(range(4, 11)), 'kartky-'),  # лише картки продуктів
+                ('docs/plakaty.pdf', set(), 'plakat-'),
+                ('docs/pamyatka-batkam.pdf', set(), 'pamyatka-'),
+                ('docs/konspekt.pdf', {1, 2, 3}, 'konspekt-')],
 }
 LONG_SIDE = 760          # px — досить, щоб роздивитися, замало для друку
 RED = (200, 52, 31)
@@ -66,7 +72,11 @@ def watermark(im, note='Демо · версія для друку — з код
 
 
 if __name__ == '__main__':   # make_pptx_previews.py бере звідси лише watermark()
+    import sys
+    only = set(sys.argv[1:])   # python make_handout_previews.py tarilka — лише цей набір
     for pack, docs in PACKS.items():
+        if only and pack not in only:
+            continue
         base = os.path.join(ROOT, 'packs', pack)
         for pdf, skip, prefix in docs:
             doc = pymupdf.open(os.path.join(base, pdf))
