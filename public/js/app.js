@@ -749,6 +749,7 @@
     const item = (ico, title, note, path, main) => h('button', { class: 'menu-item' + (main ? ' main' : ''), onclick: () => { Sfx.tap(); go(path); } },
       h('div', { class: 'ico' }, icon(ico)), h('h3', {}, title), h('div', { class: 'muted' }, note));
     const lp = byLevel(pack, pack);
+    const nt = byLevel(pack, pack.notes || {});
     const gateBanner = packGateBanner(pack);
     frame([pack.title], [
       gateBanner || newsBanner(),   // одна картка зверху, не дві: у демо — про доступ, інакше — оголошення
@@ -758,14 +759,14 @@
         lp.description ? h('p', { class: 'lead' }, lp.description) : null,
         classPicker(pack),
         levelPicker(pack)),
-      h('div', { class: 'menu' },
+      h('div', { class: 'menu' },   // nt — підписи меню з урахуванням вікової версії (notes.levels[id])
         pack.board ? boardItem(pack)
           : item('clock', 'Машина часу', done ? `Пройдено ${done} з ${pack.stops.length} зупинок — продовжити` : 'Інтерактивна подорож для дошки: 5 епох, 5 завдань, одне слово', `#/pack/${pack.id}/map`, true),
-        item('film', 'Мультфільми', (pack.notes && pack.notes.cartoons) || 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
-        item('print', 'Роздатка', license.allows(pack.id) ? ((pack.notes && pack.notes.handouts) || 'Робочі аркуші, плакати, грамоти для друку') : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
-        item('board', 'Для вчителя', 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`),
+        item('film', 'Мультфільми', nt.cartoons || 'Класики розповідають про себе', `#/pack/${pack.id}/cartoons`),
+        item('print', 'Роздатка', license.allows(pack.id) ? (nt.handouts || 'Робочі аркуші, плакати, грамоти для друку') : 'Подивитися зразки сторінок', `#/pack/${pack.id}/handouts`),
+        item('board', 'Для вчителя', nt.teacher || 'Сценарій на 45 хвилин і відповіді', `#/pack/${pack.id}/teacher`),
         item('verified', 'Джерела й фактчек', 'Чим підтверджено факти заняття', `#/pack/${pack.id}/sources`),
-        license.allows(pack.id) ? item('download', 'Завантажити матеріали', (pack.notes && pack.notes.downloads) || 'Презентація PowerPoint, мультфільми, роздатка та сценарій', `#/pack/${pack.id}/downloads`)
+        license.allows(pack.id) ? item('download', 'Завантажити матеріали', nt.downloads || 'Презентація PowerPoint, мультфільми, роздатка та сценарій', `#/pack/${pack.id}/downloads`)
           : levelSlides(pack).length ? item('download', 'Презентація PowerPoint', 'Подивитися зразки слайдів', `#/pack/${pack.id}/downloads`) : null),
       offlineCard(pack)]);
   }
@@ -1212,7 +1213,7 @@
     if (!license.allows(pack.id)) { lockedDialog(); return packHome(pack); }
     const t = byLevel(pack, pack.teacher);
     frame([pack.title, ' · ', h('b', {}, 'Для вчителя')], [
-      h('h2', {}, 'Сценарій заходу на 45 хвилин'),
+      h('h2', {}, t.heading || 'Сценарій заходу на 45 хвилин'),
       levelPicker(pack),
       h('div', { class: 'teacher' },
         h('div', { class: 'card-soft' }, h('table', { class: 'plan' }, t.minutes.map(([m, txt]) => h('tr', {}, h('td', {}, m), h('td', {}, txt))))),
@@ -1227,11 +1228,11 @@
     track('slides');
     const open = sampleViewer(pages, 'Зразок слайда');
     frame([pack.title, ' · ', h('b', {}, 'Презентація')], [
-      h('h2', {}, (pack.notes && pack.notes.slidesTitle) || 'Презентація PowerPoint'),
+      h('h2', {}, byLevel(pack, pack.notes || {}).slidesTitle || 'Презентація PowerPoint'),
       levelPicker(pack),
       h('div', { class: 'card-soft sample-note' },
         h('div', { class: 'kicker' }, 'Демо-версія'),
-        h('p', {}, (pack.notes && pack.notes.slidesDemo) || 'Так виглядає зупинка «Тарас Шевченко» у презентації. У повному наборі — файл PowerPoint для вашого класу без водяних знаків: усі 5 зупинок, мультфільми вже всередині, анімації й відповіді відкриваються по кліку, працює без інтернету, можна редагувати під свій клас.'),
+        h('p', {}, byLevel(pack, pack.notes || {}).slidesDemo || 'Так виглядає зупинка «Тарас Шевченко» у презентації. У повному наборі — файл PowerPoint для вашого класу без водяних знаків: усі 5 зупинок, мультфільми вже всередині, анімації й відповіді відкриваються по кліку, працює без інтернету, можна редагувати під свій клас.'),
         h('div', { class: 'chips' },
           h('button', { class: 'btn', onclick: enterCode }, 'Ввести код'),
           h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo-pptx#peredzamovlennia', target: '_blank', rel: 'noopener', onclick: () => track('want') }, 'Хочу повну версію'))),
@@ -1253,7 +1254,7 @@
     const pptList = (pack.presentations || []).filter(d => !lv || !d.levels || d.levels.includes(lv.id)).map(d => fileRow(d.title, d.note, d.file, 'pptx', d.name));
     const teacherData = byLevel(pack, pack.teacher);
     const guide = fileRow('Сценарій, поради та відповіді', teacherData.fileNote || '1 сторінка A4 · PDF', teacherData.file, 'teacher');
-    const notes = pack.notes || {};
+    const notes = byLevel(pack, pack.notes || {});
     frame([pack.title, ' · ', h('b', {}, 'Завантаження')], [
       h('div', { class: 'download-head' },
         h('h2', {}, 'Завантажити окремі матеріали'),

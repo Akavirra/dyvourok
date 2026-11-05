@@ -518,3 +518,33 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .flags h3{font-size:38px;font-weight:1000;margin-bottom:12px}
 .flags ul{padding-left:30px;font-size:30px;font-weight:800;line-height:1.5}
 .flags p{margin-top:16px;font-size:24px;font-weight:800;color:var(--muted)}
+
+/* сніданок героя */
+.hmf{font-size:28px;font-weight:900;margin:-6px 0 18px;color:var(--muted)}
+.hmw{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.hm{padding:22px 26px;border-top:14px solid var(--c)}
+.hm h3{font-size:36px;font-weight:1000;color:var(--c);margin-bottom:8px}
+.hm table{width:100%;border-collapse:collapse;font-size:24px}
+.hm th{background:var(--ink);color:#fff;text-align:left;padding:6px 10px;font-weight:900;font-size:20px}
+.hm td{border-bottom:2px solid #E3D3BB;padding:8px 10px;font-weight:800;vertical-align:top}
+.hm td small{display:block;font-size:17px;color:var(--muted);font-weight:800}
+.hm td.v{text-align:right;white-space:nowrap;font-weight:1000;transition:opacity .3s}
+.hm td.v.hid,.hm tr.hid td{opacity:0}
+.hm tr.tot td{font-size:28px;font-weight:1000;color:var(--c);border-bottom:0;transition:opacity .3s}
+.hmout{margin-top:22px;padding:18px 26px;font-size:28px;font-weight:800;opacity:0;transition:opacity .4s}
+.hmout b{color:var(--red)}
+/* реклама їжі */
+.ads{flex:1;display:grid;grid-template-columns:560px 1fr;gap:44px;align-items:center}
+.adw{display:flex;flex-direction:column;align-items:center;gap:10px}
+.adw small{font-size:22px;font-weight:800;color:var(--muted)}
+.adv{width:100%;height:560px;border-radius:30px;background:linear-gradient(160deg,#151515,#2c2c2c);box-shadow:var(--sh);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#B8FF3A;text-align:center;padding:30px}
+.adv img{height:300px}
+.adv b{font-size:52px;font-weight:1000;line-height:1}
+.adv span{font-size:32px;font-weight:900;color:#fff}
+.adv i{font-style:normal;font-size:24px;color:#9AE6FF;font-weight:800}
+.aqs{display:flex;flex-direction:column;gap:18px}
+.aq{padding:18px 26px;border-left:14px solid var(--red)}
+.aq b{font-size:36px;font-weight:1000}
+.aq p{font-size:28px;font-weight:800;margin-top:6px;opacity:0;transition:opacity .4s}
+.aq.on p{opacity:1}
+.adv>div{display:flex;flex-direction:column;align-items:center;gap:12px}
