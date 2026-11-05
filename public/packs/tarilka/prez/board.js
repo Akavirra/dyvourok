@@ -175,21 +175,24 @@
   // ------------------------------------------------------------ екрани
   const STAGES = [['start', 'Початок'], ['warm', 'Розминка'], ['new', 'Нове'], ['practice', 'Станції'], ['sum', 'Підсумок'], ['refl', 'Рефлексія']];
   const S = [];
-  const add = (o) => S.push(o);
+  // клас: ?g=1 → 1–4, ?g=2 → 5–7, ?g=3 → 8–11 (так передає застосунок); без параметра — 5–7
+  const G = ({ '1': '14', '2': '57', '3': '811' })[new URLSearchParams(location.search).get('g')] || '57';
+  const add = (o) => { if (!o.grades || o.grades.includes(G)) S.push(o); };
+  const STAGE_NAME = { practice: { '14': 'Граємо', '57': 'Станції', '811': 'Практика' }[G] };
 
   // 1. Титул
   add({ stage: 'start', title: 'Титул', bg: 'img/bg/hero.webp', cls: 'hero',
     tip: 'Відкрийте на весь екран (кнопка вгорі праворуч або F). Далі — велика червона кнопка або стрілка →. Ця підказка видна класу — сховайте її лампочкою або клавішею T.',
     build(el, go) {
       el.append(h('div', { class: 'card pop' },
-        h('span', { class: 'kick' }, 'ЗБД · 6 клас'),
+        h('span', { class: 'kick' }, { '14': 'Я досліджую світ · 1–4 клас', '57': 'ЗБД · 5–7 клас', '811': 'ЗБД · 8–11 клас' }[G]),
         h('h1', {}, 'Що на моїй тарілці?'),
-        h('p', {}, 'Здорове та збалансоване харчування'),
+        h('p', {}, G === '811' ? 'Харчування, реклама і факти' : 'Здорове та збалансоване харчування'),
         h('button', { class: 'start', onclick: () => go(1) , html: 'Почати урок ' + ICON.next })));
     } });
 
   // відео
-  const video = (n, title, tip) => add({ stage: n === 3 ? 'practice' : n === 2 ? 'new' : 'start', title: 'Мультик ' + n, bg: 'img/bg/' + (n === 1 ? 'kitchen' : n === 2 ? 'table' : 'shop') + '.webp', bgcls: 'dim', tip,
+  const video = (n, title, tip, grades) => add({ grades, stage: n === 3 ? 'practice' : n === 2 ? 'new' : 'start', title: 'Мультик ' + n, bg: 'img/bg/' + (n === 1 ? 'kitchen' : n === 2 ? 'table' : 'shop') + '.webp', bgcls: 'dim', tip,
     build(el) {
       const p = vplayer(`../media/m${n}.mp4`, `../media/m${n}.jpg`, D.subs['m' + n] || []);
       p.video.addEventListener('ended', () => $('#next').classList.add('pulse'));
@@ -197,10 +200,10 @@
       return { leave() { p.video.pause(); } };
     } });
 
-  video(1, 'Сніданок, що дає сили', 'Після мультика спитайте: «Чому Марко до третього уроку ледве тримав олівець?» Субтитри вмикаються кнопкою в куті.');
+  video(1, 'Сніданок, що дає сили', 'Після мультика спитайте: «Чому Марко до третього уроку ледве тримав олівець?» Субтитри вмикаються кнопкою в куті.', ['14', '57']);
 
   // 3. Три сніданки — голосування
-  add({ stage: 'start', title: 'Три сніданки', bg: 'img/bg/kitchen.webp', bgcls: 'dim', steps: 1,
+  add({ grades: ['14', '57'], stage: 'start', title: 'Три сніданки', bg: 'img/bg/kitchen.webp', bgcls: 'dim', steps: 1,
     tip: 'Діти голосують рукою, ви натискаєте «+». Потім «Далі» — відповідь із поясненням.',
     build(el) {
       const opts = [
@@ -218,11 +221,17 @@
       return { step(s) { cards.forEach((c, i) => { c.classList.toggle('win', s >= 1 && i === 1); c.querySelector('.why').textContent = s >= 1 ? opts[i][3] : ''; }); } };
     } });
 
+  // 1–4: «Так чи ні?» (G02–G04, G06)
+  const MYTH14 = [
+    ['Пити хочеться — найкраще випити води', true, 'Вода — найкращий напій від спраги.'],
+    ['Цукерки можна їсти замість обіду', false, 'Солодке — інколи, на свято. А обід — це тарілка з овочами, кашею й білком.'],
+    ['Що більше кольорів на тарілці, то краще', true, 'Їж веселку: червоне, жовте, зелене, фіолетове!'],
+    ['Якщо руки чисті на вигляд, перед їжею їх можна не мити', false, 'Перед їжею руки миють з милом — щонайменше 20 секунд.']];
   // 4. Міф чи факт — 6 тверджень (F03, F07, F12, F13, F20)
-  add({ stage: 'warm', title: 'Міф чи факт?', bg: 'img/bg/class.webp', bgcls: 'soft',
+  add({ grades: ['14', '57'], stage: 'warm', title: G === '14' ? 'Так чи ні?' : 'Міф чи факт?', bg: 'img/bg/class.webp', bgcls: 'soft',
     tip: 'Діти піднімають картки ✓ / ✕. Ви натискаєте відповідь класу — і з\'являється пояснення. «Далі» — наступне твердження.',
     build(el) {
-      const M = [
+      const M = G === '14' ? MYTH14 : [
         ['Картопля — це овоч, тому може бути половиною тарілки', false, 'На тарілці здорового харчування картопля не рахується як овоч.'],
         ['Найкращий напій від спраги — вода', true, 'Солодка газована вода й енергетики — не для щоденного вибору.'],
         ['Сік — так само корисно, як фрукт, тому його можна пити скільки завгодно', false, 'У соках є вільний цукор, тож їх варто обмежувати.'],
@@ -231,7 +240,8 @@
         ['Пити воду треба тільки тоді, коли дуже хочеться', false, 'Краще пити протягом дня, особливо на перерві й після фізкультури.']];
       let i = 0, answered = false, right = 0;
       const num = h('div', { class: 'cnum' }), stmt = h('div', { class: 'stmt' }), ans = h('div', {});
-      const yes = h('button', { class: 'yes', onclick: () => answer(true) }, '✓ Факт'), no = h('button', { class: 'no', onclick: () => answer(false) }, '✕ Міф');
+      const LBL = G === '14' ? ['👍 Так', '👎 Ні'] : ['✓ Факт', '✕ Міф'];
+      const yes = h('button', { class: 'yes', onclick: () => answer(true) }, LBL[0]), no = h('button', { class: 'no', onclick: () => answer(false) }, LBL[1]);
       const track = h('div', { class: 'track' }, M.map(() => h('i')));
       const apple = say('yabluko', '', { side: 'right', right: '60px', bottom: '140px', h: 360 });
       const show = () => {
@@ -244,11 +254,11 @@
         const ok = v === M[i][1]; if (ok) right++;
         (M[i][1] ? no : yes).classList.add('dim');
         ans.className = 'ans ' + (ok ? 'ok' : 'no');
-        ans.innerHTML = `<b>${M[i][1] ? '✓ Факт.' : '✕ Міф.'}</b> ${M[i][2]}`;
+        ans.innerHTML = `<b>${M[i][1] ? LBL[0] : LBL[1]}.</b> ${M[i][2]}`;
         apple.setText(ok ? 'Так! Чудово!' : 'Ой, не зовсім!');
         $('#next').classList.add('pulse');
       };
-      el.append(h('div', { class: 'body' }, header('Міф чи факт?', 'Розминка'),
+      el.append(h('div', { class: 'body' }, header(G === '14' ? 'Так чи ні?' : 'Міф чи факт?', 'Розминка'),
         h('div', { class: 'mf' }, h('div', { class: 'card paper' }, num, stmt, h('div', { class: 'btns' }, yes, no), ans), h('div', { class: 'side' }))), apple);
       show();
       return {
@@ -259,7 +269,7 @@
     } });
 
   // 5. Навіщо їжа: хто будує, заряджає, захищає (F01, F04, F09, F10, F11, F12, F15, F17)
-  add({ stage: 'new', title: 'Хто що робить', bg: 'img/bg/table.webp', bgcls: 'dim', steps: 4,
+  add({ grades: ['14', '57'], stage: 'new', title: 'Хто що робить', bg: 'img/bg/table.webp', bgcls: 'dim', steps: 4,
     tip: 'Їжа дає енергію, а рух її витрачає — що більше рухаємося, то більше енергії потрібно. Натискайте на героїв або «Далі».',
     build(el) {
       const R = [['kvasolia', 'Будують', 'Білки', 'Риба, птиця, яйця, квасоля, сир — будують м\'язи', ['fish', 'eggs', 'beans', 'cottage'], 'var(--prot)', 'var(--prot-b)'],
@@ -277,10 +287,61 @@
       return { step(s) { cards.forEach((c, i) => c.classList.toggle('open', s > i)); extra.style.opacity = s >= 4 ? 1 : 0; } };
     } });
 
+  // 8–11: «Що в кошику підлітка?» — мотивація (F12, F18, H06)
+  add({ grades: ['811'], stage: 'warm', title: 'Кошик підлітка', bg: 'img/bg/shop.webp', bgcls: 'dim', steps: 1,
+    tip: 'Клас каже, куди покласти кожен продукт, ви торкаєтеся картки (кожен дотик — наступна полиця). «Далі» — звірити з відповіддю.',
+    build(el) {
+      const K = [['energy', 'Енергетик', 2], ['soda', 'Солодка газовка', 1], ['crisps', 'Чипси', 1], ['donut', 'Пончик', 1], ['hotdog', 'Хот-дог', 1], ['juice', 'Пакетований сік', 1],
+        ['bottle', 'Вода', 0], ['banana', 'Банан', 0], ['apple', 'Яблуко', 0], ['nuts', 'Горіхи', 0], ['kefir', 'Кефір', 0], ['bread', 'Цільнозерновий хліб', 0]];
+      const SH = [['Щодня', 'var(--veg)'], ['Час від часу', 'var(--grain)'], ['Не для підлітків', 'var(--prot)']];
+      const shelves = SH.map(([n, c]) => h('div', { class: 'kshelf paper', style: { '--c': c } }, h('h3', {}, n), h('div', { class: 'kin' })));
+      const pool = h('div', { class: 'kpool' });
+      const items = shuffle(K.slice()).map(([img, n, a]) => {
+        const it = h('button', { class: 'kit', 'data-a': a }, h('img', { src: food(img), alt: '' }), h('span', {}, n));
+        it.onclick = () => { const s = it.dataset.s == null ? 0 : (+it.dataset.s + 1) % 3; it.dataset.s = s; shelves[s].querySelector('.kin').append(it); it.classList.remove('pop'); void it.offsetWidth; it.classList.add('pop'); };
+        pool.append(it); return it;
+      });
+      const note = h('div', { class: 'knote paper' }, h('b', {}, 'Енергетики'), ' — 70–80 мг кофеїну в банці 250 мл. ЦГЗ МОЗ: для підлітків вони небезпечні для серця, сну й нервової системи.');
+      el.append(h('div', { class: 'body' }, header('Що в кошику після школи?', 'Щодня чи час від часу?'), h('div', { class: 'kb' }, pool, h('div', { class: 'kshelves' }, shelves)), note));
+      return { step(s) {
+        items.forEach(it => { const a = +it.dataset.a; if (s >= 1) { it.dataset.s = a; shelves[a].querySelector('.kin').append(it); it.classList.add('right'); } else it.classList.remove('right'); });
+        note.style.opacity = s >= 1 ? 1 : 0;
+      } };
+    } });
+
   video(2, 'Подорож обіду', 'Після мультика: «Хто займає половину тарілки? Чому картоплю не пустили в половину овочів?»');
 
+  // 1–4: тарілка (G01, G03, G07)
+  add({ grades: ['14'], stage: 'new', title: 'Моя тарілка', bg: 'img/bg/table.webp', bgcls: 'dim', steps: 4,
+    tip: 'Покажіть руками: кулак — скільки каші, долоня — скільки риби чи сиру. «Далі» відкриває частини тарілки.',
+    build(el) {
+      const plate = h('div', { class: 'p14', html: plateSVG(true) });
+      const R = [['veg', 'Половина — овочі й фрукти', 'Що більше кольорів — то краще', ['carrot', 'cucumber', 'apple'], 'var(--veg)'],
+        ['grain', 'Чверть — каша чи хліб', '✊ Кулак — скільки каші', ['buckwheat', 'oatmeal', 'bread'], 'var(--grain)'],
+        ['prot', 'Чверть — риба, яйце, квасоля чи сир', '✋ Долоня — скільки риби', ['fish', 'eggs', 'beans'], 'var(--prot)'],
+        ['water', 'Поруч — вода', 'Пити хочеться — пий воду', ['water'], 'var(--water)']];
+      const rows = R.map(([k, t, s, imgs, c]) => h('div', { class: 'r14 paper', style: { '--c': c } }, h('div', { class: 'imgs' }, imgs.map(i => h('img', { src: food(i), alt: '' }))), h('div', {}, h('b', {}, t), h('span', {}, s))));
+      el.append(h('div', { class: 'body' }, header('Моя тарілка', 'Запам\'ятай'), h('div', { class: 'pl14' }, plate, h('div', { class: 'rows' }, rows))));
+      return { step(s) {
+        ['.s-veg', '.s-grain', '.s-prot'].forEach((q, i) => plate.querySelector(q).classList.toggle('off', s < i + 1));
+        rows.forEach((r, i) => r.classList.toggle('on', s > i));
+      } };
+    } });
+
+  // 1–4: їж веселку (G02)
+  add({ grades: ['14'], stage: 'new', title: 'Їж веселку', bg: 'img/bg/kitchen.webp', bgcls: 'dim', steps: 5,
+    tip: 'Перед кожним «Далі» спитайте: «Який овоч чи фрукт цього кольору ви знаєте?» — а потім покажіть.',
+    build(el) {
+      const C = [['Червоне', '#D2402B', ['tomato', 'apple', 'pepper']], ['Помаранчеве', '#E98A1F', ['carrot', 'pumpkin']], ['Жовте', '#E7B520', ['banana', 'pear']],
+        ['Зелене', '#5E9447', ['broccoli', 'cucumber', 'cabbage']], ['Фіолетове', '#7D4C9E', ['grapes', 'plum', 'blueberry', 'beet']]];
+      const rows = C.map(([n, c, imgs]) => h('div', { class: 'rb', style: { '--c': c } }, h('b', {}, n), h('div', { class: 'imgs' }, imgs.map(i => h('img', { src: food(i), alt: '' })))));
+      el.append(h('div', { class: 'body' }, header('Їж веселку!', 'Овочі й фрукти різних кольорів'), h('div', { class: 'rainbow' }, rows)),
+        say('yabluko', 'Що більше кольорів — то краще!', { side: 'right', right: '60px', bottom: '150px', h: 330 }));
+      return { step(s) { rows.forEach((r, i) => r.classList.toggle('on', s > i)); } };
+    } });
+
   // 7. Піраміда і тарілка (F01, F02, F27, F28)
-  add({ stage: 'new', title: 'Піраміда і тарілка', bg: 'img/bg/class.webp', bgcls: 'dim', steps: 9,
+  add({ grades: ['57', '811'], stage: 'new', title: 'Піраміда і тарілка', bg: 'img/bg/class.webp', bgcls: 'dim', steps: 9,
     tip: 'Програма називає харчову піраміду, а МОЗ з 2017 року радить тарілку — її простіше застосувати до кожного прийому їжі. Піраміди в країнах різні.',
     build(el) {
       const T = [['Хліб, каші, картопля', 'bread', '#D99A12', 100], ['Овочі й фрукти', 'broccoli', '#5E9447', 90], ['Молоко, сир, йогурт', 'kefir', '#B5838D', 80],
@@ -311,7 +372,7 @@
     } });
 
   // 8. Збери тарілку на дошці (F01, F03, F07, F12, F18)
-  add({ stage: 'new', title: 'Збери тарілку', bg: 'img/bg/table.webp', bgcls: 'dim',
+  add({ grades: ['14', '57'], stage: G === '14' ? 'practice' : 'new', title: 'Збери тарілку', bg: 'img/bg/table.webp', bgcls: 'dim',
     tip: 'Діти по черзі виходять до дошки й перетягують продукт на тарілку. Тарілка одразу підказує, чи підходить місце.',
     build(el) {
       const G = { veg: ['carrot', 'cucumber', 'tomato', 'pepper', 'broccoli', 'apple', 'pear', 'grapes', 'cabbage', 'blueberry'], grain: ['buckwheat', 'oatmeal', 'bread', 'rice'],
@@ -372,8 +433,34 @@
       return {};
     } });
 
+  // 1–4: миємо руки (G06, S23) — хвилинка-руханка
+  add({ grades: ['14'], stage: 'practice', title: 'Миємо руки', bg: 'img/bg/kitchen.webp', bgcls: 'dim',
+    tip: 'Діти стоять і показують рухи разом з вами. Натисніть «Старт» — 20 секунд, поки двічі проспіваєте «З днем народження».',
+    build(el) {
+      const ST = [['💧', 'Намочи руки'], ['🧼', 'Візьми мило'], ['👐', 'Потри долоні'], ['🖐️', 'Між пальчиками'], ['✋', 'Тильний бік і нігтики'], ['🚿', 'Змий і витри рушником']];
+      const cards = ST.map(([ic, t], i) => h('div', { class: 'hw paper' }, h('span', { class: 'n' }, String(i + 1)), h('div', { class: 'ic' }, ic), h('b', {}, t)));
+      const TOTAL = 20; let left = TOTAL, tid = null;
+      const R = 100, C = 2 * Math.PI * R;
+      const ring = h('div', { class: 'ring', html: `<svg viewBox="0 0 240 240"><circle cx="120" cy="120" r="${R}" stroke="#EADBC4"/><circle class="p" cx="120" cy="120" r="${R}" stroke="#3F86C2" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>` }, h('div', { class: 't' }));
+      const draw = () => {
+        ring.querySelector('.t').textContent = left; ring.querySelector('.p').style.strokeDashoffset = C * (1 - left / TOTAL); ring.classList.toggle('end', left === 0);
+        const k = Math.min(ST.length - 1, Math.floor((TOTAL - left) / TOTAL * ST.length)); cards.forEach((c, i) => c.classList.toggle('now', tid != null && i === k));
+      };
+      const stop = () => { clearInterval(tid); tid = null; };
+      const go = h('button', { class: 'main', onclick: () => {
+        if (tid) { stop(); go.textContent = 'Старт'; draw(); return; }
+        if (!left) left = TOTAL;
+        go.textContent = 'Пауза';
+        tid = setInterval(() => { left--; draw(); if (!left) { stop(); go.textContent = 'Ще раз'; draw(); confetti(el); } }, 1000); draw();
+      } }, 'Старт');
+      const timer = h('div', { class: 'timer paper' }, h('div', { class: 'round' }, '20 секунд'), ring, h('div', { class: 'row' }, go), h('img', { class: 'soap', src: food('soap'), alt: '' }));
+      draw();
+      el.append(h('div', { class: 'body' }, header('Перед їжею — руки з милом', 'Хвилинка-руханка'), h('div', { class: 'hwb' }, h('div', { class: 'hws' }, cards), timer)));
+      return { leave() { stop(); go.textContent = 'Старт'; left = TOTAL; draw(); } };
+    } });
+
   // 9. Порція рукою (F14)
-  add({ stage: 'new', title: 'Порція рукою', bg: 'img/bg/kitchen.webp', bgcls: 'dim', steps: 4,
+  add({ grades: ['57'], stage: 'new', title: 'Порція рукою', bg: 'img/bg/kitchen.webp', bgcls: 'dim', steps: 4,
     tip: 'Попросіть дітей показати кулак, долоню й великий палець — і порівняти зі своєю порцією.',
     build(el) {
       const H = [['✊', 'Кулак', 'каші', 'buckwheat'], ['✋', 'Долоня', 'білка', 'fish'], ['✊', 'Кулак', 'овочів', 'broccoli'], ['👍', 'Великий палець', 'масла', 'oil']];
@@ -383,7 +470,7 @@
     } });
 
   // 10. Скільки і як часто (F05, F06, F08, F16, F18)
-  add({ stage: 'new', title: 'Скільки і як часто', bg: 'img/bg/shop.webp', bgcls: 'dim', steps: 5,
+  add({ grades: ['57', '811'], stage: 'new', title: 'Скільки і як часто', bg: 'img/bg/shop.webp', bgcls: 'dim', steps: 5,
     tip: 'Цифри цукру й солі — орієнтир ВООЗ для дорослих; дітям — ще менше. Особистих підрахунків не робимо.',
     build(el) {
       const O = [['400 г', 'овочів і фруктів щодня — приблизно 5 жмень', ['apple', 'carrot', 'grapes'], 'var(--veg)'],
@@ -397,7 +484,7 @@
     } });
 
   // 11. Станції: три групи по колу, на кожній — друковані матеріали з набору (kartky-stancii.pdf, plakaty.pdf)
-  add({ stage: 'practice', title: 'Станції', bg: 'img/bg/class.webp', bgcls: 'dim',
+  add({ grades: ['57'], stage: 'practice', title: 'Станції', bg: 'img/bg/class.webp', bgcls: 'dim',
     tip: 'Роздрукуйте заздалегідь: картки продуктів (с. 1–4) і картки станцій (с. 6–8) з PDF «Картки й станції», етикетки й картку детектива (с. 9–11), плакат-тарілку (PDF «Плакати», с. 1). Розкладіть на трьох партах.',
     build(el) {
       const ST = [['Збери тарілку', 'station_plate', 'var(--veg)', 'Картки продуктів і плакат-тарілка',
@@ -434,10 +521,10 @@
       return { leave() { clearInterval(tid); tid = null; go.textContent = 'Старт'; } };
     } });
 
-  video(3, 'Детектив етикеток', 'Покажіть мультик перед станцією «Детектив етикеток» — або всім класом перед наступним екраном.');
+  video(3, 'Детектив етикеток', G === '811' ? 'Розминка: що Лупа шукає на етикетці? Далі — етикетки PRO.' : 'Покажіть мультик перед станцією «Детектив етикеток» — або всім класом перед наступним екраном.', ['57', '811']);
 
   // 13. Детектив етикеток на дошці (F19–F22, F29 🎭 — продукт вигаданий)
-  add({ stage: 'practice', title: 'Детектив етикеток', bg: 'img/bg/shop.webp', bgcls: 'dim',
+  add({ grades: ['57'], stage: 'practice', title: 'Детектив етикеток', bg: 'img/bg/shop.webp', bgcls: 'dim',
     tip: 'Діти по черзі виходять і торкаються потрібного місця на етикетці. Продукт навчальний — вигаданий.',
     build(el) {
       const Z = (k, html) => `<span class="z" data-z="${k}">${html}</span>`;
@@ -479,8 +566,97 @@
       };
     } });
 
+  // 8–11: етикетки PRO — порівняння на 100 г (S8, S17, H02, H04). Продукти вигадані
+  add({ grades: ['811'], stage: 'practice', title: 'Етикетки PRO', bg: 'img/bg/shop.webp', bgcls: 'dim',
+    tip: 'Пари порівнюють цифри «на 100 г» і відповідають. Ви натискаєте «Далі» — підсвічується відповідь. Продукти навчальні, вигадані.',
+    build(el) {
+      const L = [['yog', 'Йогурт полуничний', 'на 100 г', [['Цукри', '13,8 г', 'sug'], ['Жири', '2,5 г'], ['Білки', '3,0 г']], 'Без додавання цукру? Ні: у складі — цукор.'],
+        ['kef', 'Кефір 2,5 %', 'на 100 г', [['Цукри', '4,0 г', 'sug'], ['Жири', '2,5 г'], ['Білки', '3,0 г']], 'Цукор — лише природний молочний (лактоза).'],
+        ['cer', 'Шоко-кульки', 'на 100 г', [['Цукри', '28 г', 'sug'], ['Клітковина', '5 г', 'fib'], ['Сіль', '0,6 г', 'salt']], '«Джерело клітковини!» — пише упаковка.'],
+        ['oat', 'Вівсяні пластівці', 'на 100 г', [['Цукри', '1 г', 'sug'], ['Клітковина', '10 г', 'fib'], ['Сіль', '0 г', 'salt']], 'Без тверджень на упаковці.']];
+      const labs = L.map(([k, n, per, rows, cl]) => h('div', { class: 'mlab', 'data-k': k }, h('b', {}, n), h('table', {}, h('tr', {}, h('th', {}, 'Поживна цінність'), h('th', {}, per)),
+        rows.map(([a, b, z]) => h('tr', { 'data-z': z || '' }, h('td', {}, a), h('td', {}, b)))), h('p', {}, cl)));
+      const T = [['Де менше цукрів: у йогурті чи в кефірі?', 'У кефірі — 4 г проти 13,8 г. У 100 г йогурту — понад 3 чайні ложки цукру (1 ложка ≈ 4 г).', [['yog', 'sug'], ['kef', 'sug']]],
+        ['Шоко-кульки — «джерело клітковини». Це правда?', 'Так: «джерело клітковини» — від 3 г на 100 г, тут 5 г. Але цукрів — 28 г! Одне гарне слово не робить продукт щоденним.', [['cer', 'fib'], ['cer', 'sug']]],
+        ['Які пластівці краще для щоденного сніданку?', 'Вівсяні: цукрів 1 г, клітковини 10 г — це вже «високий вміст» (від 6 г). Солі немає.', [['oat', 'sug'], ['oat', 'fib'], ['oat', 'salt']]],
+        ['Головне правило детектива', 'Порівнюй «на 100 г», а не «на порцію». Твердження на упаковці перевіряй цифрами.', []]];
+      let i = 0, shown = false;
+      const tn = h('div', { class: 'tn' }), tq = h('h3', {}), tf = h('div', {}), steps = h('div', { class: 'steps' }, T.map(() => h('i')));
+      const clear = () => el.querySelectorAll('.mlab tr.hi').forEach(r => r.classList.remove('hi'));
+      const show = () => { shown = false; clear(); tn.textContent = `Питання ${i + 1} з ${T.length}`; tq.textContent = T[i][0]; tf.className = ''; tf.textContent = ''; [...steps.children].forEach((s, k) => s.classList.toggle('on', k < i)); };
+      const reveal = () => { shown = true; T[i][2].forEach(([k, z]) => el.querySelector(`.mlab[data-k="${k}"] tr[data-z="${z}"]`).classList.add('hi')); tf.className = 'found pop'; tf.textContent = T[i][1]; [...steps.children].forEach((s, k) => s.classList.toggle('on', k <= i)); $('#next').classList.add('pulse'); };
+      el.append(h('div', { class: 'body' }, header('Етикетки PRO', 'Порівнюємо на 100 г'),
+        h('div', { class: 'lpro' }, h('div', { class: 'mlabs' }, labs), h('div', { class: 'task paper' }, tn, tq, tf, steps, h('div', { class: 'fake' }, 'Продукти вигадані — це навчальні етикетки.')))));
+      show();
+      return {
+        next() { if (!shown) { reveal(); return true; } if (i < T.length - 1) { i++; show(); return true; } return false; },
+        prev() { if (i > 0) { i--; show(); return true; } return false; },
+        progress: () => [i, T.length]
+      };
+    } });
+
+  // 8–11: що означають написи на упаковці (H02–H05; наказ МОЗ №1145, №45)
+  add({ grades: ['811'], stage: 'practice', title: 'Написи на упаковці', bg: 'img/bg/shop.webp', bgcls: 'dim', steps: 6,
+    tip: 'Перед кожним «Далі» спитайте клас, що, на їхню думку, означає напис. Можна торкатися карток у будь-якому порядку.',
+    build(el) {
+      const C = [['«Без додавання цукру»', 'Цукор не додавали, але природний (з фруктів, молока) лишається. Це не «без цукру»!'],
+        ['«Не містить цукру»', 'Не більше ніж 0,5 г цукрів на 100 г (100 мл).'],
+        ['«З низьким вмістом цукру»', 'Не більше ніж 5 г на 100 г — або 2,5 г на 100 мл напою.'],
+        ['«Знежирено на 30 %»', 'Таке формулювання заборонене. «Знежирений» — не більше ніж 0,5 г жиру на 100 г.'],
+        ['«Джерело клітковини»', 'Щонайменше 3 г клітковини на 100 г; «високий вміст» — від 6 г.'],
+        ['E330, E440…', 'Е — код дозволеної харчової добавки, а не «отрута». Добавки мають бути вказані в складі.']];
+      const cards = C.map(([f, b]) => { const c = h('div', { class: 'cl', onclick: () => c.classList.toggle('open') }, h('div', { class: 'in' }, h('div', { class: 'f' }, h('b', {}, f), h('span', {}, 'Що це означає?')), h('div', { class: 'b' }, h('b', {}, f), h('p', {}, b)))); return c; });
+      el.append(h('div', { class: 'body' }, header('Що означають написи на упаковці?', 'Правила МОЗ'), h('div', { class: 'claims' }, cards),
+        h('div', { class: 'src-line' }, 'Наказ МОЗ №1145 від 15.05.2020 (твердження про поживну цінність); наказ МОЗ №45 від 08.01.2024 (харчові добавки).')));
+      return { step(s) { cards.forEach((c, i) => c.classList.toggle('open', s > i)); } };
+    } });
+
+  // 8–11: енергетики — факти (H06, H07, S20, S21)
+  add({ grades: ['811'], stage: 'practice', title: 'Енергетики', bg: 'img/bg/shop.webp', bgcls: 'dim', steps: 3,
+    tip: 'Перед уроком перевірте, чи не ухвалено закон про заборону продажу енергетиків до 18 (станом на 01.2026 — законопроєкт у Верховній Раді). Обговорення: «Що робити, коли втома?»',
+    build(el) {
+      const can = h('div', { class: 'en-can paper' }, h('img', { src: food('energy'), alt: '' }), h('b', {}, '70–80 мг'), h('span', {}, 'кофеїну в банці 250 мл'), h('i', {}, '3 % підлітків в Україні п\'ють енергетики щодня'));
+      const risk = h('div', { class: 'en-box paper', style: { '--c': 'var(--prot)' } }, h('h3', {}, 'Що кажуть лікарі ЦГЗ'),
+        h('ul', {}, ['Серце б\'ється частіше, тиск росте', 'Гірше спиш — завтра ще більше втома', 'Тривожність і дратівливість', 'Зневоднення, гірша реакція'].map(x => h('li', {}, x))));
+      const law = h('div', { class: 'en-box paper', style: { '--c': 'var(--grain)' } }, h('h3', {}, 'А закон?'),
+        h('p', {}, 'Продаж енергетиків неповнолітнім в Україні поки не заборонений (законопроєкт — у Верховній Раді). Тому рішення — за тобою.'));
+      const alt = h('div', { class: 'en-box paper', style: { '--c': 'var(--veg)' } }, h('h3', {}, 'Коли втома — що допоможе?'),
+        h('div', { class: 'en-alt' }, [['clock', 'Сон'], ['bottle', 'Вода'], ['apple', 'Перекус'], [null, '🏃 Рух і перерва']].map(([i, t]) => h('span', {}, i ? h('img', { src: food(i), alt: '' }) : null, t))));
+      const boxes = [risk, law, alt];
+      el.append(h('div', { class: 'body' }, header('Енергетик перед контрольною?', 'Факти'), h('div', { class: 'energy' }, can, h('div', { class: 'en-r' }, boxes)),
+        h('div', { class: 'src-line' }, 'ЦГЗ МОЗ, 18.09.2026; Держпродспоживслужба, 16.07.2024.')));
+      return { step(s) { boxes.forEach((b, i) => b.classList.toggle('on', s > i)); } };
+    } });
+
+  // 8–11: фактчек-студія (H01–H09). Дописи вигадані
+  add({ grades: ['811'], stage: 'practice', title: 'Фактчек-студія', bg: 'img/bg/class.webp', bgcls: 'soft',
+    tip: 'Групи голосують: правда чи фейк? Попросіть назвати червоні прапорці: обіцянка швидкого результату, «усім», немає джерела, продає товар. Дієти обговорюємо лише як маніпуляцію — без порад щодо ваги.',
+    build(el) {
+      const P = [['@detox_life', 'Детокс-сік за 3 дні очищає організм від усіх токсинів! Замов зі знижкою 🔥', false, 'Фейк. Печінка й нирки очищають організм самі. Червоні прапорці: обіцянка швидкого результату й продаж товару.'],
+        ['@snack_review', 'На пачці написано «без додавання цукру» — отже, цукру там нуль.', false, 'Фейк. Природний цукор (з фруктів, молока) лишається. «Не містить цукру» — це до 0,5 г на 100 г.'],
+        ['@study_hacks', 'Енергетик перед контрольною працює краще, ніж сон 💪', false, 'Фейк. За ЦГЗ, енергетики погіршують сон і підвищують тривожність. Найкраще перед контрольною — виспатися.'],
+        ['@clean_food', 'Усе, де є Е, — це хімія й отрута. Читай склад і викидай!', false, 'Фейк. Е — код дозволеної добавки (наприклад, E300 — вітамін C). Важливо, у якому продукті й скільки.'],
+        ['@who_fan', 'Найкращий напій від спраги — звичайна вода 💧', true, 'Правда. Вода — найкращий щоденний напій; солодкі напої — час від часу.'],
+        ['@fit_blogger', 'Моя чудо-дієта: мінус 5 кг за тиждень, підходить усім!', false, 'Фейк. «Усім» і «швидко» — червоні прапорці. Будь-які дієти — лише з лікарем.']];
+      let i = 0, answered = false;
+      const who = h('div', { class: 'who' }), txt = h('div', { class: 'ptxt' }), ans = h('div', {});
+      const yes = h('button', { class: 'yes', onclick: () => answer(true) }, '✓ Правда'), no = h('button', { class: 'no', onclick: () => answer(false) }, '✕ Фейк');
+      const flags = h('div', { class: 'flags paper' }, h('h3', {}, '🚩 Червоні прапорці'), h('ul', {}, ['Обіцяє швидкий результат', '«Підходить усім»', 'Немає джерела', 'Продає товар', 'Лякає: «отрута», «хімія»'].map(x => h('li', {}, x))),
+        h('p', {}, 'Перевіряй: ВООЗ, МОЗ, ЦГЗ, Держпродспоживслужба.'));
+      const show = () => { answered = false; who.textContent = P[i][0]; txt.textContent = P[i][1]; ans.className = ''; ans.textContent = ''; yes.classList.remove('dim'); no.classList.remove('dim'); txt.classList.remove('pop'); void txt.offsetWidth; txt.classList.add('pop'); };
+      const answer = v => { if (answered) return; answered = true; const ok = v === P[i][2]; (P[i][2] ? no : yes).classList.add('dim'); ans.className = 'ans ' + (ok ? 'ok' : 'no'); ans.textContent = P[i][3]; $('#next').classList.add('pulse'); };
+      el.append(h('div', { class: 'body' }, header('Фактчек-студія', 'Правда чи фейк?'),
+        h('div', { class: 'fc' }, h('div', { class: 'post paper' }, h('div', { class: 'ph' }, h('i'), who, h('small', {}, 'допис вигаданий')), txt, h('div', { class: 'btns' }, yes, no), ans), flags)));
+      show();
+      return {
+        next() { if (!answered) { answer(P[i][2]); return true; } if (i < P.length - 1) { i++; show(); return true; } return false; },
+        prev() { if (i > 0) { i--; show(); return true; } return false; },
+        progress: () => [i, P.length]
+      };
+    } });
+
   // 14. Покажіть, що вийшло — чек-лист
-  add({ stage: 'sum', title: 'Покажіть, що вийшло', bg: 'img/bg/class.webp', bgcls: 'dim',
+  add({ grades: ['57'], stage: 'sum', title: 'Покажіть, що вийшло', bg: 'img/bg/class.webp', bgcls: 'dim',
     tip: 'Кожна група — 1 хвилина. Клас звіряє з чек-листом: торкайтеся пунктів, які виконано.',
     build(el) {
       const L = ['Половина тарілки — овочі й фрукти', 'Є каша або цільнозерновий хліб', 'Є білок', 'Головний напій — вода', 'За день — щонайменше 5 жмень овочів і фруктів'];
@@ -490,11 +666,28 @@
       return {};
     } });
 
+  const QUIZ14 = [
+    ['Яка частина тарілки — для овочів і фруктів?', ['Половина', 'Трішечки', 'Уся тарілка', 'Нічого'], 0, 'Половина тарілки — овочі й фрукти!'],
+    ['Що найкраще випити, коли хочеться пити?', ['Газовану воду', 'Воду', 'Сік', 'Какао'], 1, 'Вода — найкращий напій від спраги.'],
+    ['Цукерки — це їжа…', ['На кожен день', 'Замість обіду', 'Інколи, на свято', 'На сніданок'], 2, 'Солодке — інколи, на свято.'],
+    ['Скільки каші покласти на тарілку?', ['Як кулак', 'Як дві голови', 'Як мізинець', 'Цілу каструлю'], 0, 'Порція каші — як твій кулак.'],
+    ['Що зробити перед їжею?', ['Пограти в телефон', 'Помити руки з милом', 'Побігати', 'Нічого'], 1, 'Перед їжею — руки з милом, щонайменше 20 секунд.'],
+    ['Яка тарілка краща?', ['Одного кольору', 'Різнокольорова', 'Порожня', 'Лише солодка'], 1, 'Їж веселку — що більше кольорів, то краще!']];
+  const QUIZ811 = [
+    ['Яку частину тарілки займають овочі й фрукти?', ['Чверть', 'Половину', 'Третину', 'Майже нічого'], 1, 'Половина — овочі й фрукти, чверть — цільнозернове, чверть — білок.'],
+    ['«Без додавання цукру» означає…', ['Цукру нуль', 'Цукор не додавали, але природний може бути', 'Мало калорій', 'Продукт дієтичний'], 1, 'Природний цукор лишається. «Не містить цукру» — до 0,5 г на 100 г.'],
+    ['«З низьким вмістом цукру» — це не більше ніж…', ['5 г на 100 г', '15 г на 100 г', '50 г на 100 г', 'Скільки завгодно'], 0, '≤ 5 г на 100 г (для напоїв — ≤ 2,5 г на 100 мл).'],
+    ['Що таке «Е» у складі?', ['Отрута', 'Код дозволеної харчової добавки', 'Енергетична цінність', 'Термін придатності'], 1, 'Е — код дозволеної добавки; її мають вказати в складі.'],
+    ['Скільки кофеїну в банці енергетика 250 мл?', ['5 мг', '70–80 мг', '1 г', 'Немає зовсім'], 1, '70–80 мг — за даними ЦГЗ МОЗ.'],
+    ['Що краще допомагає, коли втома перед контрольною?', ['Енергетик', 'Сон, вода, перерва', 'Солодка газовка', 'Пропустити обід'], 1, 'Сон, вода й рух — без ризиків для серця й сну.'],
+    ['Порівнювати продукти на етикетці треба…', ['На порцію', 'На 100 г', 'За ціною', 'За кольором упаковки'], 1, 'На 100 г — тоді цифри можна чесно порівняти.'],
+    ['Червоний прапорець у дописі про їжу —', ['Посилання на ВООЗ', '«Мінус 5 кг за тиждень, підходить усім»', 'Цифри на 100 г', 'Порада пити воду'], 1, 'Швидкий результат і «усім» — ознаки маніпуляції.']];
+
   // 15. Квіз на дошці + QR (ті самі 10 питань, що й /tarilka/kviz)
   add({ stage: 'sum', title: 'Квіз', bg: 'img/bg/class.webp', bgcls: 'dim',
     tip: 'Два способи: діти проходять квіз на телефонах за QR, або всі разом на дошці — клас обирає відповідь, ви натискаєте.',
     build(el) {
-      const Q = [
+      const Q = G === '14' ? QUIZ14 : G === '811' ? QUIZ811 : [
         ['Яку частину тарілки займають овочі й фрукти?', ['Половину', 'Чверть', 'Майже нічого', 'Усю тарілку'], 0, 'Половина — овочі й фрукти, чверть — каші, чверть — білок.'],
         ['Картопля на тарілці рахується як овоч?', ['Так', 'Ні'], 1, 'Картопля смачна, але як овоч на тарілці не рахується.'],
         ['Який напій найкраще тамує спрагу?', ['Сік', 'Газована вода', 'Вода', 'Енергетик'], 2, 'Найкращий напій — звичайна вода.'],
@@ -511,8 +704,8 @@
       const show = () => {
         done = false;
         if (i >= Q.length) {
-          q.replaceChildren(h('div', { class: 'end' }, h('b', {}, `${score}/${Q.length}`), h('p', {}, score >= 8 ? 'Клас чудово знає тарілку!' : 'Добре! Повторімо, що запам\'ятали.')));
-          if (score >= 8) confetti(el); return;
+          q.replaceChildren(h('div', { class: 'end' }, h('b', {}, `${score}/${Q.length}`), h('p', {}, score >= Math.ceil(Q.length * .8) ? 'Клас чудово знає тарілку!' : 'Добре! Повторімо, що запам\'ятали.')));
+          if (score >= Math.ceil(Q.length * .8)) confetti(el); return;
         }
         const [t, o, a, w] = Q[i];
         const opts = h('div', { class: 'opts' }, o.map((x, k) => h('button', { class: 'opt', onclick: () => answer(k) }, h('span', { class: 'l', style: { background: COL[k] } }, LET[k]), x)));
@@ -528,7 +721,7 @@
       };
       el.append(h('div', { class: 'body' }, header('Квіз', 'Перевір себе'),
         h('div', { class: 'qz' }, q, h('div', { class: 'aside' }, h('div', { class: 'score paper' }, sc, h('span', {}, 'правильних')),
-          h('div', { class: 'qrbox paper', html: (D.qr.kviz || '') + '<p><b>Або на телефонах</b>dyvourok.com.ua/tarilka/kviz</p>' })))));
+          (G === '57' ? h('div', { class: 'qrbox paper', html: (D.qr.kviz || '') + '<p><b>Або на телефонах</b>dyvourok.com.ua/tarilka/kviz</p>' }) : null)))));
       show();
       return {
         next() { if (i >= Q.length) return false; if (!done) { answer(-1); return true; } i++; show(); return true; },
@@ -540,7 +733,10 @@
   add({ stage: 'refl', title: 'Моя тарілка завтра', bg: 'img/bg/kitchen.webp', bgcls: 'dim',
     tip: 'Кожен обирає ОДНУ зміну на завтра й пише її на стікері. Натискайте варіанти, щоб порахувати, що обрав клас.',
     build(el) {
-      const O = [['Додати овоч до обіду', 'carrot'], ['Взяти воду в пляшці', 'bottle'], ['Яблуко в рюкзак', 'apple'], ['Кашу на сніданок', 'oatmeal'], ['Рибу цього тижня', 'fish'], ['Сік — лише час від часу', 'juice']];
+      const O = G === '811'
+        ? [['Пляшка води замість солодкої газовки', 'bottle'], ['Перевірити етикетку перед покупкою', 'basket'], ['Овоч або фрукт до кожного прийому їжі', 'apple'],
+           ['Сон і перерва замість енергетика', 'clock'], ['Цільнозерновий хліб замість білого', 'bread'], ['Перевірити допис про їжу за джерелом', 'fork']]
+        : [['Додати овоч до обіду', 'carrot'], ['Взяти воду в пляшці', 'bottle'], ['Яблуко в рюкзак', 'apple'], ['Кашу на сніданок', 'oatmeal'], ['Рибу цього тижня', 'fish'], ['Сік — лише час від часу', 'juice']];
       let total = 0;
       const onPlate = h('div', { class: 'onplate' });
       const btns = O.map(([t, img]) => { const c = h('span', { class: 'c' }, ''); let n = 0;
@@ -550,7 +746,7 @@
           if (total === 10 || total === 20) confetti(el);
         } }, h('img', { src: food(img), alt: '' }), t, c); return b; });
       const plate = h('div', { class: 'tplate', html: plateSVG(false) }, onPlate);
-      el.append(h('div', { class: 'body' }, header('Одна зміна, яку я спробую завтра', 'Рефлексія'), h('div', { class: 'tom' }, plate, h('div', { class: 'opts' }, btns))),
+      el.append(h('div', { class: 'body' }, header(G === '811' ? 'Одна зміна на цей тиждень' : 'Одна зміна, яку я спробую завтра', 'Рефлексія'), h('div', { class: 'tom' }, plate, h('div', { class: 'opts' }, btns))),
         say('kraplia', '', { side: 'left', left: '30px', bottom: '140px', h: 280 }));
       return {};
     } });
@@ -566,11 +762,18 @@
         '<b>Держпродспоживслужба</b> на kmu.gov.ua: нові правила читання етикетки, 06.08.2019.', '<b>EUFIC.</b> Харчові настанови в країнах Європи.',
         '<b>Слово і діло.</b> МОЗ презентувало тарілку здорового харчування, 13.12.2017.',
         'Герої мультиків і навчальні етикетки — художня вигадка. Тарілку намальовано заново за моделлю Гарварду.'];
+      if (G === '14') L.splice(0, 1, '<b>МОН.</b> Типова освітня програма 1–2 кл. (Савченко О. Я.), «Я досліджую світ»; програма 3–4 кл. (наказ №1273 від 08.10.2019).',
+        '<b>МОЗ України.</b> Як привчити дитину мити руки: практичні поради.');
+      if (G === '811') L.splice(0, 1, '<b>МОН.</b> Модельні програми «ЗБД. 7–9 класи» (Воронцова Т. В. та ін.; Шиян О. І. та ін.).',
+        '<b>МОЗ.</b> Наказ №1145 від 15.05.2020 — вимоги до тверджень про поживну цінність; наказ №45 від 08.01.2024 — вимоги до харчових добавок.',
+        '<b>ЦГЗ МОЗ.</b> Енергетичні напої та діти, 18.09.2026.', '<b>Держпродспоживслужба.</b> Написи на продуктах (28.10.2025); продаж енергетиків (16.07.2024).',
+        '<b>ВООЗ.</b> Policies to protect children from the harmful impact of food marketing, 2023.');
       el.append(h('div', { class: 'body' }, header('Джерела', 'Для вчителя'), h('ol', { class: 'srcs paper' }, L.map(t => h('li', { html: t })))));
       return {};
     } });
 
   // ------------------------------------------------------------ рушій
+  const SG = STAGES.filter(([id]) => S.some(s => s.stage === id)).map(([id, t]) => [id, STAGE_NAME[id] || t]);
   const stage = $('#stage');
   let cur = -1, step = 0, api = {};
   // підказка вчителю за замовчуванням схована: урок транслюють класу. Лампочка вмикає її, вибір пам'ятаємо на пристрої
@@ -580,7 +783,7 @@
   const fit = () => { stage.style.transform = `translate(-50%,-50%) scale(${stageScale()})`; };
 
   // каркас
-  const stagesEl = h('div', { class: 'stages' }, STAGES.map(([id, t], i) => h('button', { class: 'stage', 'data-st': id, onclick: () => go(S.findIndex(s => s.stage === id)) }, h('span', { class: 'n' }, String(i + 1)), t)));
+  const stagesEl = h('div', { class: 'stages' }, SG.map(([id, t], i) => h('button', { class: 'stage', 'data-st': id, onclick: () => go(S.findIndex(s => s.stage === id)) }, h('span', { class: 'n' }, String(i + 1)), t)));
   const offline = location.protocol === 'file:';
   const homeBtn = offline ? null : h('a', { class: 'tb-btn', href: '../../../app/#/pack/tarilka', html: ICON.home + 'До набору' });
   const tipBtn = h('button', { class: 'tb-btn' + (tipOn ? ' on' : ''), title: 'Підказка вчителю (T)', 'aria-label': 'Підказка вчителю', html: ICON.tip, onclick: () => toggleTip() });
@@ -605,7 +808,7 @@
 
   function paintChrome() {
     const s = S[cur];
-    const si = STAGES.findIndex(x => x[0] === s.stage);
+    const si = SG.findIndex(x => x[0] === s.stage);
     [...stagesEl.children].forEach((b, i) => { b.classList.toggle('now', i === si); b.classList.toggle('done', i < si); });
     tipEl.innerHTML = '<b>Вчителю</b>' + s.tip;
     const p = api.progress ? api.progress() : s.steps ? [step, s.steps + 1] : null;
@@ -647,7 +850,7 @@
     ov.classList.toggle('on', on); ovBtn.classList.toggle('on', on);
     if (!on) return;
     ov.replaceChildren(h('button', { class: 'tb-btn close', onclick: () => toggleOv(false) }, 'Закрити ✕'),
-      ...STAGES.map(([id, t], si) => [h('h3', {}, `${si + 1}. ${t}`),
+      ...SG.map(([id, t], si) => [h('h3', {}, `${si + 1}. ${t}`),
         h('div', { class: 'grid' }, S.map((s, i) => s.stage === id ? h('button', { class: i === cur ? 'now' : '', onclick: () => go(i) }, h('small', {}, `Екран ${i + 1}`), s.title) : null))]).flat());
   }
   function fullscreen() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }

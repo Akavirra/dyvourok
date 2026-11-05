@@ -110,13 +110,13 @@
   const className = c => (/клас/i.test(c.name) ? c.name : c.name + ' клас');
 
   // ---------------------------------------------------------------- рівень (вікова версія)
-  // pack.grades — вікові версії набору; перша — базова. Для інших зупинка може мати levels[id] = {intro, task},
+  // pack.grades — вікові версії набору; базова — pack.defaultGrade або перша. Для інших зупинка може мати levels[id] = {intro, task},
   // а будь-який об'єкт набору (teacher, description) — свої levels[id]. Вибір запам'ятовується за класом (c.grade),
   // а без класу — на пристрої.
   function levelIdFor(pack, c) {
     const ls = pack.grades;
     if (!ls) return '';
-    const id = c && c.grade && ls.some(l => l.id === c.grade) ? c.grade : store.get('dyvo_level_' + pack.id, ls[0].id);
+    const id = c && c.grade && ls.some(l => l.id === c.grade) ? c.grade : store.get('dyvo_level_' + pack.id, pack.defaultGrade || ls[0].id);
     return (ls.find(l => l.id === id) || ls[0]).id;
   }
   function levelOf(pack) {
