@@ -26,6 +26,8 @@
     "/packs/khlib/img/*",
     "/packs/khlib/pack.js",
     "/packs/tarilka/img/*",
-    "/packs/tarilka/pack.js"
+    "/packs/tarilka/pack.js",
+    "/packs/perenosne/img/*",
+    "/packs/perenosne/pack.js"
   ]
 }

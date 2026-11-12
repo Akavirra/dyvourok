@@ -22,6 +22,9 @@ PACKS = {
                 ('docs/konspekt.pdf', {1, 2, 3}, 'konspekt-'),
                 ('docs/rozdatka-1-4.pdf', {5}, 'r14-'), ('docs/rozdatka-8-11.pdf', {4}, 'r811-'),
                 ('docs/konspekt-1-4.pdf', {1}, 'konspekt14-'), ('docs/konspekt-8-11.pdf', {1, 2}, 'konspekt811-'), ('docs/plakaty-8-11.pdf', set(), 'pl811-')],
+    # «Робот Буквалик»: без с. «Як користуватися» і ключів
+    'perenosne': [('docs/rozdatka.pdf', {0, 10}, 'rozdatka-'), ('docs/rozdatka-plus.pdf', set(), 'plus-'),
+                  ('docs/hra-a3.pdf', set(), 'hra-'), ('docs/plakat-a3.pdf', set(), 'plakat-'), ('docs/konspekt.pdf', set(range(1, 9)), 'konspekt-')],
 }
 LONG_SIDE = 760          # px — досить, щоб роздивитися, замало для друку
 RED = (200, 52, 31)

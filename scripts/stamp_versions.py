@@ -18,7 +18,7 @@ for pack in os.listdir(ROOT):
         d = os.path.join(base, sub)
         if not os.path.isdir(d):
             continue
-        for f in sorted(os.listdir(d)):
+        for f in sorted(x for x in os.listdir(d) if os.path.isfile(os.path.join(d, x))):
             h = hashlib.sha1(open(os.path.join(d, f), 'rb').read()).hexdigest()[:10]
             vers[f'{sub}/{f}'] = h
     s = open(pj, encoding='utf-8').read()

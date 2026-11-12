@@ -52,13 +52,16 @@
   // передзамовлення: заявка йде в /api/preorder, джерело береться з ?from= або utm_source
   const form = document.getElementById('preorder');
   // вибір набору у формі: заголовок і перелік у картці ціни; «Купити набір» на картці набору обирає його
-  const PACK_TITLES = { mova: 'Машина часу рідної мови', tarilka: 'Що на моїй тарілці?' };
+  const PACK_TITLES = { mova: 'Машина часу рідної мови', tarilka: 'Що на моїй тарілці?', perenosne: 'Робот Буквалик і чарівні окуляри' };
+  const PACK_PRICE = { perenosne: '250\u00a0₴' };   // інші набори — 300 ₴
   const pickPack = id => {
     if (!form || !PACK_TITLES[id]) return;
     const r = form.querySelector(`input[name=pack][value="${id}"]`);
     if (r) r.checked = true;
     const t = document.getElementById('price-title');
     if (t) t.textContent = PACK_TITLES[id];
+    const sum = document.getElementById('price-sum');
+    if (sum) sum.textContent = PACK_PRICE[id] || '300\u00a0₴';
     document.querySelectorAll('.checks[data-for]').forEach(ul => { ul.hidden = ul.dataset.for !== id; });
   };
   if (form) form.addEventListener('change', e => { if (e.target.name === 'pack') pickPack(e.target.value); });
@@ -73,7 +76,7 @@
     if (!contact) { form.contact.setAttribute('aria-invalid', 'true'); form.contact.focus(); return fail('Вкажіть e-mail, Telegram або телефон, щоб ми могли вам написати.'); }
     const q = new URLSearchParams(location.search);
     const pack = (form.querySelector('input[name=pack]:checked') || {}).value || 'mova';
-    const packTitle = { mova: 'Машина часу рідної мови', tarilka: 'Що на моїй тарілці?' }[pack] || pack;
+    const packTitle = PACK_TITLES[pack] || pack;
     const data = {
       contact, name: form.name.value, comment: `[Набір: ${packTitle}] ${form.comment.value}`.trim(), website: form.website.value,
       grade: (form.querySelector('input[name=grade]:checked') || {}).value || '',

@@ -97,29 +97,56 @@
   const colorFor = s => AVA[[...(s || '')].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % AVA.length];
   function avatar(name) { const a = el('div', 'ava', initials(name)); a.style.background = colorFor(name); a.setAttribute('aria-hidden', 'true'); return a; }
 
-  // ---- тексти для покупця (ті самі, що на сторінці шаблонів)
+  // ---- тексти для покупця (залежать від набору, вибраного під час видачі коду)
   const APP = location.origin + '/app/';
-  const SUBJECT = 'Ваш код доступу до «Машини часу рідної мови»';
+  const PACK_COPY = {
+    mova: {
+      title: 'Машина часу рідної мови',
+      offline: 'Квест, мультфільми, поради, відповіді та роздатка',
+      wish: 'Бажаємо натхненного уроку, і щоб ваші учні з радістю мандрували в Машині часу! 📜✨'
+    },
+    tarilka: {
+      title: 'Що на моїй тарілці?',
+      offline: 'Урок на дошці, ігри, мультфільми, відповіді та роздатка',
+      wish: 'Бажаємо цікавого уроку, яскравих відкриттів і корисних розмов про здорове харчування! 🥦🍎'
+    },
+    perenosne: {
+      title: 'Робот Буквалик і чарівні окуляри',
+      offline: 'Урок на дошці, мультфільми, конспект, відповіді та роздатка',
+      wish: 'Бажаємо яскравого уроку, і щоб ваші учні разом із Букваликом закохалися в рідне слово! 🤖👓',
+      noGrade: true
+    },
+    '*': {
+      title: 'наборів «Дивоуроку»',
+      offline: 'Інтерактивні уроки, мультфільми, відповіді та роздатка',
+      wish: 'Бажаємо натхненних уроків і яскравих відкриттів разом із вашими учнями! 💛'
+    }
+  };
+  const packCopy = c => PACK_COPY[c.packs] || (String(c.packs || '').includes(',') ? PACK_COPY['*'] : PACK_COPY.mova);
+  const packNameFor = c => c.packs === '*' || String(c.packs || '').includes(',') ? packCopy(c).title : `набору «${packCopy(c).title}»`;
+  const subjectFor = c => `Ваш код доступу до ${c.packs === '*' || String(c.packs || '').includes(',') ? packCopy(c).title : '«' + packCopy(c).title + '»'}`;
   const hiOf = c => c.hi || 'Вітаємо';
   const howto = c => `1. Відкрийте ${APP}
 2. ${emailOf(c) ? `Увійдіть через Google або пошту ${emailOf(c)} — набір відкриється сам і буде доступний на будь-якому пристрої. Або` : 'Увійдіть через Google чи пошту й натисніть «Додати код», або'} вставте код у поле «Маєте код доступу?» і натисніть «Увійти з кодом». (Якщо раніше відкривали демо, спершу натисніть «Увійти» угорі.)
-3. На сторінці набору вгорі оберіть свій клас: 1–4, 5–7 або 8–11.
-4. Щоб провести весь урок без інтернету, натисніть там же «Увесь набір без інтернету → Зберегти весь набір» (≈100 МБ). Квест, мультфільми, поради, відповіді та роздатка збережуться в цьому браузері.
+${packCopy(c).noGrade ? '3. Урок на дошці відкривається кнопкою «Урок на дошці», презентацію PowerPoint завантажите в розділі «Завантажити матеріали».' : '3. На сторінці набору вгорі оберіть свій клас: 1–4, 5–7 або 8–11.'}
+4. Щоб провести весь урок без інтернету, натисніть там же «Увесь набір без інтернету → Зберегти весь набір» (≈100 МБ). ${packCopy(c).offline} збережуться в цьому браузері.
 5. Якщо потрібні окремі файли в папці «Завантаження», відкрийте в наборі розділ «Завантажити матеріали».`;
-  const WISH = `Якщо виникнуть питання чи щось не відкриється — пишіть сюди або на info@dyvourok.com.ua, ми завжди на зв'язку й швидко допоможемо 🙂
+  const wishFor = c => `Якщо виникнуть питання чи щось не відкриється — пишіть сюди або на info@dyvourok.com.ua, ми завжди на зв'язку й швидко допоможемо 🙂
 
-Бажаємо натхненного уроку, і щоб ваші учні з радістю мандрували в Машині часу! 📜✨`;
+${packCopy(c).wish}`;
   const FOLLOW = 'Підписуйтесь на нашу сторінку facebook.com/dyvourok — там ідеї для уроків і перші новини про нові набори 💛';
-  const messageFor = c => `${hiOf(c)}, дякуємо! Оплату отримали 💛 Ось ваш код доступу: ${c.code}
+  const messageFor = c => `${hiOf(c)}, дякуємо! Оплату отримали 💛 Ось ваш код доступу до ${packNameFor(c)}: ${c.code}
 
 ${howto(c)}
 ${emailOf(c) ? `\nКод та інструкцію дублюємо на пошту ${emailOf(c)}.\n` : ''}
-${WISH}
+${wishFor(c)}
 
 ${FOLLOW}`;
   const letterFor = c => `${hiOf(c)}, вітаємо!
 
 Дякуємо за покупку в «Дивоуроці» 💛
+
+Ви придбали доступ до ${packNameFor(c)}.
 
 Ваш код доступу: ${c.code}
 
@@ -130,12 +157,12 @@ ${howto(c)}
 
 Роздатку для друку (PDF) і сценарій уроку знайдете в наборі: розділи «Роздатка» та «Для вчителя». Презентацію PowerPoint для свого класу завантажите в розділі «Завантажити матеріали».
 
-${WISH}
+${wishFor(c)}
 
 ${FOLLOW}
 
 Команда «Дивоурок»`;
-  const reminderFor = c => `${hiOf(c)}, вітаємо! Вдалося відкрити набір «Машина часу рідної мови»? 🙂 Нагадую ваш код: ${c.code}
+  const reminderFor = c => `${hiOf(c)}, вітаємо! Вдалося відкрити ${packNameFor(c)}? 🙂 Нагадую ваш код: ${c.code}
 
 ${howto(c)}
 
@@ -149,7 +176,7 @@ ${howto(c)}
     box.append(chip,
       button('Повідомлення', 'btn soft sm', () => copy(messageFor(c), 'Повідомлення')),
       button('Лист', 'btn soft sm', () => copy(letterFor(c), 'Лист')),
-      button('Тема листа', 'btn soft sm', () => copy(SUBJECT, 'Тема листа')));
+      button('Тема листа', 'btn soft sm', () => copy(subjectFor(c), 'Тема листа')));
     return box;
   }
   function menu(items) {
@@ -294,7 +321,7 @@ ${howto(c)}
     if (c.packs !== 'mova') info.append(el('div', 'sub', 'Набори: ' + (c.packs === '*' ? 'усі' : c.packs)));
     const acts = copySet(c);
     if (lazy) acts.append(button('Нагадування', 'btn sun sm', () => copy(reminderFor(c), 'Нагадування')));
-    acts.append(button('Шаблони', 'btn soft sm', () => openMsgs({ hi: c.hi || '', name: c.note || '', code: c.code, email: emailOf(c) }, 'покупець ' + (c.note || c.code))));
+    acts.append(button('Шаблони', 'btn soft sm', () => openMsgs({ hi: c.hi || '', name: c.note || '', code: c.code, email: emailOf(c), packs: c.packs || 'mova' }, 'покупець ' + (c.note || c.code))));
     acts.append(button(editing === c.code ? 'Закрити' : 'Редагувати', 'btn ghost sm', () => { editing = editing === c.code ? '' : c.code; render(); }));
     const more = [[c.revoked ? 'Розблокувати код' : 'Заблокувати код', () => act(c.revoked ? 'restore' : 'revoke', c.code), !c.revoked]];
     if (c.user_id) more.push(['Відв’язати від акаунта', async () => { if (confirm('Відв’язати код ' + c.code + ' від акаунта ' + (c.account_email || '') + '? Код лишиться дійсним.')) { await call('POST', { action: 'unlink', code: c.code }, 'accounts'); toast('Відв’язано ✓'); load(); } }]);
@@ -599,7 +626,7 @@ ${howto(c)}
   let tplSettings = {};
   let mSec = 'all';
   let mEdit = null;               // id шаблону, що редагується, або 'new'
-  const client = { hi: '', name: '', code: '', email: '' };
+  const client = { hi: '', name: '', code: '', email: '', packs: 'mova' };
   const CHANNEL = { msg: 'Messenger', mail: 'Лист', com: 'Коментар' };
   const PH_LABEL = { hi: 'звертання', name: 'ім\'я та прізвище', code: 'код', email: 'пошта', card: 'номер картки', owner: 'отримувач', paylink: 'посилання на оплату', sign: 'підпис' };
   const PH_ALL = ['hi', 'name', 'code', 'email', 'price', 'price_note', 'link', 'howto', 'wish', 'follow', 'paylink', 'card', 'owner', 'sign', 'app', 'mail'];
@@ -615,16 +642,20 @@ ${howto(c)}
       case 'link': return DEMO_LINK;
       case 'app': return APP;
       case 'mail': return 'info@dyvourok.com.ua';
-      case 'howto': return howto({ email: client.email });
-      case 'wish': return WISH;
+      case 'howto': return howto({ email: client.email, packs: client.packs });
+      case 'wish': return wishFor(client);
       case 'follow': return FOLLOW;
     }
     return null;
   }
-  const fillText = s => s.replace(/\{(\w+)\}/g, (m, k) => { const v = phValue(k); return v == null ? '[' + (PH_LABEL[k] || k) + ']' : v; });
+  const adaptForPack = s => PACK_COPY[client.packs] && client.packs !== 'mova' && client.packs !== '*'
+    ? s.replaceAll('«Машини часу рідної мови»', '«' + PACK_COPY[client.packs].title + '»').replaceAll('«Машина часу рідної мови»', '«' + PACK_COPY[client.packs].title + '»')
+    : s;
+  const fillText = s => adaptForPack(s).replace(/\{(\w+)\}/g, (m, k) => { const v = phValue(k); return v == null ? '[' + (PH_LABEL[k] || k) + ']' : v; });
   // те саме, але DOM: порожні місця червоним
   function fillNode(node, s) {
     node.replaceChildren();
+    s = adaptForPack(s);
     let last = 0;
     s.replace(/\{(\w+)\}/g, (m, k, i) => {
       node.append(s.slice(last, i));
@@ -745,7 +776,7 @@ ${howto(c)}
 
   // клієнт: заповнюється вручну, з картки покупця або з форми «Новий код»
   function setClient(c, from) {
-    Object.assign(client, { hi: '', name: '', code: '', email: '' }, c);
+    Object.assign(client, { hi: '', name: '', code: '', email: '', packs: 'mova' }, c);
     document.querySelectorAll('#msgs [data-c]').forEach(i => { i.value = client[i.dataset.c] || ''; });
     $('m-from').textContent = from || '';
     renderMsgs();
@@ -778,8 +809,9 @@ ${howto(c)}
   $('m-close').onclick = closeMsgs;
   // поки відкрито «Новий код», дані з форми одразу йдуть у шаблони
   const newOpen = () => $('new-code').classList.contains('on');
-  function syncFromNew() { setClient({ name: $('note').value.trim(), hi: $('hi').value.trim(), email: $('email').value.trim() }, 'з форми «Новий код»'); }
+  function syncFromNew() { setClient({ name: $('note').value.trim(), hi: $('hi').value.trim(), email: $('email').value.trim(), packs: $('packs').value }, 'з форми «Новий код»'); }
   ['note', 'hi', 'email'].forEach(id => $(id).addEventListener('input', () => { if (msgsOpen()) syncFromNew(); }));
+  $('packs').addEventListener('change', () => { if (msgsOpen()) syncFromNew(); });
 
   // ---- вхід: спершу пробуємо сесію Google (кукі), інакше — екран входу; токен — запасний спосіб
   const LOGIN_MSG = {
@@ -848,9 +880,9 @@ ${howto(c)}
     const codes = d.codes || [];
     $('created-box').hidden = false;
     $('created').textContent = codes.join('\n');
-    $('letter-actions').replaceChildren(copySet({ code: codes[0], hi: body.hi, email: body.email, max_devices: parseInt(body.maxDevices, 10) || 3 }));
+    $('letter-actions').replaceChildren(copySet({ code: codes[0], hi: body.hi, email: body.email, packs: body.packs, max_devices: parseInt(body.maxDevices, 10) || 3 }));
     toast('Код створено ✓');
-    if (msgsOpen()) setClient({ name: body.note.trim(), hi: body.hi.trim(), email: body.email.trim(), code: codes[0] || '' }, 'щойно створений код');
+    if (msgsOpen()) setClient({ name: body.note.trim(), hi: body.hi.trim(), email: body.email.trim(), code: codes[0] || '', packs: body.packs }, 'щойно створений код');
     if (fromPre) { try { await call('POST', { action: 'status', contact: fromPre, status: 'paid' }, 'preorders'); } catch (e) {} }
     fromPre = ''; $('from-pre').hidden = true;
     ['note', 'hi', 'email', 'contact'].forEach(id => $(id).value = '');

@@ -127,6 +127,7 @@
     return obj && l && obj.levels && obj.levels[l.id] ? { ...obj, ...obj.levels[l.id] } : obj;
   }
   const levelHandouts = pack => { const l = levelOf(pack); return pack.handouts.filter(d => !l || !d.levels || d.levels.includes(l.id)); };
+  const levelCartoons = pack => { const l = levelOf(pack); return (pack.cartoons || []).filter(d => !l || !d.levels || d.levels.includes(l.id)); };
   function levelPicker(pack) {
     if (!pack.grades) return null;
     const cur = levelOf(pack);
@@ -350,6 +351,11 @@
   const mailLink = () => h('a', { class: 'mail', href: 'mailto:' + CONTACT }, CONTACT);
   const contactLine = (lead = 'Питання чи проблеми з доступом? Пишіть на ') => h('p', { class: 'muted contact' }, lead, mailLink());
   const buyHint = () => h('div', {}, h('p', { class: 'muted' }, 'Ще немає коду? ', h('a', { href: 'https://dyvourok.com.ua/?from=app#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Замовте набір'), ' — надішлемо реквізити й код доступу.'), contactLine('Питання? Пишіть на '));
+  // текст про демо: у «Машині часу» відкрита зупинка, у наборах з уроком на дошці — зразки сторінок і слайдів
+  const currentPack = () => { const m = location.hash.match(/#\/(?:pack|demo)\/([a-z0-9-]+)/); return m ? PACKS.find(x => x.id === m[1]) : null; };
+  const demoText = p => p && p.board
+    ? 'У демо можна переглянути зразки уроку, роздатки й презентації з водяними знаками. Повний урок, мультфільми, роздатка для друку та конспект відкриваються за кодом.'
+    : 'У демо можна пройти зупинку «Тарас Шевченко». Повний набір — 5 епох, мультфільми, роздатка і сценарій уроку.';
   function lockedDialog() {
     Sfx.wrong(); track('locked');
     const r = h('div', { class: 'reward', role: 'dialog', 'aria-label': 'Потрібен доступ' },
@@ -357,7 +363,7 @@
         h('div', { class: 'kicker' }, 'Демо-версія'),
         h('span', { style: 'font-size:64px;color:var(--red)' }, icon('lock')),
         h('h2', {}, 'Ця частина відкривається з кодом доступу'),
-        h('p', {}, 'У демо можна пройти зупинку «Тарас Шевченко». Повний набір — 5 епох, мультфільми, роздатка і сценарій уроку.'),
+        h('p', {}, demoText(currentPack())),
         h('button', { class: 'btn big', onclick: () => { r.remove(); enterCode(); } }, isAccount() ? 'Додати код доступу' : 'Увійти або ввести код'),
         h('a', { class: 'btn ghost', href: 'https://dyvourok.com.ua/?from=demo#peredzamovlennia', target: '_blank', rel: 'noopener', onclick: () => track('want') }, 'Хочу повну версію'),
         h('button', { class: 'btn ghost', onclick: () => r.remove() }, 'Повернутися'),
@@ -710,7 +716,7 @@
       h('div', { class: 'ico' }, icon('lock')),
       h('div', { class: 'grow' },
         h('h3', {}, 'Демо-доступ до набору «' + p.title + '»'),
-        h('p', { class: 'news-body' }, 'У демо відкрита перша зупинка. Повний урок, роздатка для друку та презентація відкриваються за кодом.')),
+        h('p', { class: 'news-body' }, p.board ? 'У демо — зразки уроку, роздатки й презентації з водяними знаками. Повний урок, мультфільми, роздатка для друку та конспект відкриваються за кодом.' : 'У демо відкрита перша зупинка. Повний урок, роздатка для друку та презентація відкриваються за кодом.')),
       h('div', { class: 'news-acts' },
         h('button', { class: 'btn compact', onclick: enterCode }, isAccount() ? 'Ввести код' : 'Увійти з кодом'),
         h('a', { class: 'btn ghost compact', href: 'https://dyvourok.com.ua/?from=demo#peredzamovlennia', target: '_blank', rel: 'noopener' }, 'Замовити набір')));
@@ -1151,7 +1157,7 @@
   // ---------------------------------------------------------------- мультфільми, роздатка, вчитель
   function cartoons(pack) {
     const slot = h('div', { class: 'player' });
-    const list = h('div', { class: 'list' }, pack.cartoons.map(c => h('button', { class: 'row' + (c.ready ? '' : ' off'), onclick: () => {
+    const list = h('div', { class: 'list' }, levelCartoons(pack).map(c => h('button', { class: 'row' + (c.ready ? '' : ' off'), onclick: () => {
       if (!c.ready) { toast('Цей мультфільм ще в роботі'); return; }
       if (!license.allows(pack.id) && !c.demo) return lockedDialog();
       Sfx.tap();
@@ -1248,7 +1254,7 @@
     }, h('span', { class: 'download-ico' }, icon('download')),
     h('div', { class: 'grow' }, h('h3', {}, title), h('div', { class: 'muted' }, note)),
     h('span', { class: 'btn ghost compact' }, 'Завантажити'));
-    const cartoonsList = pack.cartoons.filter(c => c.ready).map(c => fileRow(c.title, 'MP4 з озвученням', c.download || c.file, 'video'));
+    const cartoonsList = levelCartoons(pack).filter(c => c.ready).map(c => fileRow(c.title, 'MP4 з озвученням', c.download || c.file, 'video'));
     const handoutsList = levelHandouts(pack).map(d => fileRow(d.title, d.note, d.file, 'pdf'));
     const lv = levelOf(pack);
     const pptList = (pack.presentations || []).filter(d => !lv || !d.levels || d.levels.includes(lv.id)).map(d => fileRow(d.title, d.note, d.file, 'pptx', d.name));
