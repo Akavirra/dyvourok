@@ -22,6 +22,9 @@
     document.querySelectorAll('[data-early]').forEach(el => { el.hidden = true; });
   }
 
+  // мітка «Нове» на картках матеріалів — тиждень від дати виходу (до кінця дня data-new-until за Києвом)
+  document.querySelectorAll('.new-flag[data-new-until]').forEach(f => { f.hidden = Date.now() >= Date.parse(f.dataset.newUntil + 'T00:00:00+02:00'); });
+
   // блоки плавно з'являються; без JS або з reduced-motion усе видно одразу
   const reveal = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {

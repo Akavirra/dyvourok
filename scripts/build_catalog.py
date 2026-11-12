@@ -158,7 +158,10 @@ def card(it, newest=False, level=3):
     tape = ' tape-' + str(sum(map(ord, it['slug'])) % 3)
     pos = f' style="object-position:{it["cover_pos"]}"' if it.get('cover_pos') else ''
     fri = f'<span class="fri-flag">Безкоштовна п’ятниця #{it["friday"]}</span>' if it.get('friday') else ''
-    new = '<span class="new-flag">Нове</span>' if newest else ''
+    # «Нове» — 7 днів від дати матеріалу (поле date). Сторінка статична, тож ховає/показує site.js за data-new-until
+    from datetime import date as _d, timedelta as _td
+    until = (_d.fromisoformat(it['date']) + _td(days=7)).isoformat()
+    new = f'<span class="new-flag" data-new-until="{until}" hidden>Нове</span>'
     cta = it.get('cta') or 'Завантажити'
     return f'''<article class="m-card{tape}" data-kind="{it["kind"]}" data-grades="{" ".join(it["grades"])}" data-subject="{it["subject"]}">
   <div class="pic"><img src="{e(it["cover"])}" alt="" width="1320" height="570" loading="lazy"{pos}>{new}</div>
