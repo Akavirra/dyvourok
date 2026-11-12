@@ -58,6 +58,9 @@
   const PRICE_SWITCH = Date.parse('2026-10-20T00:00:00+03:00');   // ціна для перших покупців (250 ₴) — до 19.10 включно, далі 300 ₴
   const priceAt = ms => (ms >= PRICE_SWITCH ? 300 : 250);
   const PRICE = priceAt(Date.now());
+  // власна ціна набору (як PACK_PRICE у site.js); решта — PRICE
+  const PACK_PRICE = { perenosne: 250 };
+  const priceFor = packs => PACK_PRICE[packs] || PRICE;
   const SOURCE_LABEL = { messenger: 'Messenger', instagram: 'Instagram', site: 'Сайт', tiktok: 'TikTok', other: 'Інше', '': '—' };
   const GRADE_LABEL = { '1-4': '1–4', '5-7': '5–7', '8-11': '8–11', '': '—' };
   const KIND_LABEL = { sale: 'Продаж', gift: 'Подарунок', test: 'Тест' };
@@ -123,6 +126,8 @@
     }
   };
   const packCopy = c => PACK_COPY[c.packs] || (String(c.packs || '').includes(',') ? PACK_COPY['*'] : PACK_COPY.mova);
+  const packLabel = packs => packs === '*' ? 'усі набори' : String(packs || 'mova').split(',').map(id => (PACK_COPY[id] || {}).title || id).join(', ');
+  const packOfPreorder = p => { const m = /\[Набір: ([^\]]+)\]/.exec(p.comment || ''); const id = m && Object.keys(PACK_COPY).find(k => k !== '*' && PACK_COPY[k].title === m[1].trim()); return id || 'mova'; };
   const packNameFor = c => c.packs === '*' || String(c.packs || '').includes(',') ? packCopy(c).title : `набору «${packCopy(c).title}»`;
   const subjectFor = c => `Ваш код доступу до ${c.packs === '*' || String(c.packs || '').includes(',') ? packCopy(c).title : '«' + packCopy(c).title + '»'}`;
   const hiOf = c => c.hi || 'Вітаємо';
@@ -318,7 +323,7 @@ ${howto(c)}
     info.append(el('div', null, parts.join(' · ')));
     if (c.account_email) info.append(el('div', 'sub', 'Акаунт: ' + c.account_email));
     if (c.contact) info.append(el('div', 'sub', c.contact));
-    if (c.packs !== 'mova') info.append(el('div', 'sub', 'Набори: ' + (c.packs === '*' ? 'усі' : c.packs)));
+    if (c.packs !== 'mova') info.append(el('div', 'sub', 'Набір: ' + packLabel(c.packs)));
     const acts = copySet(c);
     if (lazy) acts.append(button('Нагадування', 'btn sun sm', () => copy(reminderFor(c), 'Нагадування')));
     acts.append(button('Шаблони', 'btn soft sm', () => openMsgs({ hi: c.hi || '', name: c.note || '', code: c.code, email: emailOf(c), packs: c.packs || 'mova' }, 'покупець ' + (c.note || c.code))));
@@ -389,7 +394,7 @@ ${howto(c)}
     info.append(el('div', null, [a.name ? a.email : '', a.school, 'з ' + fmtDate(a.created_at)].filter(Boolean).join(' · ')));   // без імені пошта вже в заголовку
     a.codes.forEach(c => {
       const line = el('div', 'sub');
-      line.append(el('span', null, c.code + ' — ' + (c.note || 'без імені') + (c.packs !== 'mova' ? ' · ' + (c.packs === '*' ? 'усі набори' : c.packs) : '') + (c.revoked ? ' · заблоковано' : '') + ' '),
+      line.append(el('span', null, c.code + ' — ' + (c.note || 'без імені') + (c.packs !== 'mova' ? ' · ' + packLabel(c.packs) : '') + (c.revoked ? ' · заблоковано' : '') + ' '),
         button('відв’язати', 'linkish', async () => { if (confirm('Відв’язати код ' + c.code + ' від ' + a.email + '? Код лишиться дійсним.')) { await call('POST', { action: 'unlink', code: c.code }, 'accounts'); toast('Відв’язано ✓'); load(); } }));
       info.append(line);
     });
@@ -534,13 +539,15 @@ ${howto(c)}
     acts.append(sel,
       button('Створити код', 'btn sm', () => fillFromPreorder(p)),
       button('Копіювати контакт', 'btn soft sm', () => copy(p.contact, 'Контакт')),
-      button('Шаблони', 'btn soft sm', () => openMsgs({ name: p.name || '', email: p.contact.includes('@') ? p.contact : '' }, 'заявка ' + p.contact)),
+      button('Шаблони', 'btn soft sm', () => openMsgs({ name: p.name || '', email: p.contact.includes('@') ? p.contact : '', packs: packOfPreorder(p) }, 'заявка ' + p.contact)),
       menu([['Видалити заявку', async () => { if (confirm('Видалити заявку ' + p.contact + '?')) { await call('POST', { action: 'delete', contact: p.contact }, 'preorders'); toast('Заявку видалено'); loadPre(); } }, true]]));
     card.append(avatar(p.name || p.contact), head, info, acts);
     return card;
   }
   function fillFromPreorder(p) {
     fromPre = p.contact;
+    const pk = packOfPreorder(p);
+    setSel('packs', pk); $('amount').value = priceFor(pk);
     $('note').value = p.name || '';
     $('hi').value = '';
     $('email').value = p.contact.includes('@') ? p.contact : '';
@@ -637,8 +644,8 @@ ${howto(c)}
     switch (k) {
       case 'hi': return 'Добрий день';
       case 'sign': return 'Команда «Дивоурок»';
-      case 'price': return PRICE + ' ₴';
-      case 'price_note': return PRICE < 300 ? ' Стартова ціна діє до 19 жовтня включно, з 20 жовтня набір коштуватиме 300 ₴.' : '';
+      case 'price': return priceFor(client.packs) + ' ₴';
+      case 'price_note': return !PACK_PRICE[client.packs] && PRICE < 300 ? ' Стартова ціна діє до 19 жовтня включно, з 20 жовтня набір коштуватиме 300 ₴.' : '';
       case 'link': return DEMO_LINK;
       case 'app': return APP;
       case 'mail': return 'info@dyvourok.com.ua';
@@ -867,6 +874,7 @@ ${howto(c)}
   // ---- новий код
   $('paid').value = toDateInput(Date.now());
   $('amount').value = PRICE;
+  $('packs').addEventListener('change', () => { $('amount').value = priceFor($('packs').value); });
   $('create').onclick = async () => {
     const body = {
       note: $('note').value, hi: $('hi').value, email: $('email').value, source: $('source').value, grade: $('grade').value,
@@ -886,7 +894,7 @@ ${howto(c)}
     if (fromPre) { try { await call('POST', { action: 'status', contact: fromPre, status: 'paid' }, 'preorders'); } catch (e) {} }
     fromPre = ''; $('from-pre').hidden = true;
     ['note', 'hi', 'email', 'contact'].forEach(id => $(id).value = '');
-    $('amount').value = PRICE; $('paid').value = toDateInput(Date.now());
+    $('amount').value = priceFor($('packs').value); $('paid').value = toDateInput(Date.now());
     setSel('kind', 'sale'); setSel('grade', ''); setSel('source', 'messenger');
     load();
   };
