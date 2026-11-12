@@ -192,7 +192,7 @@
     } });
 
   // відео
-  const video = (n, title, tip, grades) => add({ grades, stage: n === 3 ? 'practice' : n === 2 ? 'new' : 'start', title: 'Мультик ' + n, bg: 'img/bg/' + (n === 1 ? 'kitchen' : n === 2 ? 'table' : 'shop') + '.webp', bgcls: 'dim', tip,
+  const video = (n, title, tip, grades) => add({ grades, stage: n >= 3 ? 'practice' : n === 2 ? 'new' : 'start', title: 'Мультик ' + n, bg: 'img/bg/' + (n === 1 || n === 4 ? 'kitchen' : n === 2 ? 'table' : 'shop') + '.webp', bgcls: 'dim', tip,
     build(el) {
       const p = vplayer(`../media/m${n}.mp4`, `../media/m${n}.jpg`, D.subs['m' + n] || []);
       p.video.addEventListener('ended', () => $('#next').classList.add('pulse'));
@@ -635,6 +635,8 @@
         out.style.opacity = s >= 4 ? 1 : 0;
       } };
     } });
+
+  video(4, 'Енергетик чи сон?', 'Після мультика: «Що обіцяла реклама? Що сказала Лупа? Що допомогло Маркові?» Далі — факти ЦГЗ.', ['811']);
 
   // 8–11: енергетики — факти (H06, H07, S20, S21)
   add({ grades: ['811'], stage: 'practice', title: 'Енергетики', bg: 'img/bg/shop.webp', bgcls: 'dim', steps: 3,
