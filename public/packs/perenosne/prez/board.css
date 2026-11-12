@@ -787,3 +787,37 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .rule .ex small{font-size:30px;margin-top:6px}
 .nat-grid{grid-auto-rows:1fr}
 .hero h1{font-size:72px}
+
+/* v3 (12.11): каліграфія — рядки-картинки прописом; кнопка окулярів */
+.kl-sheet{position:relative;padding:14px 30px 26px;justify-content:space-between}
+.kl-row{display:flex;align-items:center;gap:18px}
+.kl-n{flex:none;width:52px;height:52px;border-radius:50%;background:var(--sun);display:grid;place-items:center;font-size:26px;font-weight:1000}
+.kl-img{position:relative;flex:1;aspect-ratio:2900/420}
+.kl-img img{position:absolute;inset:0;width:100%;height:100%}
+.kl-ink2{clip-path:inset(0 100% 0 0)}
+.kl-row.on .kl-ink2{animation:write 2.4s steps(36) forwards}
+.kl-src{position:absolute;right:30px;bottom:6px;font-size:15px;font-weight:700;color:var(--muted)}
+.ln-btn{position:relative;overflow:visible}
+.ln-btn img{width:120px}
+.ln-btn span{position:absolute;left:50%;top:calc(100% + 14px);transform:translateX(-50%);white-space:nowrap;font-size:26px;color:var(--gold)}
+/* v3: розміри тексту для дошки (видно з останньої парти) */
+.kl-img{flex:none;width:1060px}
+.kl-sheet{flex:none}
+.kl{align-items:stretch}
+.pr-how h3{font-size:48px}
+.pr-how ol{font-size:36px;line-height:1.5}
+.pc{font-size:36px;padding:22px 32px}
+.tm-face{font-size:200px}
+.timer .row button.tm-go,.timer .row button.tm-done,.tm-go,.tm-done{height:110px;font-size:38px;border-radius:30px}
+.choice .mb{transform:scale(1.4);margin:40px 0 30px}
+.choice h3{font-size:56px;min-height:0}
+.choice p.why{font-size:32px;min-height:90px;color:var(--ink);opacity:.75}
+.choice .cnt button{width:84px;height:84px;font-size:54px}
+.choice .cnt b{font-size:72px}
+.hw{align-items:stretch;margin-top:20px}
+.hw-c h3{font-size:52px}
+.hw-c p{font-size:40px;line-height:1.35}
+.rule p{font-size:38px}
+.rule h3{font-size:56px}
+.dn-legend>div{font-size:36px}.dn-legend b{font-size:42px}
+.tx-note{font-size:38px}

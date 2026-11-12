@@ -148,8 +148,14 @@
     let a = null;
     return id => { try { if (a) a.pause(); a = new Audio(`../media/audio/${id}.mp3`); a.volume = Math.max(0.2, +store.get('dyvo_vol', 1) || 1); a.play().catch(() => {}); } catch (e) {} };
   })();
-  const praise = () => voice('bo_0' + (1 + (Math.random() * 3 | 0)));
-  const hint = () => voice('bn_0' + (1 + (Math.random() * 2 | 0)));
+  // Похвала й підказки звучать рідко: не частіше ніж раз на 12 с (підказка — 15 с), фрази йдуть по колу без повторів поспіль.
+  // Репліки-вступи екранів (b0_01, bk_01, bf_01…) — лише перший раз за урок.
+  const said = new Set();
+  const once = id => { if (said.has(id)) return; said.add(id); voice(id); };
+  const ring = (ids, gap) => { let k = Math.random() * ids.length | 0, last = -1e9;
+    return (force) => { const now = Date.now(); if (!force && now - last < gap) return; last = now; k = (k + 1) % ids.length; voice(ids[k]); }; };
+  const praise = ring(['bo_01', 'bo_02', 'bo_03'], 12000);
+  const hint = ring(['bn_01', 'bn_02'], 15000);
 
   const header = (title, kick) => h('div', { class: 'hd' }, h('div', {}, kick ? h('div', { class: 'kick' }, kick) : null, h('h2', {}, title)));
   const say = (who, text, pos) => {
@@ -204,13 +210,13 @@
       const bot = h('img', { class: 'balloon-bot', src: ch('bukvalyk_head'), alt: '' });
       const q = h('div', { class: 'bigq paper' }, 'Хто це летить до нашого класу?');
       el.append(h('div', { class: 'fly' }, ball, bot), q);
-      return { step(s) { el.classList.toggle('flying', s >= 1); if (s >= 1) voice('b0_01'); } };
+      return { step(s) { el.classList.toggle('flying', s >= 1); if (s >= 1) once('b0_01'); } };
     } });
 
   // відео
   const video = (n, title, stage, tip, bg) => add({ stage, title: 'Мультик ' + n, bg: 'img/bg/paper.webp', tip,
     build(el) {
-      const p = vplayer(`../media/m${n}.mp4`, `../media/m${n}.jpg`, []);   // субтитри вже в кадрі
+      const p = vplayer(`../media/m${n}.mp4`, `../media/m${n}.jpg`, D.subs['m' + n] || []);   // субтитри — окремо (data.js), вмикаються в плеєрі
       p.video.addEventListener('ended', () => { $('#next').classList.add('pulse'); if (n === 2) battery.charge('m2', 10); if (n === 3) { battery.charge('m3', 10); confetti(el); } });
       el.append(h('div', { class: 'body' }, header(title, 'Мультик ' + n), h('div', { class: 'vid' }, h('div', { class: 'vbox' }, p.box))));
       return { leave() { p.video.pause(); } };
@@ -228,8 +234,9 @@
   add({ stage: 'kalig', title: 'Каліграфічна хвилинка', bg: 'img/bg/paper.webp', steps: KALIG.length + 1,
     tip: 'Буквалик уміє лише ДРУКУВАТИ — діти допомагають йому: переписують надрукований рядок у зошит гарним письмом. Нагадайте про посадку й нахил. Після речення «Золота осінь.» — ще раз «Далі»: Буквалик дивується «Осінь із золота?!». Хай діти пояснять: осінь жовта, як золото. Це і є місток до теми.',
     build(el) {
-      const rows = KALIG.map(([t, lab]) => h('div', { class: 'kl-row' }, h('small', {}, lab), h('div', { class: 'kl-line' }, h('span', { class: 'kl-ink' }, t))));
-      const sheet = h('div', { class: 'kl-sheet paper' }, rows);
+      const rows = KALIG.map(([txt, lab], i) => h('div', { class: 'kl-row' }, h('b', { class: 'kl-n', title: lab }, String(i + 1)),
+        h('div', { class: 'kl-img' }, h('img', { src: 'img/kl/kl_line.webp', alt: '' }), h('img', { class: 'kl-ink2', src: `img/kl/kl_${i + 1}.webp`, alt: txt }))));
+      const sheet = h('div', { class: 'kl-sheet paper' }, rows, h('small', { class: 'kl-src' }, 'Шрифт прописів: Propysy © Всеосвіта'));
       const printer = h('div', { class: 'kl-printer' }, h('img', { src: ch('bukvalyk'), alt: '' }));
       const wonder = h('div', { class: 'kl-wonder' },
         h('figure', {}, sticker(cut('lit_osin'), 'blue'), h('figcaption', { class: 'pill blue' }, 'Так подумав Буквалик')),
@@ -238,9 +245,9 @@
       el.append(h('div', { class: 'body' }, header('Допоможи Буквалику: напиши красиво!', 'Каліграфічна хвилинка'), h('div', { class: 'kl' }, sheet, printer), wonder));
       return { step(s) {
         rows.forEach((r, i) => r.classList.toggle('on', i < s));
-        if (s === 1) voice('bk_01');
+        if (s === 1) once('bk_01');
         el.classList.toggle('wonder', s > KALIG.length);
-        if (s > KALIG.length) { voice('bk_02'); battery.charge('kalig', 10); }
+        if (s > KALIG.length) { once('bk_02'); battery.charge('kalig', 10); }
       } };
     } });
 
@@ -326,7 +333,7 @@
       paint();
       return {
         next() {
-          if (i < 0) { i = 0; shown = false; voice('bf_01'); paint(); return true; }
+          if (i < 0) { i = 0; shown = false; once('bf_01'); paint(); return true; }
           if (!shown) { shown = true; paint(); if (i === DANCE.length - 1) { battery.charge('dance', 10); $('#next').classList.add('pulse'); } return true; }
           if (i < DANCE.length - 1) { i++; shown = false; paint(); return true; }
           return false;
@@ -404,7 +411,7 @@
       const start = h('button', { class: 'tm-go', onclick: () => {
         if (iv) { clearInterval(iv); iv = null; start.textContent = 'Далі ▶'; return; }
         start.textContent = 'Пауза';
-        iv = setInterval(() => { t--; paint(); if (t <= 0) { clearInterval(iv); iv = null; start.textContent = 'Час!'; battery.charge('pairs', 10); voice('bo_03'); $('#next').classList.add('pulse'); } }, 1000);
+        iv = setInterval(() => { t--; paint(); if (t <= 0) { clearInterval(iv); iv = null; start.textContent = 'Час!'; battery.charge('pairs', 10); praise(true); $('#next').classList.add('pulse'); } }, 1000);
       } }, 'Старт ▶');
       const done = h('button', { class: 'tm-done', onclick: () => { battery.charge('pairs', 10); praise(); } }, 'Ми впоралися!');
       const sample = h('div', { class: 'pr-sample' },
@@ -431,7 +438,7 @@
       el.append(h('div', { class: 'body' }, header('Оживи природу!', 'Творча хвилинка'),
         h('div', { class: 'nat-grid' }, cards),
         h('div', { class: 'bank' }, h('b', {}, 'Банк слів:'), ['всміхається', 'плаче', 'біжить', 'спить', 'шепоче', 'співає'].map(w => h('span', {}, w)))));
-      return { enter() { voice('bt_01'); } };
+      return { enter() { once('bt_01'); } };
     } });
 
   // 14. Квіз «Пряме чи переносне?» — весь клас відповідає разом
