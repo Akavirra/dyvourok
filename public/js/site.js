@@ -66,6 +66,8 @@
   };
   if (form) form.addEventListener('change', e => { if (e.target.name === 'pack') pickPack(e.target.value); });
   document.querySelectorAll('[data-pack]').forEach(a => a.addEventListener('click', () => pickPack(a.dataset.pack)));
+  // з каталогу /materialy: /?pack=<id>#cina — одразу вибрати цей набір у формі
+  { const qp = new URLSearchParams(location.search).get('pack'); if (qp) pickPack(qp); }
   if (form) form.addEventListener('submit', async e => {
     e.preventDefault();
     const msg = document.getElementById('preorder-msg');

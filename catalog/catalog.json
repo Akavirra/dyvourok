@@ -1,6 +1,44 @@
 {
-  "_comment": "Каталог /materialy. Новий матеріал: додати запис угорі списку, файли в public/files/free/ і public/img/materialy/<slug>/, потім python scripts/build_catalog.py. kind: free — PDF без реєстрації (своя сторінка); account — безкоштовно після входу в застосунок; paid — платний набір; idea — стаття з ідеями.",
+  "_comment": "Каталог /materialy. Новий матеріал: додати запис угорі списку, файли в public/files/free/ і public/img/materialy/<slug>/, потім python scripts/build_catalog.py. kind: free — PDF без реєстрації (своя сторінка); account — безкоштовно після входу в застосунок; paid — платний набір; idea — стаття з ідеями. Кожен новий набір чи матеріал (платний теж) — сюди, інакше його не буде в /materialy.",
   "items": [
+    {
+      "slug": "perenosne",
+      "kind": "paid",
+      "price": 250,
+      "date": "2026-11-12",
+      "title": "Робот Буквалик і чарівні окуляри",
+      "short": "Відкритий урок «Пряме і переносне значення слів»: робот розуміє все буквально, а діти вчать його бачити переносне значення. Урок на дошці й PowerPoint з іграми, три мультики, роздатка трьох рівнів, комікс, гра й плакат.",
+      "grades": [
+        "1-4"
+      ],
+      "grade_label": "3 клас",
+      "subject": "lang",
+      "format": "Застосунок · PowerPoint · мультфільми · PDF",
+      "cover": "/packs/perenosne/img/cover-card.webp?v=c52f4c79",
+      "url": "/?pack=perenosne#cina",
+      "demo": "/app/#/demo/perenosne",
+      "cta": "Купити набір"
+    },
+    {
+      "slug": "tarilka",
+      "kind": "paid",
+      "price": 300,
+      "date": "2026-11-04",
+      "title": "Що на моїй тарілці?",
+      "short": "Урок про збалансоване харчування у трьох версіях: 1–4, 5–7 і 8–11 клас. Урок на дошці й PowerPoint, мультики, роздатки, квіз і гра «Збери тарілку». Без дієт і розмов про вагу.",
+      "grades": [
+        "1-4",
+        "5-7",
+        "8-11"
+      ],
+      "grade_label": "1–11 клас",
+      "subject": "health",
+      "format": "Застосунок · PowerPoint · мультфільми · PDF",
+      "cover": "/packs/tarilka/img/cover-card.webp?v=885030d5",
+      "url": "/?pack=tarilka#cina",
+      "demo": "/app/#/demo/tarilka",
+      "cta": "Купити набір"
+    },
     {
       "slug": "valizka-ukryttia",
       "kind": "free",
@@ -359,7 +397,7 @@
       "subject": "lang",
       "format": "Застосунок · мультфільми · PDF",
       "cover": "/packs/mova/img/cover-card.webp?v=e7272fc0",
-      "url": "/#cina",
+      "url": "/?pack=mova#cina",
       "demo": "/app/#/demo",
       "cta": "Купити набір"
     },
